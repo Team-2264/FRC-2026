@@ -129,11 +129,11 @@ public class Swerve extends SubsystemBase {
         Module0SpeedLog = new DoubleLogEntry(log, "/my/SpeedModule0");
         Module0AngleLog = new DoubleLogEntry(log, "/my/AngleModule0");
         Module1SpeedLog = new DoubleLogEntry(log, "/my/SpeedModule1");
-        Module0AngleLog = new DoubleLogEntry(log, "/my/AngleModule1");
+        Module1AngleLog = new DoubleLogEntry(log, "/my/AngleModule1");
         Module2SpeedLog = new DoubleLogEntry(log, "/my/SpeedModule2");
-        Module0AngleLog = new DoubleLogEntry(log, "/my/AngleModule2");
+        Module2AngleLog = new DoubleLogEntry(log, "/my/AngleModule2");
         Module3SpeedLog = new DoubleLogEntry(log, "/my/SpeedModule3");
-        Module0AngleLog = new DoubleLogEntry(log, "/my/AngleModule3");
+        Module3AngleLog = new DoubleLogEntry(log, "/my/AngleModule3");
 
         poseEstimator = new SwerveDrivePoseEstimator(Constants.Swerve.swerveKinematics, getGyroAngle(), getModulePositions(), Constants.Swerve.initialPose);
         
