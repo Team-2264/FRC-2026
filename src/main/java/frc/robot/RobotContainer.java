@@ -14,7 +14,7 @@ import frc.robot.enums.HeldButton;
 import frc.robot.subsystems.HeldButtons;
 import frc.robot.subsystems.Leds;
 import frc.robot.subsystems.Swerve;
-import frc.robot.subsystems.VisionOld;
+import frc.robot.subsystems.Vision2025;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -45,7 +45,7 @@ public class RobotContainer {
     // Subsystems
     public final Swerve swerve = new Swerve();
     public final Leds leds = new Leds(Constants.LedStrip.pwmPort, Constants.LedStrip.numLeds, Constants.LedStrip.scaleFactor);
-    public final VisionOld vision = new VisionOld();
+    public final Vision2025 vision = new Vision2025();
     private final HeldButtons heldButtons = new HeldButtons();
 
     // Controllers

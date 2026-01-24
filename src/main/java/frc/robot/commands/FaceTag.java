@@ -4,7 +4,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
 import frc.robot.subsystems.Swerve;
-import frc.robot.subsystems.VisionOld;
+import frc.robot.subsystems.Vision2025;
 
 /**
  * Command to rotate the robot to face a specific tag.
@@ -13,10 +13,10 @@ import frc.robot.subsystems.VisionOld;
 
 public class FaceTag extends Command {
     private final Swerve swerve;
-    private final VisionOld vision;
+    private final Vision2025 vision;
     private final int tagId;
 
-    public FaceTag(Swerve swerve, VisionOld vision, int tagId){
+    public FaceTag(Swerve swerve, Vision2025 vision, int tagId){
         this.swerve = swerve;
         this.vision = vision;
         this.tagId = tagId;

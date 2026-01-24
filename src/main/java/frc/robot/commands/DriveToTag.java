@@ -9,7 +9,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.Swerve;
-import frc.robot.subsystems.VisionOld;
+import frc.robot.subsystems.Vision2025;
 
 /**
  * Command to drive the motion to a specific distance from the tag.
@@ -18,7 +18,7 @@ import frc.robot.subsystems.VisionOld;
 public class DriveToTag extends Command{
 
     private final Swerve swerve;
-    private final VisionOld vision;
+    private final Vision2025 vision;
     private Pose2d targetPose;
     private Pose2d tagPose;
     //private Optional<Pose2d> tagPose;
@@ -28,7 +28,7 @@ public class DriveToTag extends Command{
      * For autoaligning based on robot translation, take a look at the translation_based_autoalign branch.
      */
 
-    public DriveToTag(Swerve swerve, VisionOld vision){
+    public DriveToTag(Swerve swerve, Vision2025 vision){
         this.swerve = swerve;
         this.vision = vision;
         addRequirements(swerve);
