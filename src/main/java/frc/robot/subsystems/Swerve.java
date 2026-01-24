@@ -8,6 +8,10 @@ import frc.robot.Constants;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 
+//import edu.wpi.first.util.datalog.DataLogManager;
+
+import edu.wpi.first.util.datalog.DoubleLogEntry;
+import edu.wpi.first.wpilibj.Timer;
 import com.ctre.phoenix6.hardware.Pigeon2;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.FollowPathCommand;
@@ -38,6 +42,8 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
+import edu.wpi.first.wpilibj.DataLogManager;
+import edu.wpi.first.util.datalog.DataLog;
 
 
 /**
@@ -64,7 +70,22 @@ public class Swerve extends SubsystemBase {
     private Optional<Translation2d> lockedOnto = Optional.empty();
 
     private final SwerveDrivePoseEstimator poseEstimator;
+    private double lastLogTime = 0.0;
+    DoubleLogEntry Module0SpeedLog;
+    DoubleLogEntry Module0AngleLog;
+    DoubleLogEntry Module1SpeedLog;
+    DoubleLogEntry Module1AngleLog;
+    DoubleLogEntry Module2SpeedLog;
+    DoubleLogEntry Module2AngleLog;
+    DoubleLogEntry Module3SpeedLog;
+    DoubleLogEntry Module3AngleLog;
 
+    private DoubleLogEntry gyroYawLog;
+    private DoubleLogEntry gyroPitchLog;
+    private DoubleLogEntry gyroRollLog;
+    private DoubleLogEntry gyroYawRateLog;
+
+    //Alert Mod0Alert = new Alert()
 
     /**
      * Constructs a Swerve subsystem instance.
@@ -103,8 +124,17 @@ public class Swerve extends SubsystemBase {
 
         };
 
+        DataLogManager.start();
+        DataLog log = DataLogManager.getLog();
+        Module0SpeedLog = new DoubleLogEntry(log, "/my/SpeedModule0");
+
         poseEstimator = new SwerveDrivePoseEstimator(Constants.Swerve.swerveKinematics, getGyroAngle(), getModulePositions(), Constants.Swerve.initialPose);
         
+        gyroYawLog = new DoubleLogEntry(log, "/swerve/gyro/yaw");
+        gyroPitchLog = new DoubleLogEntry(log, "/swerve/gyro/pitch");
+        gyroRollLog = new DoubleLogEntry(log, "/swerve/gyro/roll");
+        gyroYawRateLog = new DoubleLogEntry(log, "/swerve/gyro/yawRate");
+
 
         // Configure AutoBuilder
         AutoBuilder.configure(
@@ -457,11 +487,56 @@ public class Swerve extends SubsystemBase {
 
         poseEstimator.update(getGyroAngle(), getModulePositions());
 
+        double now = Timer.getFPGATimestamp();
+        
+        // Log speed ang angle of the swerve modules every second
+        // if (now - lastLogTime >= 1.0) {
+        //     Module0SpeedLog.append(
+        //         swerveModules[0].getState().speedMetersPerSecond
+        //     );
+        //     Module0AngleLog.append(
+        //         swerveModules[0].getState().angle.getDegrees()
+        //     );
+        //     Module1SpeedLog.append(
+        //         swerveModules[1].getState().speedMetersPerSecond
+        //     );
+        //     Module1AngleLog.append(
+        //         swerveModules[1].getState().angle.getDegrees()
+        //     );
+        //     Module2SpeedLog.append(
+        //         swerveModules[2].getState().speedMetersPerSecond
+        //     );
+        //     Module2AngleLog.append(
+        //         swerveModules[2].getState().angle.getDegrees()
+        //     );
+        //     Module3SpeedLog.append(
+        //         swerveModules[3].getState().speedMetersPerSecond
+        //     );
+        //     Module3AngleLog.append(
+        //         swerveModules[3].getState().angle.getDegrees()
+        //     );
+
+        //     double yaw = pidgey.getYaw().refresh().getValueAsDouble();
+        //     double pitch = pidgey.getPitch().refresh().getValueAsDouble();
+        //     double roll = pidgey.getRoll().refresh().getValueAsDouble();
+        //     double yawRate = pidgey.getAngularVelocityZWorld().refresh().getValueAsDouble();
+
+        //     gyroYawLog.append(yaw);
+        //     gyroPitchLog.append(pitch);
+        //     gyroRollLog.append(roll);
+        //     gyroYawRateLog.append(yawRate);
+
+        //     SmartDashboard.putNumber("Gyro Yaw", yaw);
+        //     SmartDashboard.putNumber("Gyro Pitch", pitch);
+        //     SmartDashboard.putNumber("Gyro Roll", roll);
+        //     SmartDashboard.putNumber("Gyro Yaw Rate", yawRate);
+
+        //     lastLogTime = now;
+        // }
+
         // for (SwerveModule mod : swerveModules) {
         //     SmartDashboard.putNumber("Mod " + mod.moduleNumber, mod.getState().angle.getDegrees());
 
         // }
-
     }
-
 }

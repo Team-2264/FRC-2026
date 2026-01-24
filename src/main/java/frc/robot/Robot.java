@@ -3,13 +3,31 @@
 // the WPILib BSD license file in the root directory of this project.
 
 package frc.robot;
-
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.net.WebServer;
+import edu.wpi.first.util.datalog.BooleanLogEntry;
+import edu.wpi.first.util.datalog.DataLog;
+import edu.wpi.first.util.datalog.DoubleLogEntry;
+import edu.wpi.first.util.datalog.StringLogEntry;
+
+import org.littletonrobotics.junction.LogFileUtil;
+import org.littletonrobotics.junction.LoggedRobot;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.NT4Publisher;
+import org.littletonrobotics.junction.wpilog.WPILOGReader;
+import org.littletonrobotics.junction.wpilog.WPILOGWriter;
+import edu.wpi.first.wpilibj.DataLogManager;
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.Alert.AlertType;
+
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -24,6 +42,11 @@ public class Robot extends TimedRobot {
     private Command m_autonomousCommand;
 
     private RobotContainer m_robotContainer;
+    BooleanLogEntry myBooleanLog;
+    DoubleLogEntry myBatteryLog;
+    StringLogEntry myStringLog;
+    Alert alertTest = new Alert("This is a test!", AlertType.kError);
+     
 
     /**
      * This function is run when the robot is first started up and should be used
@@ -32,12 +55,30 @@ public class Robot extends TimedRobot {
      */
     @Override
     public void robotInit() {
+        // Start Logging
         // Instantiate our RobotContainer. This will perform all our button bindings,
         // and put our autonomous chooser on the dashboard.
         m_robotContainer = new RobotContainer();
 
         WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
 
+        // Record metadata
+        Logger.recordMetadata("ProjectName", "Wayzata2026Test");
+        Logger.recordMetadata("RobotMACAddress", "10");
+        Logger.recordMetadata("RobotInstance", "Trojans");
+        Logger.recordMetadata("BuildDate", "11/12/25");
+        
+        alertTest.set(true); //Show alertTest
+        
+        DataLogManager.start();
+        // Set up custom log entries
+        DataLog log = DataLogManager.getLog();
+        DataLogManager.log("Testing Wayzata");
+        myBooleanLog = new BooleanLogEntry(log, "/my/boolean");
+        myBatteryLog = new DoubleLogEntry(log, "/my/BatteryVoltage");
+        myStringLog = new StringLogEntry(log, "/my/string");
+
+        addPeriodic(()->{myBatteryLog.update(RobotController.getBatteryVoltage(),RobotController.getFPGATime());},2.00,0.00);
     }
 
     /**
@@ -50,6 +91,8 @@ public class Robot extends TimedRobot {
      * and
      * SmartDashboard integrated updating.
      */
+    long oldMicrosecondTimestamp = RobotController.getFPGATime();
+
     @Override
     public void robotPeriodic() {
         // Runs the Scheduler. This is responsible for polling buttons, adding
@@ -61,6 +104,11 @@ public class Robot extends TimedRobot {
         // block in order for anything in the Command-based framework to work.
         CommandScheduler.getInstance().run();
         m_robotContainer.robotPeriodic();
+
+        /* double batteryVoltage = RobotController.getBatteryVoltage();
+        long microsecondTimestamp = RobotController.getFPGATime();
+        if(microsecondTimestamp-)
+        myBatteryLog.update(batteryVoltage,microsecondTimestamp); */
         
     }
 

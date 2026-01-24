@@ -156,7 +156,7 @@ public final class Constants {
         public static final double driveKA = (0.27 / 12);
 
         // Swerve Profiling Values
-        public static final double maxSpeed = 2.5; //1.0; //2.5; // meters per second
+        public static final double maxSpeed = 1.0; //2.5; // meters per second
         public static final double maxAngularVelocity = Math.PI / 2; // Math.PI; // radians per second (rad/s)
         
         // Turbo mode values
