@@ -4,30 +4,19 @@
 
 package frc.robot;
 
-import frc.robot.commands.DriveToTag;
-import frc.robot.commands.FaceTag;
 import frc.robot.commands.TeleopSwerve;
 import frc.robot.commands.ToggleTurbo;
 import frc.robot.commands.locks.LockSwerve;
 import frc.robot.commands.locks.UnlockSwerve;
-import frc.robot.enums.HeldButton;
-import frc.robot.subsystems.HeldButtons;
 import frc.robot.subsystems.Leds;
 import frc.robot.subsystems.Swerve;
 import frc.robot.subsystems.Vision2025;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.SelectCommand;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandPS4Controller;
-import edu.wpi.first.wpilibj2.command.button.JoystickButton;
-import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
-import java.lang.annotation.ElementType;
-import java.util.Map;
 import java.util.Optional;
 import org.photonvision.EstimatedRobotPose;
 import com.pathplanner.lib.auto.AutoBuilder;
@@ -46,11 +35,10 @@ public class RobotContainer {
     public final Swerve swerve = new Swerve();
     public final Leds leds = new Leds(Constants.LedStrip.pwmPort, Constants.LedStrip.numLeds, Constants.LedStrip.scaleFactor);
     public final Vision2025 vision = new Vision2025();
-    private final HeldButtons heldButtons = new HeldButtons();
 
     // Controllers
     private final CommandPS4Controller controller = new CommandPS4Controller(Constants.Operator.controllerPort);
-    private final CommandPS4Controller controller2 = new CommandPS4Controller(Constants.Operator.controller2Port);
+    //private final CommandPS4Controller controller2 = new CommandPS4Controller(Constants.Operator.controller2Port);
 
     // Autonomous
     private final SendableChooser<Command> autoChooser;

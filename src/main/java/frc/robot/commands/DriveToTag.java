@@ -38,7 +38,7 @@ public class DriveToTag extends Command{
     public void initialize(){
         //swerve.setGyro();
         if (vision.targetIds.length>0){
-            int closestID = vision.targetIds[0];
+            //int closestID = vision.targetIds[0];
             targetPose = new Pose2d(0.1, 0.05, new Rotation2d(0.0)); //vision.rightReefPose(closestID);
             //tagPose = vision.tagPose(closestID);
             //Translation2d rotationLock = tagPose.getTranslation().
@@ -57,7 +57,7 @@ public class DriveToTag extends Command{
 
         Optional<Transform3d> tagTransform = vision.getTargetTransform();
         if (tagTransform.isPresent()) {
-            Transform3d xform = tagTransform.get();
+            //Transform3d xform = tagTransform.get();
             //Pose2d tagPose = Pose2d(Meters.of(xform.getMeasureX()), xform.getMeasureY());
             //Pose2d currentPose = swerve.getPose();
             Translation2d error= targetPose.getTranslation().minus(tagPose.getTranslation());
