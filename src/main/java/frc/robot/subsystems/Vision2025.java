@@ -22,6 +22,11 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.DataLogManager;
+import edu.wpi.first.util.datalog.DataLog;
+import edu.wpi.first.util.datalog.IntegerLogEntry;
+
 /**
  * Subsystem for vision processing using PhotonVision.
  * 
@@ -32,6 +37,9 @@ public class Vision2025 extends SubsystemBase {
     private PhotonPipelineResult latestResult;
     private AprilTagFieldLayout aprilTagFieldLayout;
     private Field2d field;
+    private double lastLogTime = 0.0;
+    IntegerLogEntry tagNumberLogger;
+    
     
     /**
      * Constructs a new Vision instance.
@@ -49,6 +57,10 @@ public class Vision2025 extends SubsystemBase {
         estimator.setRobotToCameraTransform(Constants.Vision.robotToCamera);
 
         field = new Field2d();
+
+        DataLogManager.start();
+        DataLog log = DataLogManager.getLog();
+        tagNumberLogger = new IntegerLogEntry(log, "/Vision/TagNumber");
 
     }
 
@@ -448,6 +460,21 @@ public class Vision2025 extends SubsystemBase {
         // Field
         SmartDashboard.putData("Vision - Field", field);
         
+        double now = Timer.getFPGATimestamp();
+
+         if (now - lastLogTime >= 1.0) {
+
+            if (latestResult.hasTargets()){
+                var target = latestResult.getBestTarget();
+                int tagNumber = target.getFiducialId();
+                tagNumberLogger.append(tagNumber);
+            }
+
+            lastLogTime = now;
+         }
+            
+
+
     }
     
 }
