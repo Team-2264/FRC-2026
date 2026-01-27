@@ -127,6 +127,13 @@ public class Swerve extends SubsystemBase {
         DataLogManager.start();
         DataLog log = DataLogManager.getLog();
         Module0SpeedLog = new DoubleLogEntry(log, "/my/SpeedModule0");
+        Module0AngleLog = new DoubleLogEntry(log, "/my/AngleModule0");
+        Module1SpeedLog = new DoubleLogEntry(log, "/my/SpeedModule1");
+        Module1AngleLog = new DoubleLogEntry(log, "/my/AngleModule1");
+        Module2SpeedLog = new DoubleLogEntry(log, "/my/SpeedModule2");
+        Module2AngleLog = new DoubleLogEntry(log, "/my/AngleModule2");
+        Module3SpeedLog = new DoubleLogEntry(log, "/my/SpeedModule3");
+        Module3AngleLog = new DoubleLogEntry(log, "/my/AngleModule3");
 
         poseEstimator = new SwerveDrivePoseEstimator(Constants.Swerve.swerveKinematics, getGyroAngle(), getModulePositions(), Constants.Swerve.initialPose);
         
@@ -136,6 +143,7 @@ public class Swerve extends SubsystemBase {
         gyroYawRateLog = new DoubleLogEntry(log, "/swerve/gyro/yawRate");
 
 
+        
         // Configure AutoBuilder
         AutoBuilder.configure(
             this::getPose, 
@@ -490,53 +498,53 @@ public class Swerve extends SubsystemBase {
         double now = Timer.getFPGATimestamp();
         
         // Log speed ang angle of the swerve modules every second
-        // if (now - lastLogTime >= 1.0) {
-        //     Module0SpeedLog.append(
-        //         swerveModules[0].getState().speedMetersPerSecond
-        //     );
-        //     Module0AngleLog.append(
-        //         swerveModules[0].getState().angle.getDegrees()
-        //     );
-        //     Module1SpeedLog.append(
-        //         swerveModules[1].getState().speedMetersPerSecond
-        //     );
-        //     Module1AngleLog.append(
-        //         swerveModules[1].getState().angle.getDegrees()
-        //     );
-        //     Module2SpeedLog.append(
-        //         swerveModules[2].getState().speedMetersPerSecond
-        //     );
-        //     Module2AngleLog.append(
-        //         swerveModules[2].getState().angle.getDegrees()
-        //     );
-        //     Module3SpeedLog.append(
-        //         swerveModules[3].getState().speedMetersPerSecond
-        //     );
-        //     Module3AngleLog.append(
-        //         swerveModules[3].getState().angle.getDegrees()
-        //     );
+         if (now - lastLogTime >= 1.0) {
+             Module0SpeedLog.append(
+                 swerveModules[0].getState().speedMetersPerSecond
+             );
+             Module0AngleLog.append(
+                 swerveModules[0].getState().angle.getDegrees()
+             );
+             Module1SpeedLog.append(
+                 swerveModules[1].getState().speedMetersPerSecond
+             );
+             Module1AngleLog.append(
+                 swerveModules[1].getState().angle.getDegrees()
+             );
+             Module2SpeedLog.append(
+                 swerveModules[2].getState().speedMetersPerSecond
+             );
+             Module2AngleLog.append(
+                 swerveModules[2].getState().angle.getDegrees()
+             );
+             Module3SpeedLog.append(
+                 swerveModules[3].getState().speedMetersPerSecond
+             );
+             Module3AngleLog.append(
+                 swerveModules[3].getState().angle.getDegrees()
+            );
 
-        //     double yaw = pidgey.getYaw().refresh().getValueAsDouble();
-        //     double pitch = pidgey.getPitch().refresh().getValueAsDouble();
-        //     double roll = pidgey.getRoll().refresh().getValueAsDouble();
-        //     double yawRate = pidgey.getAngularVelocityZWorld().refresh().getValueAsDouble();
+             double yaw = pidgey.getYaw().refresh().getValueAsDouble();
+             double pitch = pidgey.getPitch().refresh().getValueAsDouble();
+             double roll = pidgey.getRoll().refresh().getValueAsDouble();
+             double yawRate = pidgey.getAngularVelocityZWorld().refresh().getValueAsDouble();
 
-        //     gyroYawLog.append(yaw);
-        //     gyroPitchLog.append(pitch);
-        //     gyroRollLog.append(roll);
-        //     gyroYawRateLog.append(yawRate);
+             gyroYawLog.append(yaw);
+             gyroPitchLog.append(pitch);
+             gyroRollLog.append(roll);
+             gyroYawRateLog.append(yawRate);
 
-        //     SmartDashboard.putNumber("Gyro Yaw", yaw);
-        //     SmartDashboard.putNumber("Gyro Pitch", pitch);
-        //     SmartDashboard.putNumber("Gyro Roll", roll);
-        //     SmartDashboard.putNumber("Gyro Yaw Rate", yawRate);
+             SmartDashboard.putNumber("Gyro Yaw", yaw);
+             SmartDashboard.putNumber("Gyro Pitch", pitch);
+             SmartDashboard.putNumber("Gyro Roll", roll);
+             SmartDashboard.putNumber("Gyro Yaw Rate", yawRate);
 
-        //     lastLogTime = now;
-        // }
+             lastLogTime = now;
+         }
 
-        // for (SwerveModule mod : swerveModules) {
-        //     SmartDashboard.putNumber("Mod " + mod.moduleNumber, mod.getState().angle.getDegrees());
+         for (SwerveModule mod : swerveModules) {
+            SmartDashboard.putNumber("Mod " + mod.moduleNumber, mod.getState().angle.getDegrees());
 
-        // }
+         }
     }
 }
