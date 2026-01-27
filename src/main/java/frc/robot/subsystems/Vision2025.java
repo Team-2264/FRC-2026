@@ -41,12 +41,12 @@ public class Vision2025 extends SubsystemBase {
         camera = new PhotonCamera(Constants.Vision.cameraName);
         aprilTagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
 
-        estimator = new PhotonPoseEstimator(
-            aprilTagFieldLayout, 
-            Constants.Vision.robotToCamera
-        );
+        // estimator = new PhotonPoseEstimator(
+        //     aprilTagFieldLayout, 
+        //     Constants.Vision.robotToCamera
+        // );
 
-        estimator.setRobotToCameraTransform(Constants.Vision.robotToCamera);
+        // estimator.setRobotToCameraTransform(Constants.Vision.robotToCamera);
 
         field = new Field2d();
 
@@ -359,11 +359,11 @@ public class Vision2025 extends SubsystemBase {
             return lastEstimatedRobotBose;
         }
         
-        var robot_pose = estimator.update(latestResult);
-        if(robot_pose.isPresent()) {
-            lastEstimatedRobotBose = Optional.of(robot_pose.get());
-            return Optional.of(robot_pose.get());
-        }
+        // var robot_pose = estimator.update(latestResult);
+        // if(robot_pose.isPresent()) {
+        //     lastEstimatedRobotBose = Optional.of(robot_pose.get());
+        //     return Optional.of(robot_pose.get());
+        // }
 
         return lastEstimatedRobotBose;
     }
