@@ -26,6 +26,8 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.util.datalog.DataLog;
 import edu.wpi.first.util.datalog.IntegerLogEntry;
+import edu.wpi.first.util.datalog.DoubleLogEntry;
+
 
 /**
  * Subsystem for vision processing using PhotonVision.
@@ -38,7 +40,8 @@ public class Vision2025 extends SubsystemBase {
     private AprilTagFieldLayout aprilTagFieldLayout;
     private Field2d field;
     private double lastLogTime = 0.0;
-    IntegerLogEntry tagNumberLogger;
+    private IntegerLogEntry tagNumberLogger;
+    private DoubleLogEntry distancelog;
     
     
     /**
@@ -61,6 +64,8 @@ public class Vision2025 extends SubsystemBase {
         DataLogManager.start();
         DataLog log = DataLogManager.getLog();
         tagNumberLogger = new IntegerLogEntry(log, "/Vision/TagNumber");
+        distancelog = new DoubleLogEntry(DataLogManager.getLog(), "/Vision/TagDistance");
+        
 
     }
 
@@ -467,10 +472,18 @@ public class Vision2025 extends SubsystemBase {
             if (latestResult.hasTargets()){
                 var target = latestResult.getBestTarget();
                 int tagNumber = target.getFiducialId();
-                tagNumberLogger.append(tagNumber);
+                double dist = latestResult.getBestTarget().getBestCameraToTarget().getX();
+
+        
+                
+                
+                tagNumberLogger.append(tagNumber); //log the tag number
+                distancelog.append(dist);
+
+                
             }
 
-            lastLogTime = now;
+            lastLogTime = now;      
          }
             
 
