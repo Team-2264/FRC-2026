@@ -54,6 +54,7 @@ public class Vision2025 extends SubsystemBase {
 
         estimator = new PhotonPoseEstimator(
             aprilTagFieldLayout, 
+            PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR,
             Constants.Vision.robotToCamera
         );
 
