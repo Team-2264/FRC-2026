@@ -3,11 +3,10 @@ package frc.robot.subsystems;
 import java.util.Arrays;
 import java.util.Optional;
 
-import org.photonvision.EstimatedRobotPose;
 import org.photonvision.PhotonCamera;
+import org.photonvision.EstimatedRobotPose;
 import org.photonvision.PhotonPoseEstimator;
 import org.photonvision.PhotonPoseEstimator.PoseStrategy;
-import org.photonvision.PhotonUtils;
 import org.photonvision.targeting.PhotonPipelineResult;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
@@ -49,12 +48,13 @@ public class Vision2025 extends SubsystemBase {
         camera = new PhotonCamera(Constants.Vision.cameraName);
         aprilTagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
 
+        // Use the 2026 PhotonPoseEstimator constructor that takes a PoseStrategy.
+        // The API version in this project exposes a constructor without a PhotonCamera parameter.
         estimator = new PhotonPoseEstimator(
-            aprilTagFieldLayout, 
+            aprilTagFieldLayout,
+            PoseStrategy.CLOSEST_TO_REFERENCE_POSE,
             Constants.Vision.robotToCamera
         );
-
-        estimator.setRobotToCameraTransform(Constants.Vision.robotToCamera);
 
         field = new Field2d();
 
@@ -317,14 +317,15 @@ public class Vision2025 extends SubsystemBase {
     public Optional<Pose2d> getEstimatedPose2d(){
         var estimatedPose = getEstimatedPose();
 
-        if(estimatedPose.isPresent()){
+        if (estimatedPose.isPresent()) {
+            Pose3d meterPose = estimatedPose.get().estimatedPose;
             Pose2d pose = new Pose2d(
-                estimatedPose.get().estimatedPose.getX(),
-                estimatedPose.get().estimatedPose.getY(),
-                estimatedPose.get().estimatedPose.getRotation().toRotation2d()
+                meterPose.getX(),
+                meterPose.getY(),
+                meterPose.getRotation().toRotation2d()
             );
             return Optional.of(pose);
-        }else{
+        } else {
             return Optional.empty();
         }
     }
@@ -363,21 +364,50 @@ public class Vision2025 extends SubsystemBase {
      * Estimate the pose of the robot.
      * 
      */
-    private Optional<EstimatedRobotPose> lastEstimatedRobotBose = Optional.empty();
+    // We now compute an EstimatedRobotPose directly (field -> robot) from the detected target
+    // instead of using the deprecated PhotonPoseEstimator.update(...) API.
+    private Optional<EstimatedRobotPose> lastEstimatedRobotPose = Optional.empty();
 
     public Optional<EstimatedRobotPose> getEstimatedPose() {
-        if (null == latestResult)
-        {
-            return lastEstimatedRobotBose;
-        }
-        
-        var robot_pose = estimator.update(latestResult);
-        if(robot_pose.isPresent()) {
-            lastEstimatedRobotBose = Optional.of(robot_pose.get());
-            return Optional.of(robot_pose.get());
+        if (latestResult == null) {
+            return lastEstimatedRobotPose;
         }
 
-        return lastEstimatedRobotBose;
+        if (!latestResult.hasTargets()) {
+            return lastEstimatedRobotPose;
+        }
+
+        var target = latestResult.getBestTarget();
+
+        // Get the field pose of the detected tag from the AprilTagFieldLayout
+        var tagPoseOpt = aprilTagFieldLayout.getTagPose(target.getFiducialId());
+        if (tagPoseOpt.isEmpty()) {
+            return lastEstimatedRobotPose;
+        }
+
+        Pose3d fieldToTag = tagPoseOpt.get();
+
+        // camera -> target (from Photon); invert to get tag -> camera
+        Transform3d cameraToTarget = target.getBestCameraToTarget();
+        Transform3d tagToCamera = cameraToTarget.inverse();
+
+        // robot -> camera is defined in Constants; invert to get camera -> robot
+        Transform3d cameraToRobot = Constants.Vision.robotToCamera.inverse();
+
+        // field -> robot = field -> tag -> camera -> robot
+        Pose3d fieldToRobot = fieldToTag.transformBy(tagToCamera).transformBy(cameraToRobot);
+
+        // Construct an EstimatedRobotPose to be compatible with other subsystems (Swerve, RobotContainer)
+        try {
+            double timestamp = latestResult.getTimestampSeconds();
+            // latestResult.targets is used as the list of targets involved
+            EstimatedRobotPose est = new EstimatedRobotPose(fieldToRobot, timestamp, latestResult.targets);
+            lastEstimatedRobotPose = Optional.of(est);
+            return lastEstimatedRobotPose;
+        } catch (NoSuchMethodError | RuntimeException e) {
+            // If API differences prevent constructing EstimatedRobotPose, fall back to empty
+            return lastEstimatedRobotPose;
+        }
     }
 
     /**
