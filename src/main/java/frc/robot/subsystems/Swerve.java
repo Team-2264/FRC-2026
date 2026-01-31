@@ -41,6 +41,7 @@ import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import org.littletonrobotics.junction.Logger;
 
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.util.datalog.DataLog;
@@ -482,6 +483,12 @@ public class Swerve extends SubsystemBase {
 
         poseEstimator.addVisionMeasurement(measuredPose, pose.timestampSeconds, standardDevs);
         addedVision = true;
+        Logger.recordOutput("Swerve/Vision/MeasurementPose", measuredPose);
+        Logger.recordOutput("Swerve/Vision/Timestamp", pose.timestampSeconds);
+        Logger.recordOutput(
+            "Swerve/Vision/StdDevs",
+            new double[] {standardDevs.get(0, 0), standardDevs.get(1, 0), standardDevs.get(2, 0)}
+        );
     }
 
     @Override
@@ -490,6 +497,9 @@ public class Swerve extends SubsystemBase {
         SmartDashboard.putBoolean("added vision in swerve:", addedVision);
 
         field.setRobotPose(getPose());
+    Logger.recordOutput("Swerve/EstimatedPose", getPose());
+    Logger.recordOutput("Swerve/Field/Robot", getPose());
+    Logger.recordOutput("Swerve/FieldRelative", fieldRelative);
 
         SmartDashboard.putData(field);
 
