@@ -85,9 +85,9 @@ public class RobotContainer {
         controller.share().onTrue(new ToggleTurbo(swerve));
         controller.share().onFalse(new ToggleTurbo(swerve)); 
 
-        // controller.square().onTrue(
-        //     new DriveToTag(swerve, vision)
-        // );
+        controller.square().onTrue(
+            new DriveToTag(swerve, vision)
+        );
 
         // controller.circle().onTrue(
         //     new FaceTag(swerve, vision)

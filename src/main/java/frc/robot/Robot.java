@@ -67,6 +67,11 @@ public class Robot extends TimedRobot {
         Logger.recordMetadata("RobotMACAddress", "10");
         Logger.recordMetadata("RobotInstance", "Trojans");
         Logger.recordMetadata("BuildDate", "11/12/25");
+
+    // AdvantageKit data receivers
+    Logger.addDataReceiver(new WPILOGWriter()); // Log to file on roboRIO
+    Logger.addDataReceiver(new NT4Publisher()); // Live viewing in AdvantageScope
+    Logger.start();
         
         alertTest.set(true); //Show alertTest
         

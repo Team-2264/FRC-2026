@@ -3,10 +3,8 @@ package frc.robot.subsystems;
 import java.util.Arrays;
 import java.util.Optional;
 
-import org.photonvision.PhotonCamera;
 import org.photonvision.EstimatedRobotPose;
-import org.photonvision.PhotonPoseEstimator;
-import org.photonvision.PhotonPoseEstimator.PoseStrategy;
+import org.photonvision.PhotonCamera;
 import org.photonvision.targeting.PhotonPipelineResult;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
@@ -14,12 +12,12 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform3d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
+import org.littletonrobotics.junction.Logger;
 
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.DataLogManager;
@@ -32,10 +30,10 @@ import edu.wpi.first.util.datalog.IntegerLogEntry;
  */
 public class Vision2025 extends SubsystemBase {
     private PhotonCamera camera;
-    private PhotonPoseEstimator estimator;
     private PhotonPipelineResult latestResult;
     private AprilTagFieldLayout aprilTagFieldLayout;
     private Field2d field;
+    private Pose2d[] cachedAprilTagPoses = new Pose2d[0];
     private double lastLogTime = 0.0;
     IntegerLogEntry tagNumberLogger;
     
@@ -48,15 +46,16 @@ public class Vision2025 extends SubsystemBase {
         camera = new PhotonCamera(Constants.Vision.cameraName);
         aprilTagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
 
-        // Use the 2026 PhotonPoseEstimator constructor that takes a PoseStrategy.
-        // The API version in this project exposes a constructor without a PhotonCamera parameter.
-        estimator = new PhotonPoseEstimator(
-            aprilTagFieldLayout,
-            PoseStrategy.CLOSEST_TO_REFERENCE_POSE,
-            Constants.Vision.robotToCamera
-        );
-
         field = new Field2d();
+        try {
+            cachedAprilTagPoses = aprilTagFieldLayout.getTags().stream()
+                .map(tag -> tag.pose.toPose2d())
+                .toArray(Pose2d[]::new);
+            field.getObject("AprilTags").setPoses(cachedAprilTagPoses);
+            Logger.recordOutput("Vision/Field/AprilTags", cachedAprilTagPoses);
+        } catch (Exception e) {
+            // Guard against API differences across WPILib versions
+        }
 
         DataLogManager.start();
         DataLog log = DataLogManager.getLog();
@@ -69,13 +68,12 @@ public class Vision2025 extends SubsystemBase {
      * 
      */
     public void get() {
-        // var results = camera.getAllUnreadResults();
-        // if (!results.isEmpty()) {
-        //     // Camera processed a new frame since last
-        //     // Get the last one in the list.
-        //     latestResult = results.get(results.size() - 1);
-        // }
-        latestResult = camera.getLatestResult();
+        var results = camera.getAllUnreadResults();
+        if (!results.isEmpty()) {
+            // Camera processed a new frame since last
+            // Get the last one in the list.
+            latestResult = results.get(results.size() - 1);
+        }
     }
 
     /**
@@ -267,6 +265,27 @@ public class Vision2025 extends SubsystemBase {
 
     }
 
+    /**
+     * Returns the fiducial ID of the best target if available.
+     */
+    public Optional<Integer> getBestTargetId() {
+        if (latestResult == null || !latestResult.hasTargets()) {
+            return Optional.empty();
+        }
+        return Optional.of(latestResult.getBestTarget().getFiducialId());
+    }
+
+    /**
+     * Returns the field pose of the best visible tag, if available.
+     */
+    public Optional<Pose2d> getBestTagPose2d() {
+        Optional<Integer> id = getBestTargetId();
+        if (id.isEmpty()) {
+            return Optional.empty();
+        }
+        return tagPose(id.get());
+    }
+
     // /**
     //  * 
     //  * @return array index of the closest tag
@@ -317,15 +336,14 @@ public class Vision2025 extends SubsystemBase {
     public Optional<Pose2d> getEstimatedPose2d(){
         var estimatedPose = getEstimatedPose();
 
-        if (estimatedPose.isPresent()) {
-            Pose3d meterPose = estimatedPose.get().estimatedPose;
+        if(estimatedPose.isPresent()){
             Pose2d pose = new Pose2d(
-                meterPose.getX(),
-                meterPose.getY(),
-                meterPose.getRotation().toRotation2d()
+                estimatedPose.get().estimatedPose.getX(),
+                estimatedPose.get().estimatedPose.getY(),
+                estimatedPose.get().estimatedPose.getRotation().toRotation2d()
             );
             return Optional.of(pose);
-        } else {
+        }else{
             return Optional.empty();
         }
     }
@@ -364,50 +382,37 @@ public class Vision2025 extends SubsystemBase {
      * Estimate the pose of the robot.
      * 
      */
-    // We now compute an EstimatedRobotPose directly (field -> robot) from the detected target
-    // instead of using the deprecated PhotonPoseEstimator.update(...) API.
-    private Optional<EstimatedRobotPose> lastEstimatedRobotPose = Optional.empty();
+    private Optional<EstimatedRobotPose> lastEstimatedRobotBose = Optional.empty();
 
     public Optional<EstimatedRobotPose> getEstimatedPose() {
-        if (latestResult == null) {
-            return lastEstimatedRobotPose;
+        if (null == latestResult)
+        {
+            return lastEstimatedRobotBose;
         }
 
         if (!latestResult.hasTargets()) {
-            return lastEstimatedRobotPose;
+            return lastEstimatedRobotBose;
         }
 
-        var target = latestResult.getBestTarget();
-
-        // Get the field pose of the detected tag from the AprilTagFieldLayout
-        var tagPoseOpt = aprilTagFieldLayout.getTagPose(target.getFiducialId());
+        var bestTarget = latestResult.getBestTarget();
+        var tagPoseOpt = aprilTagFieldLayout.getTagPose(bestTarget.getFiducialId());
         if (tagPoseOpt.isEmpty()) {
-            return lastEstimatedRobotPose;
+            return lastEstimatedRobotBose;
         }
 
         Pose3d fieldToTag = tagPoseOpt.get();
-
-        // camera -> target (from Photon); invert to get tag -> camera
-        Transform3d cameraToTarget = target.getBestCameraToTarget();
+        Transform3d cameraToTarget = bestTarget.getBestCameraToTarget();
         Transform3d tagToCamera = cameraToTarget.inverse();
-
-        // robot -> camera is defined in Constants; invert to get camera -> robot
         Transform3d cameraToRobot = Constants.Vision.robotToCamera.inverse();
 
-        // field -> robot = field -> tag -> camera -> robot
         Pose3d fieldToRobot = fieldToTag.transformBy(tagToCamera).transformBy(cameraToRobot);
-
-        // Construct an EstimatedRobotPose to be compatible with other subsystems (Swerve, RobotContainer)
-        try {
-            double timestamp = latestResult.getTimestampSeconds();
-            // latestResult.targets is used as the list of targets involved
-            EstimatedRobotPose est = new EstimatedRobotPose(fieldToRobot, timestamp, latestResult.targets);
-            lastEstimatedRobotPose = Optional.of(est);
-            return lastEstimatedRobotPose;
-        } catch (NoSuchMethodError | RuntimeException e) {
-            // If API differences prevent constructing EstimatedRobotPose, fall back to empty
-            return lastEstimatedRobotPose;
-        }
+        EstimatedRobotPose estimate = new EstimatedRobotPose(
+            fieldToRobot,
+            latestResult.getTimestampSeconds(),
+            latestResult.targets
+        );
+        lastEstimatedRobotBose = Optional.of(estimate);
+        return lastEstimatedRobotBose;
     }
 
     /**
@@ -441,6 +446,8 @@ public class Vision2025 extends SubsystemBase {
         }
 
         SmartDashboard.putBoolean("Vision - Has Targets", latestResult.hasTargets());
+    Logger.recordOutput("Vision/HasTargets", latestResult.hasTargets());
+    Logger.recordOutput("Vision/ResultTimestamp", latestResult.getTimestampSeconds());
 
         // Tracked targets ids
         targetIds = new int[latestResult.targets.size()];
@@ -448,6 +455,26 @@ public class Vision2025 extends SubsystemBase {
             targetIds[i] = latestResult.targets.get(i).getFiducialId();
         }
         SmartDashboard.putString("Vision - Tracked Targets", Arrays.toString(targetIds));
+        double[] targetIdsDouble = Arrays.stream(targetIds).asDoubleStream().toArray();
+        Logger.recordOutput("Vision/TargetIds", targetIdsDouble);
+        Logger.recordOutput("Vision/TargetCount", latestResult.targets.size());
+
+        // Log per-target camera->target translations (x,y,z) as arrays
+        double[] targetX = new double[latestResult.targets.size()];
+        double[] targetY = new double[latestResult.targets.size()];
+        double[] targetZ = new double[latestResult.targets.size()];
+        double[] targetDistance = new double[latestResult.targets.size()];
+        for (int i = 0; i < latestResult.targets.size(); i++) {
+            Transform3d camToTarget = latestResult.targets.get(i).getBestCameraToTarget();
+            targetX[i] = camToTarget.getTranslation().getX();
+            targetY[i] = camToTarget.getTranslation().getY();
+            targetZ[i] = camToTarget.getTranslation().getZ();
+            targetDistance[i] = camToTarget.getTranslation().getNorm();
+        }
+        Logger.recordOutput("Vision/Targets/CameraToTarget/X", targetX);
+        Logger.recordOutput("Vision/Targets/CameraToTarget/Y", targetY);
+        Logger.recordOutput("Vision/Targets/CameraToTarget/Z", targetZ);
+        Logger.recordOutput("Vision/Targets/CameraToTarget/Distance", targetDistance);
        // SmartDashboard.putNumber("Vision - Closest Target", targetIds[getClosestTarget()]);
 
         if (targetIds.length != 0)
@@ -460,6 +487,17 @@ public class Vision2025 extends SubsystemBase {
             // SmartDashboard.putNumber("Skew", targetSkewMeters);
             Transform3d targetTrans = latestResult.targets.get(0).getBestCameraToTarget();
             SmartDashboard.putString("PhotonTarget", targetTrans.toString());
+            int bestId = latestResult.targets.get(0).getFiducialId();
+            Logger.recordOutput("Vision/BestTarget/Id", bestId);
+            Logger.recordOutput("Vision/BestTarget/CameraToTarget", targetTrans);
+            var bestTagPose = aprilTagFieldLayout.getTagPose(bestId);
+            if (bestTagPose.isPresent()) {
+                Logger.recordOutput("Vision/BestTarget/FieldToTag", bestTagPose.get());
+                Pose3d fieldToRobot = bestTagPose.get()
+                    .transformBy(targetTrans.inverse())
+                    .transformBy(Constants.Vision.robotToCamera.inverse());
+                Logger.recordOutput("Vision/BestTarget/FieldToRobot", fieldToRobot);
+            }
         }
 
 
@@ -470,6 +508,9 @@ public class Vision2025 extends SubsystemBase {
         if (estimated.isPresent()) {
             Pose3d meterPose = estimated.get().estimatedPose;
             field.setRobotPose(meterPose.getX(), meterPose.getY(), meterPose.getRotation().toRotation2d());
+            field.getObject("VisionEstimate").setPose(meterPose.toPose2d());
+            Logger.recordOutput("Vision/EstimatedPose", meterPose.toPose2d());
+            Logger.recordOutput("Vision/Field/Robot", meterPose.toPose2d());
 
             Pose3d inchPose = new Pose3d(
                 meterPose.getTranslation().getX() * 39.3701,
