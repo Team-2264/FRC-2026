@@ -27,6 +27,7 @@ import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.util.datalog.DataLog;
 import edu.wpi.first.util.datalog.IntegerLogEntry;
+import edu.wpi.first.util.datalog.DoubleLogEntry;
 
 /**
  * Subsystem for vision processing using PhotonVision.
@@ -79,7 +80,12 @@ public class Vision2025 extends SubsystemBase {
         // // Get the last one in the list.
         // latestResult = results.get(results.size() - 1);
         // }
-        latestResult = camera.getLatestResult();
+        var results = camera.getAllUnreadResults();
+        if (!results.isEmpty()) {
+            // take the last (most recent) unread result
+            latestResult = results.get(results.size() - 1);
+        }
+        // if there are no unread results, latestResult stays as-is
     }
 
     /**
@@ -431,7 +437,11 @@ public class Vision2025 extends SubsystemBase {
         }
 
         // Estimated pose
-        Optional<EstimatedRobotPose> estimated = getEstimatedPose();
+        Optional<EstimatedRobotPose> estimated = estimator.estimateCoprocMultiTagPose(latestResult);
+
+        if (estimated.isEmpty()) {
+            estimated = estimator.estimateLowestAmbiguityPose(latestResult);
+        }
         SmartDashboard.putBoolean("vision-estimated:", estimated.isPresent());
 
         if (estimated.isPresent()) {
@@ -471,7 +481,11 @@ public class Vision2025 extends SubsystemBase {
             if ((latestResult != null) && latestResult.hasTargets()) {
                 var target = latestResult.getBestTarget();
                 int tagNumber = target.getFiducialId();
-                tagNumberLogger.append(tagNumber);
+                double dist = latestResult.getBestTarget().getBestCameraToTarget().getX();
+
+                tagNumberLogger.append(tagNumber); // log the tag number
+                distancelog.append(dist); // log the distance from the tag
+
             }
 
             lastLogTime = now;
