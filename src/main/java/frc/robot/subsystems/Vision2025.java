@@ -50,7 +50,7 @@ public class Vision2025 extends SubsystemBase {
      */
     public Vision2025() {  
         camera = new PhotonCamera(Constants.Vision.cameraName);
-        aprilTagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
+        aprilTagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2025ReefscapeWelded);
 
         estimator = new PhotonPoseEstimator(
             aprilTagFieldLayout, 
