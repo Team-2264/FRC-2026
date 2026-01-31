@@ -80,7 +80,12 @@ public class Vision2025 extends SubsystemBase {
         //     // Get the last one in the list.
         //     latestResult = results.get(results.size() - 1);
         // }
-        latestResult = camera.getLatestResult();
+        var results = camera.getAllUnreadResults();
+        if (!results.isEmpty()) {
+            // take the last (most recent) unread result
+            latestResult = results.get(results.size() - 1);
+        }
+        // if there are no unread results, latestResult stays as-is
     }
 
     /**
@@ -376,7 +381,7 @@ public class Vision2025 extends SubsystemBase {
             return lastEstimatedRobotBose;
         }
         
-        var robot_pose = estimator.update(latestResult);
+        var robot_pose = estimator.estimateCoprocMultiTagPose(latestResult);
         if(robot_pose.isPresent()) {
             lastEstimatedRobotBose = Optional.of(robot_pose.get());
             return Optional.of(robot_pose.get());
