@@ -9,11 +9,15 @@ import org.photonvision.PhotonPoseEstimator;
 import org.photonvision.PhotonPoseEstimator.PoseStrategy;
 import org.photonvision.PhotonUtils;
 import org.photonvision.targeting.PhotonPipelineResult;
+import org.photonvision.targeting.PhotonTrackedTarget;
+
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
@@ -23,7 +27,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import edu.wpi.first.util.datalog.DoubleLogEntry;
 import edu.wpi.first.wpilibj.DataLogManager;
-
+import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.util.datalog.DataLog;
 import edu.wpi.first.util.datalog.IntegerLogEntry;
@@ -489,6 +493,29 @@ public class Vision2025 extends SubsystemBase {
             }
 
             lastLogTime = now;
+        }
+
+        latestResult = camera.getLatestResult();
+
+        if (latestResult.hasTargets()) {
+            PhotonTrackedTarget target = latestResult.getBestTarget();
+            Transform3d cameraToTarget = target.getBestCameraToTarget();
+
+            Translation3d translation = cameraToTarget.getTranslation();
+            double x = translation.getX();
+            double y = translation.getY();
+            double z = translation.getZ();
+
+            Rotation3d rotation = cameraToTarget.getRotation();
+            double roll = Math.toDegrees(rotation.getX());
+            double pitch = Math.toDegrees(rotation.getY());
+            double yaw = Math.toDegrees(rotation.getZ());
+
+            SmartDashboard.putNumber("3D/X_Meters", x);
+            SmartDashboard.putNumber("3D/Y_Meters", y);
+            SmartDashboard.putNumber("3D/Z_Meters", z);
+            SmartDashboard.putNumber("3D/Yaw_Degrees", yaw);
+            SmartDashboard.putNumber("3D/Ambiguity", target.getPoseAmbiguity());
         }
 
     }
