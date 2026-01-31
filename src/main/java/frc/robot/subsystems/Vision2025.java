@@ -54,7 +54,6 @@ public class Vision2025 extends SubsystemBase {
 
         estimator = new PhotonPoseEstimator(
             aprilTagFieldLayout, 
-            PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR,
             Constants.Vision.robotToCamera
         );
 
@@ -440,7 +439,11 @@ public class Vision2025 extends SubsystemBase {
 
 
         // Estimated pose
-        Optional<EstimatedRobotPose> estimated = getEstimatedPose();
+        Optional<EstimatedRobotPose> estimated = estimator.estimateCoprocMultiTagPose(latestResult);
+
+        if(estimated.isEmpty()) {
+            estimated = estimator.estimateLowestAmbiguityPose(latestResult);
+        }
         SmartDashboard.putBoolean("vision-estimated:", estimated.isPresent());
 
         if (estimated.isPresent()) {
@@ -479,7 +482,7 @@ public class Vision2025 extends SubsystemBase {
                 
                 
                 tagNumberLogger.append(tagNumber); //log the tag number
-                distancelog.append(dist);
+                distancelog.append(dist); //log the distance from the tag
 
                 
             }
