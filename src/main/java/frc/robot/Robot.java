@@ -28,7 +28,7 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
-import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.PS5Controller;
 import edu.wpi.first.util.datalog.DataLog;
 import edu.wpi.first.util.datalog.DoubleLogEntry;
 import edu.wpi.first.wpilibj.DataLogManager;
@@ -51,7 +51,7 @@ public class Robot extends TimedRobot {
     StringLogEntry myStringLog;
     Alert alertTest = new Alert("This is a test!", AlertType.kError);
     DoubleLogEntry joystickLog;
-    XboxController driver = new XboxController(0);
+    PS5Controller driver = new PS5Controller(0);
 
     /**
      * This function is run when the robot is first started up and should be used
