@@ -24,6 +24,10 @@ import frc.robot.Constants;
 import edu.wpi.first.util.datalog.DoubleLogEntry;
 import edu.wpi.first.wpilibj.DataLogManager;
 
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.util.datalog.DataLog;
+import edu.wpi.first.util.datalog.IntegerLogEntry;
+
 /**
  * Subsystem for vision processing using PhotonVision.
  * 
@@ -35,6 +39,8 @@ public class Vision2025 extends SubsystemBase {
     private AprilTagFieldLayout aprilTagFieldLayout;
     private Field2d field;
     private DoubleLogEntry distancelog;
+    private double lastLogTime = 0.0;
+    private IntegerLogEntry tagNumberLogger;
 
     /**
      * Constructs a new Vision instance.
@@ -44,15 +50,21 @@ public class Vision2025 extends SubsystemBase {
         camera = new PhotonCamera(Constants.Vision.cameraName);
         aprilTagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
 
+        // Construct the estimator with a pose strategy and the camera transform
         estimator = new PhotonPoseEstimator(
                 aprilTagFieldLayout,
+
                 Constants.Vision.robotToCamera);
 
         estimator.setRobotToCameraTransform(Constants.Vision.robotToCamera);
 
         field = new Field2d();
 
-        distancelog = new DoubleLogEntry(DataLogManager.getLog(), "Vision/Distance");
+        // Start data logging and create entries
+        DataLogManager.start();
+        DataLog log = DataLogManager.getLog();
+        distancelog = new DoubleLogEntry(log, "Vision/Distance");
+        tagNumberLogger = new IntegerLogEntry(log, "Vision/TagNumber");
 
     }
 
@@ -358,7 +370,6 @@ public class Vision2025 extends SubsystemBase {
         if (null == latestResult) {
             return lastEstimatedRobotBose;
         }
-
         var robot_pose = estimator.update(latestResult);
         if (robot_pose.isPresent()) {
             lastEstimatedRobotBose = Optional.of(robot_pose.get());
@@ -453,6 +464,18 @@ public class Vision2025 extends SubsystemBase {
 
         // Field
         SmartDashboard.putData("Vision - Field", field);
+
+        double now = Timer.getFPGATimestamp();
+
+        if (now - lastLogTime >= 1.0) {
+            if ((latestResult != null) && latestResult.hasTargets()) {
+                var target = latestResult.getBestTarget();
+                int tagNumber = target.getFiducialId();
+                tagNumberLogger.append(tagNumber);
+            }
+
+            lastLogTime = now;
+        }
 
     }
 

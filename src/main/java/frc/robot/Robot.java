@@ -3,6 +3,7 @@
 // the WPILib BSD license file in the root directory of this project.
 
 package frc.robot;
+
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -27,7 +28,10 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
-
+import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.util.datalog.DataLog;
+import edu.wpi.first.util.datalog.DoubleLogEntry;
+import edu.wpi.first.wpilibj.DataLogManager;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -46,7 +50,8 @@ public class Robot extends TimedRobot {
     DoubleLogEntry myBatteryLog;
     StringLogEntry myStringLog;
     Alert alertTest = new Alert("This is a test!", AlertType.kError);
-     
+    DoubleLogEntry joystickLog;
+    XboxController driver = new XboxController(0);
 
     /**
      * This function is run when the robot is first started up and should be used
@@ -67,9 +72,9 @@ public class Robot extends TimedRobot {
         Logger.recordMetadata("RobotMACAddress", "10");
         Logger.recordMetadata("RobotInstance", "Trojans");
         Logger.recordMetadata("BuildDate", "11/12/25");
-        
-        alertTest.set(true); //Show alertTest
-        
+
+        alertTest.set(true); // Show alertTest
+
         DataLogManager.start();
         // Set up custom log entries
         DataLog log = DataLogManager.getLog();
@@ -78,7 +83,13 @@ public class Robot extends TimedRobot {
         myBatteryLog = new DoubleLogEntry(log, "/my/BatteryVoltage");
         myStringLog = new StringLogEntry(log, "/my/string");
 
-        addPeriodic(()->{myBatteryLog.update(RobotController.getBatteryVoltage(),RobotController.getFPGATime());},2.00,0.00);
+        addPeriodic(() -> {
+            myBatteryLog.update(RobotController.getBatteryVoltage(), RobotController.getFPGATime());
+        }, 2.00, 0.00);
+        DataLogManager.start();
+        DataLog Log = DataLogManager.getLog();
+        joystickLog = new DoubleLogEntry(Log, "/driver/leftStick");
+
     }
 
     /**
@@ -105,11 +116,13 @@ public class Robot extends TimedRobot {
         CommandScheduler.getInstance().run();
         m_robotContainer.robotPeriodic();
 
-        /* double batteryVoltage = RobotController.getBatteryVoltage();
-        long microsecondTimestamp = RobotController.getFPGATime();
-        if(microsecondTimestamp-)
-        myBatteryLog.update(batteryVoltage,microsecondTimestamp); */
-        
+        /*
+         * double batteryVoltage = RobotController.getBatteryVoltage();
+         * long microsecondTimestamp = RobotController.getFPGATime();
+         * if(microsecondTimestamp-)
+         * myBatteryLog.update(batteryVoltage,microsecondTimestamp);
+         */
+
     }
 
     /** This function is called once each time the robot enters Disabled mode. */
@@ -166,18 +179,22 @@ public class Robot extends TimedRobot {
         // m_robotContainer.getLeds().Rainbow();
 
         Pose2d currentPose = m_robotContainer.swerve.getPose();
-        //Pose2d tagPose = m_robotContainer.vision.getPoseOfClosestReef();
+        // Pose2d tagPose = m_robotContainer.vision.getPoseOfClosestReef();
 
         // if (tagPose != null)
         // {
-        //     Translation2d currentTranslation = currentPose.getTranslation();
-        //     Translation2d newTranslation = tagPose.getTranslation();
+        // Translation2d currentTranslation = currentPose.getTranslation();
+        // Translation2d newTranslation = tagPose.getTranslation();
 
-        //     double distance = currentTranslation.getDistance(newTranslation);
-        //     SmartDashboard.putNumber("LockOnDistance", distance);
-        //     SmartDashboard.putNumber("LockOnDistance - X", Units.metersToInches(currentTranslation.getX() - newTranslation.getX()));
-        //     SmartDashboard.putNumber("LockOnDistance - Y", Units.metersToInches(currentTranslation.getY() - newTranslation.getY()));
+        // double distance = currentTranslation.getDistance(newTranslation);
+        // SmartDashboard.putNumber("LockOnDistance", distance);
+        // SmartDashboard.putNumber("LockOnDistance - X",
+        // Units.metersToInches(currentTranslation.getX() - newTranslation.getX()));
+        // SmartDashboard.putNumber("LockOnDistance - Y",
+        // Units.metersToInches(currentTranslation.getY() - newTranslation.getY()));
         // }
+        double speed = driver.getLeftY();
+        joystickLog.append(speed);
     }
 
     @Override
@@ -202,5 +219,5 @@ public class Robot extends TimedRobot {
     @Override
     public void simulationPeriodic() {
     }
-    
+
 }
