@@ -24,7 +24,9 @@ import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.NT4Publisher;
 import org.littletonrobotics.junction.wpilog.WPILOGReader;
 import org.littletonrobotics.junction.wpilog.WPILOGWriter;
+
 import edu.wpi.first.wpilibj.DataLogManager;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 
@@ -79,6 +81,9 @@ public class Robot extends TimedRobot {
         myStringLog = new StringLogEntry(log, "/my/string");
 
         addPeriodic(()->{myBatteryLog.update(RobotController.getBatteryVoltage(),RobotController.getFPGATime());},2.00,0.00);
+   
+        DriverStation.startDataLog(DataLogManager.getLog());
+
     }
 
     /**
