@@ -28,7 +28,7 @@ import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.util.datalog.DataLog;
 import edu.wpi.first.util.datalog.IntegerLogEntry;
-// DoubleLogEntry already imported above
+import edu.wpi.first.util.datalog.StructLogEntry;
 
 /**
  * Subsystem for vision processing using PhotonVision.
@@ -52,6 +52,10 @@ public class Vision2025 extends SubsystemBase {
     private DoubleLogEntry bestTagYawLogger;
     private DoubleLogEntry bestTagPitchLogger;
 
+    // Struct-based logging for proper 3D visualization in AdvantageScope
+    private StructLogEntry<Pose3d> robotPose3dLogger;
+    private StructLogEntry<Transform3d> targetTransformLogger;
+
     /**
      * Constructs a new Vision instance.
      * 
@@ -60,10 +64,18 @@ public class Vision2025 extends SubsystemBase {
         camera = new PhotonCamera(Constants.Vision.cameraName);
         aprilTagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
 
-        // Construct the estimator with a pose strategy and the camera transform
+        // Construct the estimator with PoseStrategy.LOWEST_AMBIGUITY
+        // The 3-argument constructor takes (layout, strategy, robotToCamera)
         estimator = new PhotonPoseEstimator(
                 aprilTagFieldLayout,
+                PhotonPoseEstimator.PoseStrategy.LOWEST_AMBIGUITY,
                 Constants.Vision.robotToCamera);
+
+        // Set initial pose to middle of field (for coprocessor multi-tag sync if
+        // enabled)
+        // 2025 field is 16.54m x 8.23m, blue origin at (0,0)
+        // Center is approximately at (8.27, 4.11) in field coordinates
+        estimator.setLastPose(new Pose3d(8.27, 4.11, 0.35, new Rotation3d()));
 
         field = new Field2d();
 
@@ -77,6 +89,10 @@ public class Vision2025 extends SubsystemBase {
         robotPoseXLogger = new DoubleLogEntry(log, "Vision/RobotPose/X");
         robotPoseYLogger = new DoubleLogEntry(log, "Vision/RobotPose/Y");
         robotPoseRotLogger = new DoubleLogEntry(log, "Vision/RobotPose/RotDeg");
+
+        // Struct loggers for proper 3D visualization
+        robotPose3dLogger = StructLogEntry.create(log, "Vision/RobotPose3d", Pose3d.struct);
+        targetTransformLogger = StructLogEntry.create(log, "Vision/TargetTransform3d", Transform3d.struct);
 
         // Best-target (camera->target) transform entries
         bestTagXLogger = new DoubleLogEntry(log, "Vision/BestTarget/X");
@@ -511,15 +527,34 @@ public class Vision2025 extends SubsystemBase {
                     distancelog.append(dist);
 
                     // Log robot pose (if available) so AdvantageScope can show robot on field
+                    // PhotonPoseEstimator returns pose in FIELD frame (meters):
+                    // - X: forward (0 = red wall, 16.54 = blue wall)
+                    // - Y: left (0 = red wall, 8.23 = blue wall)
+                    // - Z: height (0 = ground, bumper ~0.35m)
                     if (estimated.isPresent()) {
                         Pose3d meterPose = estimated.get().estimatedPose;
                         robotPoseXLogger.append(meterPose.getTranslation().getX());
                         robotPoseYLogger.append(meterPose.getTranslation().getY());
                         // log rotation in degrees (yaw)
                         robotPoseRotLogger.append(Math.toDegrees(meterPose.getRotation().getZ()));
+
+                        // Log full Pose3d struct with realistic bumper height (~0.35m)
+                        // for proper 3D visualization in AdvantageScope
+                        // AdvantageScope expects Z > 0 so robot appears above ground plane
+                        Pose3d robotPose3d = new Pose3d(
+                                meterPose.getTranslation().getX(),
+                                meterPose.getTranslation().getY(),
+                                0.35, // bumper height in meters
+                                meterPose.getRotation());
+                        robotPose3dLogger.append(robotPose3d);
                     }
 
-                    // Log best-target transform (camera -> target)
+                    // IMPORTANT: Log camera->target transform (distance/bearing to tag)
+                    // Camera frame coordinates (from PhotonVision):
+                    // - X: forward distance (away from camera, along optical axis)
+                    // - Y: left offset (horizontal, left of optical axis)
+                    // - Z: up offset (vertical, above optical axis)
+                    // AdvantageScope can use this to show tag position relative to camera
                     Transform3d camToTarget = target.getBestCameraToTarget();
                     bestTagXLogger.append(camToTarget.getTranslation().getX());
                     bestTagYLogger.append(camToTarget.getTranslation().getY());
@@ -527,6 +562,9 @@ public class Vision2025 extends SubsystemBase {
                     // get yaw/pitch from tracked target
                     bestTagYawLogger.append(target.getYaw());
                     bestTagPitchLogger.append(target.getPitch());
+
+                    // Log full Transform3d struct for proper camera->target 3D visualization
+                    targetTransformLogger.append(camToTarget);
 
                     // SmartDashboard 3D values for debugging
                     Transform3d cameraToTarget = target.getBestCameraToTarget();
@@ -543,6 +581,17 @@ public class Vision2025 extends SubsystemBase {
                     SmartDashboard.putNumber("3D/Z_Meters", z);
                     SmartDashboard.putNumber("3D/Yaw_Degrees", yaw);
                     SmartDashboard.putNumber("3D/Ambiguity", target.getPoseAmbiguity());
+
+                    // Debug: log estimated robot position for AdvantageScope
+                    if (estimated.isPresent()) {
+                        Pose3d est = estimated.get().estimatedPose;
+                        SmartDashboard.putNumber("Est/Robot/X", est.getX());
+                        SmartDashboard.putNumber("Est/Robot/Y", est.getY());
+                        SmartDashboard.putNumber("Est/Robot/Z", est.getZ());
+                        SmartDashboard.putNumber("Est/Robot/RotDeg", Math.toDegrees(est.getRotation().getZ()));
+                    }
+
+                    lastLogTime = now;
 
                 } catch (Exception e) {
                     SmartDashboard.putString("Vision/LoggingError", e.toString());
