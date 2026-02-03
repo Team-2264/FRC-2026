@@ -15,9 +15,10 @@ public class Leds extends SubsystemBase {
     private int currentRed = 0;
     private int currentGreen = 0;
     private int currentBlue = 0;
+    
 
     private int rainbowFirstPixelHue = 0;
-
+// pwmPort is set as 0 in constants
     public Leds(int pwmPort, int numLeds, float scaleFactor) {
 
         ledBuffer = new AddressableLEDBuffer(numLeds);

@@ -99,7 +99,10 @@ public class RobotContainer {
     private void configureBindings() {
         // ======== Swerve ========
         swerve.setDefaultCommand(new TeleopSwerve(swerve, controller));
-        // zero gyro with verification and LED/rumble confirmation
+        /**
+         *  zero gyro with verification and LED/rumble confirmation
+         * Option button is the small button on the right side of the controller
+        */
         controller.options().onTrue(
             new InstantCommand(() -> swerve.zeroGyro())
             .andThen(new WaitCommand(0.12))
