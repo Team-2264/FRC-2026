@@ -86,8 +86,8 @@ public class RobotContainer {
         controller.share().onTrue(new ToggleTurbo(swerve));
         controller.share().onFalse(new ToggleTurbo(swerve)); 
 
-        // DriveToTag - HOLD Square to drive STRAIGHT toward visible tag (stops 0.5m away)
-        controller.square().whileTrue(new DriveToTag(swerve, vision));
+        // DriveToTag - Press Square once, drives to tag and auto-stops 0.5m away
+        controller.square().onTrue(new DriveToTag(swerve, vision));
         
         // AlignToTag - HOLD Circle to auto-align (rotate + strafe + drive to face tag)
         controller.circle().whileTrue(new AlignToTag(swerve, vision));
