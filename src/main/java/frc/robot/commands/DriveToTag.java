@@ -2,8 +2,6 @@ package frc.robot.commands;
 
 import java.util.Optional;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -12,80 +10,71 @@ import frc.robot.subsystems.Swerve;
 import frc.robot.subsystems.Vision2025;
 
 /**
- * Command to drive the motion to a specific distance from the tag.
- * 
+ * DriveToTag - Simple command to drive straight toward a visible AprilTag.
+ * Uses camera-relative control - drives FORWARD only toward the tag.
+ * Hold the button to drive toward tag, release to stop.
  */
-public class DriveToTag extends Command{
+public class DriveToTag extends Command {
 
     private final Swerve swerve;
     private final Vision2025 vision;
-    private Pose2d targetPose;
-    private Pose2d tagPose;
-    //private Optional<Pose2d> tagPose;
+    private final double targetDistance;
+    
+    // Speed constants
+    private static final double MAX_FORWARD_SPEED = 1.5;
+    private static final double SLOWDOWN_START = 1.5;
 
-    /*
-     * This code is not finalized.
-     * For autoaligning based on robot translation, take a look at the translation_based_autoalign branch.
-     */
-
-    public DriveToTag(Swerve swerve, Vision2025 vision){
+    public DriveToTag(Swerve swerve, Vision2025 vision, double targetDistance) {
         this.swerve = swerve;
         this.vision = vision;
+        this.targetDistance = targetDistance;
         addRequirements(swerve);
     }
 
+    public DriveToTag(Swerve swerve, Vision2025 vision) {
+        this(swerve, vision, 0.5);
+    }
+
     @Override
-    public void initialize(){
-        //swerve.setGyro();
-        if (vision.targetIds.length>0){
-            int closestID = vision.targetIds[0];
-            targetPose = new Pose2d(0.1, 0.05, new Rotation2d(0.0)); //vision.rightReefPose(closestID);
-            //tagPose = vision.tagPose(closestID);
-            //Translation2d rotationLock = tagPose.getTranslation().
+    public void initialize() {
+        SmartDashboard.putBoolean("DriveToTag/Active", true);
+    }
+
+    @Override
+    public void execute() {
+        Optional<Transform3d> targetTransform = vision.getTargetTransform();
+        
+        if (targetTransform.isPresent()) {
+            Transform3d transform = targetTransform.get();
+            double tagX = transform.getX();
+            double distanceToGo = tagX - targetDistance;
+            
+            double forwardSpeed = 0;
+            if (distanceToGo > 0.05) {
+                double speedRatio = Math.min(distanceToGo / SLOWDOWN_START, 1.0);
+                forwardSpeed = speedRatio * MAX_FORWARD_SPEED;
+                forwardSpeed = Math.max(forwardSpeed, 0.2);
+            }
+            
+            swerve.setFieldRelative(false);
+            swerve.drive(new Translation2d(forwardSpeed, 0), 0);
+            
+            SmartDashboard.putNumber("DriveToTag/Distance", tagX);
+            SmartDashboard.putNumber("DriveToTag/Speed", forwardSpeed);
         } else {
-            targetPose = null;
-        }
-
-
-        // swerve.lockOnto(Translation2d)
-    }
-
-    @Override
-    public void execute(){
-        //swerve.setGyro();
-        swerve.setFieldRelative(false);
-
-        Optional<Transform3d> tagTransform = vision.getTargetTransform();
-        if (tagTransform.isPresent()) {
-            Transform3d xform = tagTransform.get();
-            //Pose2d tagPose = Pose2d(Meters.of(xform.getMeasureX()), xform.getMeasureY());
-            //Pose2d currentPose = swerve.getPose();
-            Translation2d error= targetPose.getTranslation().minus(tagPose.getTranslation());
-            Translation2d driveVector = error.times(1.0);
-            swerve.drive(driveVector, 0);
-
-            SmartDashboard.putString("Move to tag err", error.toString());
+            swerve.drive(new Translation2d(0, 0), 0);
         }
     }
 
     @Override
-    public boolean isFinished(){
-        if (vision.targetIds.length == 0) {
-            return true;
-        }
-
-        Pose2d currentPose = swerve.getPose();
-        double distance = currentPose.getTranslation().getDistance(targetPose.getTranslation());
-
-        return distance < 0.1;
+    public boolean isFinished() {
+        return false;
     }
 
     @Override
     public void end(boolean interrupted) {
-        swerve.drive(new Translation2d(0,0), 0);
+        swerve.drive(new Translation2d(0, 0), 0);
         swerve.setFieldRelative(true);
-        swerve.zeroGyro();
-        //swerve.unlock();
+        SmartDashboard.putBoolean("DriveToTag/Active", false);
     }
-    
 }

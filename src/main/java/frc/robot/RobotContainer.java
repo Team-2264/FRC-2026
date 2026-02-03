@@ -4,6 +4,7 @@
 
 package frc.robot;
 
+import frc.robot.commands.AlignToTag;
 import frc.robot.commands.DriveToTag;
 import frc.robot.commands.FaceTag;
 import frc.robot.commands.TeleopSwerve;
@@ -85,13 +86,11 @@ public class RobotContainer {
         controller.share().onTrue(new ToggleTurbo(swerve));
         controller.share().onFalse(new ToggleTurbo(swerve)); 
 
-        // controller.square().onTrue(
-        //     new DriveToTag(swerve, vision)
-        // );
-
-        // controller.circle().onTrue(
-        //     new FaceTag(swerve, vision)
-        // );
+        // DriveToTag - HOLD Square to drive STRAIGHT toward visible tag (stops 0.5m away)
+        controller.square().whileTrue(new DriveToTag(swerve, vision));
+        
+        // AlignToTag - HOLD Circle to auto-align (rotate + strafe + drive to face tag)
+        controller.circle().whileTrue(new AlignToTag(swerve, vision));
     }
 
      /**

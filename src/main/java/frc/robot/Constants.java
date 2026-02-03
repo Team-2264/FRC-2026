@@ -57,6 +57,9 @@ public final class Constants {
         public static final Matrix<N3, N1> visionStandardDevs = VecBuilder.fill(0.5, 0.5, Units.degreesToRadians(17));
         public static double singleTargetMultiplier = 0;
         
+        // Distance in meters to stop in front of AprilTag when using DriveToTag
+        public static final double driveToTagOffset = 0.5; // 0.5 meters = ~20 inches
+        
         // Robot to Camera Transform
         public static final Transform3d robotToCamera = new Transform3d(
             new Translation3d(
