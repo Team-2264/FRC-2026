@@ -8,7 +8,6 @@ import org.photonvision.PhotonCamera;
 import org.photonvision.PhotonPoseEstimator;
 // removed unused imports
 import org.photonvision.targeting.PhotonPipelineResult;
-import org.photonvision.targeting.PhotonTrackedTarget;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
@@ -455,7 +454,8 @@ public class Vision2025 extends SubsystemBase {
             SmartDashboard.putString("PhotonTarget", targetTrans.toString());
         }
 
-        // Estimated pose (non-blocking) — use estimator.update which does local estimation
+        // Estimated pose (non-blocking) — use estimator.update which does local
+        // estimation
         Optional<EstimatedRobotPose> estimated = Optional.empty();
         try {
             if (latestResult != null && latestResult.hasTargets()) {
@@ -482,71 +482,62 @@ public class Vision2025 extends SubsystemBase {
             SmartDashboard.putString("Rotation - vision: ", meterPose.getRotation().toString());
         }
 
-        // Distance to target
-        var result = camera.getLatestResult();
-
-        if (result.hasTargets()) {
-            double dist = result.getBestTarget().getBestCameraToTarget().getX();
-
-            distancelog.append(dist);
-        }
-
         // Field
         SmartDashboard.putData("Vision - Field", field);
 
+        // Throttled logging at 5 Hz (once every 0.2 seconds)
         double now = Timer.getFPGATimestamp();
-
-    if (now - lastLogTime >= 0.2) {
+        if (now - lastLogTime >= 0.2) {
+            // Log only if we have targets (all guarded by null/hasTargets checks)
             if ((latestResult != null) && latestResult.hasTargets()) {
-                var target = latestResult.getBestTarget();
-                int tagNumber = target.getFiducialId();
-                double dist = latestResult.getBestTarget().getBestCameraToTarget().getX();
+                try {
+                    var target = latestResult.getBestTarget();
+                    int tagNumber = target.getFiducialId();
+                    double dist = target.getBestCameraToTarget().getX();
 
-                tagNumberLogger.append(tagNumber); // log the tag number
-                distancelog.append(dist); // log the distance from the tag
+                    tagNumberLogger.append(tagNumber);
+                    distancelog.append(dist);
 
-                // Log robot pose (if available) so AdvantageScope can show robot on field
-                if (estimated.isPresent()) {
-                    Pose3d meterPose = estimated.get().estimatedPose;
-                    robotPoseXLogger.append(meterPose.getTranslation().getX());
-                    robotPoseYLogger.append(meterPose.getTranslation().getY());
-                    // log rotation in degrees (yaw)
-                    robotPoseRotLogger.append(Math.toDegrees(meterPose.getRotation().getZ()));
+                    // Log robot pose (if available) so AdvantageScope can show robot on field
+                    if (estimated.isPresent()) {
+                        Pose3d meterPose = estimated.get().estimatedPose;
+                        robotPoseXLogger.append(meterPose.getTranslation().getX());
+                        robotPoseYLogger.append(meterPose.getTranslation().getY());
+                        // log rotation in degrees (yaw)
+                        robotPoseRotLogger.append(Math.toDegrees(meterPose.getRotation().getZ()));
+                    }
+
+                    // Log best-target transform (camera -> target)
+                    Transform3d camToTarget = target.getBestCameraToTarget();
+                    bestTagXLogger.append(camToTarget.getTranslation().getX());
+                    bestTagYLogger.append(camToTarget.getTranslation().getY());
+                    bestTagZLogger.append(camToTarget.getTranslation().getZ());
+                    // get yaw/pitch from tracked target
+                    bestTagYawLogger.append(target.getYaw());
+                    bestTagPitchLogger.append(target.getPitch());
+
+                    // SmartDashboard 3D values for debugging
+                    Transform3d cameraToTarget = target.getBestCameraToTarget();
+                    Translation3d translation = cameraToTarget.getTranslation();
+                    double x = translation.getX();
+                    double y = translation.getY();
+                    double z = translation.getZ();
+
+                    Rotation3d rotation = cameraToTarget.getRotation();
+                    double yaw = Math.toDegrees(rotation.getZ());
+
+                    SmartDashboard.putNumber("3D/X_Meters", x);
+                    SmartDashboard.putNumber("3D/Y_Meters", y);
+                    SmartDashboard.putNumber("3D/Z_Meters", z);
+                    SmartDashboard.putNumber("3D/Yaw_Degrees", yaw);
+                    SmartDashboard.putNumber("3D/Ambiguity", target.getPoseAmbiguity());
+
+                } catch (Exception e) {
+                    SmartDashboard.putString("Vision/LoggingError", e.toString());
                 }
-
-                // Log best-target transform (camera -> target)
-                Transform3d camToTarget = target.getBestCameraToTarget();
-                bestTagXLogger.append(camToTarget.getTranslation().getX());
-                bestTagYLogger.append(camToTarget.getTranslation().getY());
-                bestTagZLogger.append(camToTarget.getTranslation().getZ());
-                // get yaw/pitch from tracked target if available
-                bestTagYawLogger.append(target.getYaw());
-                bestTagPitchLogger.append(target.getPitch());
-
             }
 
             lastLogTime = now;
-        }
-
-        latestResult = camera.getLatestResult();
-
-        if (latestResult.hasTargets()) {
-            PhotonTrackedTarget target = latestResult.getBestTarget();
-            Transform3d cameraToTarget = target.getBestCameraToTarget();
-
-            Translation3d translation = cameraToTarget.getTranslation();
-            double x = translation.getX();
-            double y = translation.getY();
-            double z = translation.getZ();
-
-            Rotation3d rotation = cameraToTarget.getRotation();
-            double yaw = Math.toDegrees(rotation.getZ());
-
-            SmartDashboard.putNumber("3D/X_Meters", x);
-            SmartDashboard.putNumber("3D/Y_Meters", y);
-            SmartDashboard.putNumber("3D/Z_Meters", z);
-            SmartDashboard.putNumber("3D/Yaw_Degrees", yaw);
-            SmartDashboard.putNumber("3D/Ambiguity", target.getPoseAmbiguity());
         }
 
     }
