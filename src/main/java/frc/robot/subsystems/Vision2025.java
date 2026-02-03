@@ -64,10 +64,7 @@ public class Vision2025 extends SubsystemBase {
         // Construct the estimator with a pose strategy and the camera transform
         estimator = new PhotonPoseEstimator(
                 aprilTagFieldLayout,
-
                 Constants.Vision.robotToCamera);
-
-        estimator.setRobotToCameraTransform(Constants.Vision.robotToCamera);
 
         field = new Field2d();
 
@@ -412,11 +409,11 @@ public class Vision2025 extends SubsystemBase {
      * @return Transform3d of a specific tag
      */
     public Optional<Transform3d> getTargetTransform() {
-        if (null == latestResult) {
+        if (latestResult == null || !latestResult.hasTargets()) {
             return Optional.empty();
         }
 
-        return Optional.of(latestResult.targets.get(0).getBestCameraToTarget());
+        return Optional.of(latestResult.getBestTarget().getBestCameraToTarget());
     }
 
     /**
@@ -458,17 +455,22 @@ public class Vision2025 extends SubsystemBase {
             SmartDashboard.putString("PhotonTarget", targetTrans.toString());
         }
 
-        // Estimated pose
-        Optional<EstimatedRobotPose> estimated = estimator.estimateCoprocMultiTagPose(latestResult);
-
-        if (estimated.isEmpty()) {
-            estimated = estimator.estimateLowestAmbiguityPose(latestResult);
+        // Estimated pose (non-blocking) — use estimator.update which does local estimation
+        Optional<EstimatedRobotPose> estimated = Optional.empty();
+        try {
+            if (latestResult != null && latestResult.hasTargets()) {
+                estimated = estimator.update(latestResult);
+            }
+        } catch (Exception e) {
+            SmartDashboard.putString("Vision/EstimatorError", e.toString());
         }
+
         SmartDashboard.putBoolean("vision-estimated:", estimated.isPresent());
 
         if (estimated.isPresent()) {
             Pose3d meterPose = estimated.get().estimatedPose;
-            field.setRobotPose(meterPose.getX(), meterPose.getY(), meterPose.getRotation().toRotation2d());
+            // Update Field2d with a Pose2d (use Pose2d constructor)
+            field.setRobotPose(new Pose2d(meterPose.getX(), meterPose.getY(), meterPose.getRotation().toRotation2d()));
 
             Pose3d inchPose = new Pose3d(
                     meterPose.getTranslation().getX() * 39.3701,
@@ -476,13 +478,8 @@ public class Vision2025 extends SubsystemBase {
                     meterPose.getTranslation().getZ() * 39.3701,
                     meterPose.getRotation());
             SmartDashboard.putString("Vision - Estimated Pose (in)", inchPose.toString());
-            // SmartDashboard.putNumber("Vision - x: ", inchPose.getX());
-            // SmartDashboard.putNumber("Vision - y: ", inchPose.getY());
 
             SmartDashboard.putString("Rotation - vision: ", meterPose.getRotation().toString());
-
-            // SmartDashboard.putNumber("Closest April Tag: ", getClosestID());
-
         }
 
         // Distance to target
@@ -499,7 +496,7 @@ public class Vision2025 extends SubsystemBase {
 
         double now = Timer.getFPGATimestamp();
 
-        if (now - lastLogTime >= 1.0) {
+    if (now - lastLogTime >= 0.2) {
             if ((latestResult != null) && latestResult.hasTargets()) {
                 var target = latestResult.getBestTarget();
                 int tagNumber = target.getFiducialId();
