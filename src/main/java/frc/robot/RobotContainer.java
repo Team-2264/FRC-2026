@@ -4,6 +4,7 @@
 
 package frc.robot;
 
+import frc.robot.commands.AlignToTag;
 import frc.robot.commands.DriveToTag;
 import frc.robot.commands.FaceTag;
 import frc.robot.commands.TeleopSwerve;
@@ -129,6 +130,12 @@ public class RobotContainer {
         controller.share().onTrue(new ToggleTurbo(swerve));
         controller.share().onFalse(new ToggleTurbo(swerve)); 
 
+        // DriveToTag - Press Square once, drives to tag and auto-stops 0.5m away
+        controller.square().onTrue(new DriveToTag(swerve, vision));
+        
+        // AlignToTag - HOLD Circle to auto-align (rotate + strafe + drive to face tag)
+        controller.circle().whileTrue(new AlignToTag(swerve, vision));
+
         // on target acquired -> short green pulse + small rumble
         hasVisionTarget.onTrue(new InstantCommand(() -> {
             setLedOverride(0, 255, 0, 0.25); // green transient
@@ -141,15 +148,7 @@ public class RobotContainer {
         hasVisionTarget.onFalse(new InstantCommand(() -> setLedOverride(255, 0, 0, 0.3)));
 
         // NOTE: don't set a default LED command (we control LEDs from robotPeriodic() to enforce priorities)
-}
-
-        // controller.square().onTrue(
-        //     new DriveToTag(swerve, vision)
-        // );
-
-        // controller.circle().onTrue(
-        //     new FaceTag(swerve, vision)
-        // );
+    }
     
 
      /**

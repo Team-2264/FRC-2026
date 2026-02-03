@@ -40,7 +40,7 @@ import edu.wpi.first.wpilibj.Alert.AlertType;
  * build.gradle file in the
  * project.
  */
-public class Robot extends TimedRobot {
+public class Robot extends LoggedRobot {
     private Command m_autonomousCommand;
 
     private RobotContainer m_robotContainer;
@@ -57,6 +57,11 @@ public class Robot extends TimedRobot {
      */
     @Override
     public void robotInit() {
+        // Initialize AdvantageKit logging
+        Logger.addDataReceiver(new NT4Publisher()); // Publish data to NetworkTables
+        Logger.addDataReceiver(new WPILOGWriter()); // Save data to WPILOG file
+        Logger.start(); // Start logging
+        
         // Start Logging
         // Instantiate our RobotContainer. This will perform all our button bindings,
         // and put our autonomous chooser on the dashboard.
@@ -80,7 +85,7 @@ public class Robot extends TimedRobot {
         myBatteryLog = new DoubleLogEntry(log, "/my/BatteryVoltage");
         myStringLog = new StringLogEntry(log, "/my/string");
 
-        addPeriodic(()->{myBatteryLog.update(RobotController.getBatteryVoltage(),RobotController.getFPGATime());},2.00,0.00);
+        // Note: addPeriodic not supported by LoggedRobot, battery logging moved to robotPeriodic
    
         DriverStation.startDataLog(DataLogManager.getLog());
 

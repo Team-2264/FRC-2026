@@ -9,6 +9,7 @@ import org.photonvision.PhotonPoseEstimator;
 import org.photonvision.PhotonPoseEstimator.PoseStrategy;
 import org.photonvision.PhotonUtils;
 import org.photonvision.targeting.PhotonPipelineResult;
+import org.photonvision.targeting.PhotonTrackedTarget;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -399,6 +400,11 @@ public class Vision2025 extends SubsystemBase {
         if (null == latestResult) {
             return Optional.empty();
         }
+        
+        // Check if there are any targets before accessing the list
+        if (!latestResult.hasTargets() || latestResult.targets.isEmpty()) {
+            return Optional.empty();
+        }
 
         return Optional.of(latestResult.targets.get(0).getBestCameraToTarget());
     }
@@ -407,6 +413,96 @@ public class Vision2025 extends SubsystemBase {
      * track IDs of detected April Tags
      */
     public int[] targetIds;
+
+    // ========== DriveToTag Helper Methods ==========
+
+    /**
+     * Returns the fiducial ID of the best (most centered) visible target.
+     * @return Optional containing the best target's ID, or empty if no targets visible
+     */
+    public Optional<Integer> getBestTargetId() {
+        if (latestResult == null || !latestResult.hasTargets()) {
+            return Optional.empty();
+        }
+        return Optional.of(latestResult.getBestTarget().getFiducialId());
+    }
+
+    /**
+     * Returns the Pose2d of the best visible AprilTag using the field layout.
+     * @return Optional containing the tag's field pose, or empty if no targets visible
+     */
+    public Optional<Pose2d> getBestTagPose2d() {
+        Optional<Integer> bestId = getBestTargetId();
+        if (bestId.isEmpty()) {
+            return Optional.empty();
+        }
+        return tagPose(bestId.get());
+    }
+
+    /**
+     * Finds the closest AprilTag to the robot's current position.
+     * Only considers reef tags (6-11 for red, 17-22 for blue).
+     * @param robotPose the robot's current pose from odometry
+     * @return Optional containing the closest tag's ID, or empty if no reef tags exist
+     */
+    public Optional<Integer> getClosestTagId(Pose2d robotPose) {
+        // Reef tag IDs: Red alliance 6-11, Blue alliance 17-22
+        int[] reefTags = {6, 7, 8, 9, 10, 11, 17, 18, 19, 20, 21, 22};
+        
+        int closestId = -1;
+        double closestDistance = Double.MAX_VALUE;
+        
+        for (int tagId : reefTags) {
+            Optional<Pose2d> tagPoseOpt = tagPose(tagId);
+            if (tagPoseOpt.isPresent()) {
+                double distance = robotPose.getTranslation().getDistance(tagPoseOpt.get().getTranslation());
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestId = tagId;
+                }
+            }
+        }
+        
+        if (closestId == -1) {
+            return Optional.empty();
+        }
+        return Optional.of(closestId);
+    }
+
+    /**
+     * Returns the Pose2d of the closest AprilTag to the robot.
+     * @param robotPose the robot's current pose from odometry
+     * @return Optional containing the closest tag's field pose, or empty if none found
+     */
+    public Optional<Pose2d> getClosestTagPose2d(Pose2d robotPose) {
+        Optional<Integer> closestId = getClosestTagId(robotPose);
+        if (closestId.isEmpty()) {
+            return Optional.empty();
+        }
+        return tagPose(closestId.get());
+    }
+
+    /**
+     * Calculates the target pose for the robot to drive to, positioned in front of the tag.
+     * The robot will face the tag at the specified offset distance.
+     * @param tagPose the AprilTag's field pose
+     * @param offsetDistance distance in meters to stop in front of the tag
+     * @return the target Pose2d for the robot
+     */
+    public Pose2d calculateTargetPose(Pose2d tagPose, double offsetDistance) {
+        // Get the tag's rotation (the direction the tag is facing)
+        Rotation2d tagRotation = tagPose.getRotation();
+        
+        // Calculate offset position (in front of the tag)
+        // The tag faces outward, so we add offset in the direction the tag faces
+        double offsetX = tagPose.getX() + offsetDistance * tagRotation.getCos();
+        double offsetY = tagPose.getY() + offsetDistance * tagRotation.getSin();
+        
+        // Robot should face the tag (opposite of tag's facing direction)
+        Rotation2d robotRotation = tagRotation.plus(Rotation2d.fromDegrees(180));
+        
+        return new Pose2d(offsetX, offsetY, robotRotation);
+    }
 
     /**
      * Periodicly update SmartDashboard and track april tags.

@@ -61,6 +61,9 @@ public class TeleopSwerve extends Command {
      */
     @Override
     public void execute() {
+        // Always ensure field-relative mode for teleop
+        swerve.setFieldRelative(true);
+        
         double yAxis = -controller.getLeftY();
         double xAxis = -controller.getLeftX();
         double rAxis = -controller.getRightX();
