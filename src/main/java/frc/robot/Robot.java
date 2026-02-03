@@ -31,9 +31,6 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.PS5Controller;
-import edu.wpi.first.util.datalog.DataLog;
-import edu.wpi.first.util.datalog.DoubleLogEntry;
-import edu.wpi.first.wpilibj.DataLogManager;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -115,8 +112,14 @@ public class Robot extends TimedRobot {
         // and running subsystem periodic() methods. This must be called from the
         // robot's periodic
         // block in order for anything in the Command-based framework to work.
-        CommandScheduler.getInstance().run();
-        m_robotContainer.robotPeriodic();
+        try {
+            CommandScheduler.getInstance().run();
+            if (m_robotContainer != null) {
+                m_robotContainer.robotPeriodic();
+            }
+        } catch (Exception e) {
+            SmartDashboard.putString("Robot/robotPeriodic Error", e.toString());
+        }
 
         /*
          * double batteryVoltage = RobotController.getBatteryVoltage();
@@ -178,25 +181,24 @@ public class Robot extends TimedRobot {
     /** This function is called periodically during operator control. */
     @Override
     public void teleopPeriodic() {
-        // m_robotContainer.getLeds().Rainbow();
+        try {
+            // Get current pose safely
+            if (m_robotContainer != null && m_robotContainer.swerve != null) {
+                // Pose2d currentPose = m_robotContainer.swerve.getPose();
+                // Pose2d tagPose = m_robotContainer.vision.getPoseOfClosestReef();
+                // ... rest of pose handling ...
+            }
 
-        Pose2d currentPose = m_robotContainer.swerve.getPose();
-        // Pose2d tagPose = m_robotContainer.vision.getPoseOfClosestReef();
-
-        // if (tagPose != null)
-        // {
-        // Translation2d currentTranslation = currentPose.getTranslation();
-        // Translation2d newTranslation = tagPose.getTranslation();
-
-        // double distance = currentTranslation.getDistance(newTranslation);
-        // SmartDashboard.putNumber("LockOnDistance", distance);
-        // SmartDashboard.putNumber("LockOnDistance - X",
-        // Units.metersToInches(currentTranslation.getX() - newTranslation.getX()));
-        // SmartDashboard.putNumber("LockOnDistance - Y",
-        // Units.metersToInches(currentTranslation.getY() - newTranslation.getY()));
-        // }
-        double speed = driver.getLeftY();
-        joystickLog.append(speed);
+            // Get joystick input safely
+            if (driver != null) {
+                double speed = driver.getLeftY();
+                if (joystickLog != null) {
+                    joystickLog.append(speed);
+                }
+            }
+        } catch (Exception e) {
+            SmartDashboard.putString("Robot/teleopPeriodic Error", e.toString());
+        }
     }
 
     @Override
@@ -209,7 +211,13 @@ public class Robot extends TimedRobot {
     /** This function is called periodically during test mode. */
     @Override
     public void testPeriodic() {
-        m_robotContainer.getLeds().Rainbow();
+        try {
+            if (m_robotContainer != null && m_robotContainer.getLeds() != null) {
+                m_robotContainer.getLeds().Rainbow();
+            }
+        } catch (Exception e) {
+            SmartDashboard.putString("Robot/testPeriodic Error", e.toString());
+        }
     }
 
     /** This function is called once when the robot is first started up. */
