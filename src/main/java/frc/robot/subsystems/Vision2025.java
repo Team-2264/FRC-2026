@@ -6,8 +6,7 @@ import java.util.Optional;
 import org.photonvision.EstimatedRobotPose;
 import org.photonvision.PhotonCamera;
 import org.photonvision.PhotonPoseEstimator;
-import org.photonvision.PhotonPoseEstimator.PoseStrategy;
-import org.photonvision.PhotonUtils;
+// removed unused imports
 import org.photonvision.targeting.PhotonPipelineResult;
 import org.photonvision.targeting.PhotonTrackedTarget;
 
@@ -19,7 +18,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.geometry.Transform3d;
-import edu.wpi.first.math.geometry.Translation2d;
+// removed unused import
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -27,11 +26,10 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import edu.wpi.first.util.datalog.DoubleLogEntry;
 import edu.wpi.first.wpilibj.DataLogManager;
-import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.util.datalog.DataLog;
 import edu.wpi.first.util.datalog.IntegerLogEntry;
-import edu.wpi.first.util.datalog.DoubleLogEntry;
+// DoubleLogEntry already imported above
 
 /**
  * Subsystem for vision processing using PhotonVision.
@@ -46,6 +44,14 @@ public class Vision2025 extends SubsystemBase {
     private DoubleLogEntry distancelog;
     private double lastLogTime = 0.0;
     private IntegerLogEntry tagNumberLogger;
+    private DoubleLogEntry robotPoseXLogger;
+    private DoubleLogEntry robotPoseYLogger;
+    private DoubleLogEntry robotPoseRotLogger;
+    private DoubleLogEntry bestTagXLogger;
+    private DoubleLogEntry bestTagYLogger;
+    private DoubleLogEntry bestTagZLogger;
+    private DoubleLogEntry bestTagYawLogger;
+    private DoubleLogEntry bestTagPitchLogger;
 
     /**
      * Constructs a new Vision instance.
@@ -70,6 +76,18 @@ public class Vision2025 extends SubsystemBase {
         DataLog log = DataLogManager.getLog();
         distancelog = new DoubleLogEntry(log, "Vision/Distance");
         tagNumberLogger = new IntegerLogEntry(log, "Vision/TagNumber");
+
+        // Robot pose log entries for visualization (AdvantageScope / AdvantageKit)
+        robotPoseXLogger = new DoubleLogEntry(log, "Vision/RobotPose/X");
+        robotPoseYLogger = new DoubleLogEntry(log, "Vision/RobotPose/Y");
+        robotPoseRotLogger = new DoubleLogEntry(log, "Vision/RobotPose/RotDeg");
+
+        // Best-target (camera->target) transform entries
+        bestTagXLogger = new DoubleLogEntry(log, "Vision/BestTarget/X");
+        bestTagYLogger = new DoubleLogEntry(log, "Vision/BestTarget/Y");
+        bestTagZLogger = new DoubleLogEntry(log, "Vision/BestTarget/Z");
+        bestTagYawLogger = new DoubleLogEntry(log, "Vision/BestTarget/YawDeg");
+        bestTagPitchLogger = new DoubleLogEntry(log, "Vision/BestTarget/PitchDeg");
 
     }
 
@@ -490,6 +508,24 @@ public class Vision2025 extends SubsystemBase {
                 tagNumberLogger.append(tagNumber); // log the tag number
                 distancelog.append(dist); // log the distance from the tag
 
+                // Log robot pose (if available) so AdvantageScope can show robot on field
+                if (estimated.isPresent()) {
+                    Pose3d meterPose = estimated.get().estimatedPose;
+                    robotPoseXLogger.append(meterPose.getTranslation().getX());
+                    robotPoseYLogger.append(meterPose.getTranslation().getY());
+                    // log rotation in degrees (yaw)
+                    robotPoseRotLogger.append(Math.toDegrees(meterPose.getRotation().getZ()));
+                }
+
+                // Log best-target transform (camera -> target)
+                Transform3d camToTarget = target.getBestCameraToTarget();
+                bestTagXLogger.append(camToTarget.getTranslation().getX());
+                bestTagYLogger.append(camToTarget.getTranslation().getY());
+                bestTagZLogger.append(camToTarget.getTranslation().getZ());
+                // get yaw/pitch from tracked target if available
+                bestTagYawLogger.append(target.getYaw());
+                bestTagPitchLogger.append(target.getPitch());
+
             }
 
             lastLogTime = now;
@@ -507,8 +543,6 @@ public class Vision2025 extends SubsystemBase {
             double z = translation.getZ();
 
             Rotation3d rotation = cameraToTarget.getRotation();
-            double roll = Math.toDegrees(rotation.getX());
-            double pitch = Math.toDegrees(rotation.getY());
             double yaw = Math.toDegrees(rotation.getZ());
 
             SmartDashboard.putNumber("3D/X_Meters", x);
