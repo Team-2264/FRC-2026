@@ -31,6 +31,8 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.PS5Controller;
+import com.revrobotics.spark.SparkMax;
+import com.revrobotics.spark.SparkLowLevel.MotorType;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -51,6 +53,7 @@ public class Robot extends TimedRobot {
     Alert alertTest = new Alert("This is a test!", AlertType.kError);
     DoubleLogEntry joystickLog;
     PS5Controller driver = new PS5Controller(0);
+    private SparkMax m_motor;
 
     /**
      * This function is run when the robot is first started up and should be used
@@ -63,6 +66,7 @@ public class Robot extends TimedRobot {
         // Instantiate our RobotContainer. This will perform all our button bindings,
         // and put our autonomous chooser on the dashboard.
         m_robotContainer = new RobotContainer();
+        m_motor = new SparkMax(5, MotorType.kBrushless);
 
         WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
 
@@ -198,6 +202,7 @@ public class Robot extends TimedRobot {
             }
         } catch (Exception e) {
             SmartDashboard.putString("Robot/teleopPeriodic Error", e.toString());
+            m_motor.set(0.5);
         }
     }
 
