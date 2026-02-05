@@ -31,8 +31,6 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.PS5Controller;
-import com.revrobotics.spark.SparkMax;
-import com.revrobotics.spark.SparkLowLevel.MotorType;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -45,7 +43,6 @@ import com.revrobotics.spark.SparkLowLevel.MotorType;
  */
 public class Robot extends TimedRobot {
     private Command m_autonomousCommand;
-    private SparkMax m_motor;
 
     private RobotContainer m_robotContainer;
     BooleanLogEntry myBooleanLog;
@@ -66,7 +63,6 @@ public class Robot extends TimedRobot {
         // Instantiate our RobotContainer. This will perform all our button bindings,
         // and put our autonomous chooser on the dashboard.
         m_robotContainer = new RobotContainer();
-        m_motor = new SparkMax(5, MotorType.kBrushless);
 
         WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
 
@@ -204,7 +200,7 @@ public class Robot extends TimedRobot {
             SmartDashboard.putString("Robot/teleopPeriodic Error", e.toString());
 
         }
-        m_motor.set(0.5);
+
     }
 
     @Override
