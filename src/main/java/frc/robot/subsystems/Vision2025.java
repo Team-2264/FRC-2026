@@ -610,7 +610,6 @@ public class Vision2025 extends SubsystemBase {
                 SmartDashboard.putString("Vision/LoggingError", e.toString());
             }
 
-            lastLogTime = now;
         }
 
     }

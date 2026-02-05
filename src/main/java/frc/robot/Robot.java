@@ -45,6 +45,7 @@ import com.revrobotics.spark.SparkLowLevel.MotorType;
  */
 public class Robot extends TimedRobot {
     private Command m_autonomousCommand;
+    private SparkMax m_motor;
 
     private RobotContainer m_robotContainer;
     BooleanLogEntry myBooleanLog;
@@ -53,7 +54,6 @@ public class Robot extends TimedRobot {
     Alert alertTest = new Alert("This is a test!", AlertType.kError);
     DoubleLogEntry joystickLog;
     PS5Controller driver = new PS5Controller(0);
-    private SparkMax m_motor;
 
     /**
      * This function is run when the robot is first started up and should be used
@@ -202,8 +202,9 @@ public class Robot extends TimedRobot {
             }
         } catch (Exception e) {
             SmartDashboard.putString("Robot/teleopPeriodic Error", e.toString());
-            m_motor.set(0.5);
+
         }
+        m_motor.set(0.5);
     }
 
     @Override
