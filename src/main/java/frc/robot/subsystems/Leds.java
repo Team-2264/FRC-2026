@@ -58,6 +58,30 @@ public class Leds extends SubsystemBase {
          return true;
     }
 
+    /**
+     * Set only LEDs from startIdx to endIdx (inclusive) to the given color,
+     * and turn off all other LEDs.
+     */
+    public void setRGBRange(int red, int green, int blue, int startIdx, int endIdx) {
+        int r = Math.round(red   * scaleFactor);
+        int g = Math.round(green * scaleFactor);
+        int b = Math.round(blue  * scaleFactor);
+
+        for (int i = 0; i < ledBuffer.getLength(); i++) {
+            if (i >= startIdx && i <= endIdx) {
+                ledBuffer.setRGB(i, r, g, b);
+            } else {
+                ledBuffer.setRGB(i, 0, 0, 0);
+            }
+        }
+
+        currentRed = -1;
+        currentGreen = -1;
+        currentBlue = -1;
+
+        ledStrip.setData(ledBuffer);
+    }
+
     public void Rainbow() {
         // For every pixel
         for (var i = 0; i < ledBuffer.getLength(); i++) {

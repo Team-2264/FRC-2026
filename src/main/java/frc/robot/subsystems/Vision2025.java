@@ -28,7 +28,7 @@ import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.util.datalog.DataLog;
 import edu.wpi.first.util.datalog.IntegerLogEntry;
-// DoubleLogEntry already imported above
+import edu.wpi.first.util.datalog.StructLogEntry;
 
 /**
  * Subsystem for vision processing using PhotonVision.
@@ -52,6 +52,10 @@ public class Vision2025 extends SubsystemBase {
     private DoubleLogEntry bestTagYawLogger;
     private DoubleLogEntry bestTagPitchLogger;
 
+    // Struct-based logging for proper 3D visualization in AdvantageScope
+    private StructLogEntry<Pose3d> robotPose3dLogger;
+    private StructLogEntry<Transform3d> targetTransformLogger;
+
     /**
      * Constructs a new Vision instance.
      * 
@@ -60,10 +64,18 @@ public class Vision2025 extends SubsystemBase {
         camera = new PhotonCamera(Constants.Vision.cameraName);
         aprilTagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
 
-        // Construct the estimator with a pose strategy and the camera transform
+        // Construct the estimator with PoseStrategy.LOWEST_AMBIGUITY
+        // The 3-argument constructor takes (layout, strategy, robotToCamera)
         estimator = new PhotonPoseEstimator(
                 aprilTagFieldLayout,
+                PhotonPoseEstimator.PoseStrategy.LOWEST_AMBIGUITY,
                 Constants.Vision.robotToCamera);
+
+        // Set initial pose to middle of field (for coprocessor multi-tag sync if
+        // enabled)
+        // 2025 field is 16.54m x 8.23m, blue origin at (0,0)
+        // Center is approximately at (8.27, 4.11) in field coordinates
+        estimator.setLastPose(new Pose3d(8.27, 4.11, 0.35, new Rotation3d()));
 
         field = new Field2d();
 
@@ -77,6 +89,10 @@ public class Vision2025 extends SubsystemBase {
         robotPoseXLogger = new DoubleLogEntry(log, "Vision/RobotPose/X");
         robotPoseYLogger = new DoubleLogEntry(log, "Vision/RobotPose/Y");
         robotPoseRotLogger = new DoubleLogEntry(log, "Vision/RobotPose/RotDeg");
+
+        // Struct loggers for proper 3D visualization
+        robotPose3dLogger = StructLogEntry.create(log, "Vision/RobotPose3d", Pose3d.struct);
+        targetTransformLogger = StructLogEntry.create(log, "Vision/TargetTransform3d", Transform3d.struct);
 
         // Best-target (camera->target) transform entries
         bestTagXLogger = new DoubleLogEntry(log, "Vision/BestTarget/X");
@@ -113,75 +129,93 @@ public class Vision2025 extends SubsystemBase {
      * 
      * @param tagID of the april tag detected
      * @return Pose2d the robot is desired to drive to
-     */
-    public Pose2d rightReefPose(int tagID) {
-        var _tagPose = tagPose(tagID);
-
-        // Guard against empty Optional
-        if (_tagPose.isEmpty()) {
-            SmartDashboard.putString("Vision/Error", "rightReefPose: tagID " + tagID + " not found");
-            return null;
-        }
-
-        switch (tagID) {
-            // Red Alliance
-            case 1:
-                // return new Pose2d(Units.inchesToMeters(657.37), Units.inchesToMeters(25.8),
-                // Rotation2d.fromDegrees(126));
-                return new Pose2d(_tagPose.get().getX() - 1.0, _tagPose.get().getY() - 1.0,
-                        new Rotation2d(_tagPose.get().getRotation().getRadians()));
-            case 2:
-                return new Pose2d(Units.inchesToMeters(657.37), Units.inchesToMeters(291.20),
-                        Rotation2d.fromDegrees(234));
-            case 6:
-                return new Pose2d(Units.inchesToMeters(536.49), Units.inchesToMeters(119.7777),
-                        Rotation2d.fromDegrees(240));
-            case 7:
-                return new Pose2d(Units.inchesToMeters(558.87), Units.inchesToMeters(158.5),
-                        Rotation2d.fromDegrees(180));
-            case 8:
-                return new Pose2d(Units.inchesToMeters(536.49), Units.inchesToMeters(197.2223),
-                        Rotation2d.fromDegrees(180));
-            case 9:
-                return new Pose2d(Units.inchesToMeters(491.77), Units.inchesToMeters(197.2223),
-                        Rotation2d.fromDegrees(60));
-            case 10:
-                return new Pose2d(Units.inchesToMeters(469.39), Units.inchesToMeters(158.5), Rotation2d.fromDegrees(0));
-            case 11:
-                return new Pose2d(Units.inchesToMeters(491.7777), Units.inchesToMeters(119.777),
-                        Rotation2d.fromDegrees(300));
-
-            // Blue Alliance
-            // case 12:
-            // return new Pose2d(Units.inchesToMeters(0), Units.inchesToMeters(0),
-            // Rotation2d.fromDegrees(54));
-            case 13:
-                return new Pose2d(Units.inchesToMeters(0), Units.inchesToMeters(0), Rotation2d.fromDegrees(306));
-            case 17:
-                return new Pose2d(Units.inchesToMeters(154.39), Units.inchesToMeters(119.7777),
-                        Rotation2d.fromDegrees(240));
-            case 18:
-                return new Pose2d(Units.inchesToMeters(144), Units.inchesToMeters(158.5), Rotation2d.fromDegrees(180));
-            case 19:
-                return new Pose2d(Units.inchesToMeters(144), Units.inchesToMeters(158.5), Rotation2d.fromDegrees(180));
-            case 20:
-                return new Pose2d(Units.inchesToMeters(193.10), Units.inchesToMeters(186.83),
-                        Rotation2d.fromDegrees(60));
-            case 21:
-                return new Pose2d(Units.inchesToMeters(221.49), Units.inchesToMeters(158.5), Rotation2d.fromDegrees(0));
-            case 22:
-                return new Pose2d(Units.inchesToMeters(193.10), Units.inchesToMeters(130.17),
-                        Rotation2d.fromDegrees(300));
-
-            case 12:
-                return new Pose2d(Units.inchesToMeters(50), Units.inchesToMeters(50), Rotation2d.fromDegrees(54));
-            default:
-                return null;
-        }
-    }
-
-    /**
-     * Returns the Pose2d of a tag based on tagID
+     *         public Pose2d rightReefPose(int tagID) {
+     *         var _tagPose = tagPose(tagID);
+     * 
+     *         // Guard against empty Optional
+     *         if (_tagPose.isEmpty()) {
+     *         SmartDashboard.putString("Vision/Error", "rightReefPose: tagID " +
+     *         tagID + " not found");
+     *         return null;
+     *         }
+     * 
+     *         switch (tagID) {
+     *         // Red Alliance
+     *         case 1:
+     *         // return new Pose2d(Units.inchesToMeters(657.37),
+     *         Units.inchesToMeters(25.8),
+     *         // Rotation2d.fromDegrees(126));
+     *         return new Pose2d(_tagPose.get().getX() - 1.0, _tagPose.get().getY()
+     *         - 1.0,
+     *         new Rotation2d(_tagPose.get().getRotation().getRadians()));
+     *         case 2:
+     *         return new Pose2d(Units.inchesToMeters(657.37),
+     *         Units.inchesToMeters(291.20),
+     *         Rotation2d.fromDegrees(234));
+     *         case 6:
+     *         return new Pose2d(Units.inchesToMeters(536.49),
+     *         Units.inchesToMeters(119.7777),
+     *         Rotation2d.fromDegrees(240));
+     *         case 7:
+     *         return new Pose2d(Units.inchesToMeters(558.87),
+     *         Units.inchesToMeters(158.5),
+     *         Rotation2d.fromDegrees(180));
+     *         case 8:
+     *         return new Pose2d(Units.inchesToMeters(536.49),
+     *         Units.inchesToMeters(197.2223),
+     *         Rotation2d.fromDegrees(180));
+     *         case 9:
+     *         return new Pose2d(Units.inchesToMeters(491.77),
+     *         Units.inchesToMeters(197.2223),
+     *         Rotation2d.fromDegrees(60));
+     *         case 10:
+     *         return new Pose2d(Units.inchesToMeters(469.39),
+     *         Units.inchesToMeters(158.5), Rotation2d.fromDegrees(0));
+     *         case 11:
+     *         return new Pose2d(Units.inchesToMeters(491.7777),
+     *         Units.inchesToMeters(119.777),
+     *         Rotation2d.fromDegrees(300));
+     * 
+     *         // Blue Alliance
+     *         // case 12:
+     *         // return new Pose2d(Units.inchesToMeters(0),
+     *         Units.inchesToMeters(0),
+     *         // Rotation2d.fromDegrees(54));
+     *         case 13:
+     *         return new Pose2d(Units.inchesToMeters(0), Units.inchesToMeters(0),
+     *         Rotation2d.fromDegrees(306));
+     *         case 17:
+     *         return new Pose2d(Units.inchesToMeters(154.39),
+     *         Units.inchesToMeters(119.7777),
+     *         Rotation2d.fromDegrees(240));
+     *         case 18:
+     *         return new Pose2d(Units.inchesToMeters(144),
+     *         Units.inchesToMeters(158.5), Rotation2d.fromDegrees(180));
+     *         case 19:
+     *         return new Pose2d(Units.inchesToMeters(144),
+     *         Units.inchesToMeters(158.5), Rotation2d.fromDegrees(180));
+     *         case 20:
+     *         return new Pose2d(Units.inchesToMeters(193.10),
+     *         Units.inchesToMeters(186.83),
+     *         Rotation2d.fromDegrees(60));
+     *         case 21:
+     *         return new Pose2d(Units.inchesToMeters(221.49),
+     *         Units.inchesToMeters(158.5), Rotation2d.fromDegrees(0));
+     *         case 22:
+     *         return new Pose2d(Units.inchesToMeters(193.10),
+     *         Units.inchesToMeters(130.17),
+     *         Rotation2d.fromDegrees(300));
+     * 
+     *         case 12:
+     *         return new Pose2d(Units.inchesToMeters(50), Units.inchesToMeters(50),
+     *         Rotation2d.fromDegrees(54));
+     *         default:
+     *         return null;
+     *         }
+     *         }
+     * 
+     *         /**
+     *         Returns the Pose2d of a tag based on tagID
      * 
      * @param tagID
      * @return Pose2d of a specific april tag
@@ -441,23 +475,33 @@ public class Vision2025 extends SubsystemBase {
     }
 
     /**
+     * Get the transform to a specific AprilTag by ID.
+     * @param tagId The fiducial ID of the tag to find
+     * @return Optional containing the Transform3d to that tag, or empty if not visible
+     */
+    public Optional<Transform3d> getTransformToTag(int tagId) {
+        if (latestResult == null || !latestResult.hasTargets()) {
+            return Optional.empty();
+        }
+        for (var target : latestResult.targets) {
+            if (target.getFiducialId() == tagId) {
+                return Optional.of(target.getBestCameraToTarget());
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
      * Calculate the target pose for the robot to be positioned in front of a tag.
      * @param tagPose The field pose of the AprilTag
      * @param distance How far in front of the tag to position (meters)
      * @return The target Pose2d for the robot
      */
     public Pose2d calculateTargetPose(Pose2d tagPose, double distance) {
-        // Get the tag's rotation (the direction it's facing)
         Rotation2d tagRotation = tagPose.getRotation();
-        
-        // Calculate offset position (in front of tag, facing it)
-        // Tag rotation points outward, so we go opposite direction to be in front
         double offsetX = tagPose.getX() + distance * tagRotation.getCos();
         double offsetY = tagPose.getY() + distance * tagRotation.getSin();
-        
-        // Robot should face the tag (opposite of tag's facing direction)
         Rotation2d robotRotation = tagRotation.plus(Rotation2d.fromDegrees(180));
-        
         return new Pose2d(offsetX, offsetY, robotRotation);
     }
 
@@ -529,59 +573,85 @@ public class Vision2025 extends SubsystemBase {
         // Field
         SmartDashboard.putData("Vision - Field", field);
 
-        // Throttled logging at 5 Hz (once every 0.2 seconds)
-        double now = Timer.getFPGATimestamp();
-        if (now - lastLogTime >= 0.2) {
-            // Log only if we have targets (all guarded by null/hasTargets checks)
-            if ((latestResult != null) && latestResult.hasTargets()) {
-                try {
-                    var target = latestResult.getBestTarget();
-                    int tagNumber = target.getFiducialId();
-                    double dist = target.getBestCameraToTarget().getX();
+        // Log every periodic cycle for maximum smoothness
+        if ((latestResult != null) && latestResult.hasTargets()) {
+            try {
+                var target = latestResult.getBestTarget();
+                int tagNumber = target.getFiducialId();
+                double dist = target.getBestCameraToTarget().getX();
 
-                    tagNumberLogger.append(tagNumber);
-                    distancelog.append(dist);
+                tagNumberLogger.append(tagNumber);
+                distancelog.append(dist);
 
-                    // Log robot pose (if available) so AdvantageScope can show robot on field
-                    if (estimated.isPresent()) {
-                        Pose3d meterPose = estimated.get().estimatedPose;
-                        robotPoseXLogger.append(meterPose.getTranslation().getX());
-                        robotPoseYLogger.append(meterPose.getTranslation().getY());
-                        // log rotation in degrees (yaw)
-                        robotPoseRotLogger.append(Math.toDegrees(meterPose.getRotation().getZ()));
-                    }
+                // Log robot pose (if available) so AdvantageScope can show robot on field
+                // PhotonPoseEstimator returns pose in FIELD frame (meters):
+                // - X: forward (0 = red wall, 16.54 = blue wall)
+                // - Y: left (0 = red wall, 8.23 = blue wall)
+                // - Z: height (0 = ground, bumper ~0.35m)
+                if (estimated.isPresent()) {
+                    Pose3d meterPose = estimated.get().estimatedPose;
+                    robotPoseXLogger.append(meterPose.getTranslation().getX());
+                    robotPoseYLogger.append(meterPose.getTranslation().getY());
+                    // log rotation in degrees (yaw)
+                    double yaw = meterPose.getRotation().getZ(); // radians
+                    robotPoseRotLogger.append(Math.toDegrees(yaw));
 
-                    // Log best-target transform (camera -> target)
-                    Transform3d camToTarget = target.getBestCameraToTarget();
-                    bestTagXLogger.append(camToTarget.getTranslation().getX());
-                    bestTagYLogger.append(camToTarget.getTranslation().getY());
-                    bestTagZLogger.append(camToTarget.getTranslation().getZ());
-                    // get yaw/pitch from tracked target
-                    bestTagYawLogger.append(target.getYaw());
-                    bestTagPitchLogger.append(target.getPitch());
-
-                    // SmartDashboard 3D values for debugging
-                    Transform3d cameraToTarget = target.getBestCameraToTarget();
-                    Translation3d translation = cameraToTarget.getTranslation();
-                    double x = translation.getX();
-                    double y = translation.getY();
-                    double z = translation.getZ();
-
-                    Rotation3d rotation = cameraToTarget.getRotation();
-                    double yaw = Math.toDegrees(rotation.getZ());
-
-                    SmartDashboard.putNumber("3D/X_Meters", x);
-                    SmartDashboard.putNumber("3D/Y_Meters", y);
-                    SmartDashboard.putNumber("3D/Z_Meters", z);
-                    SmartDashboard.putNumber("3D/Yaw_Degrees", yaw);
-                    SmartDashboard.putNumber("3D/Ambiguity", target.getPoseAmbiguity());
-
-                } catch (Exception e) {
-                    SmartDashboard.putString("Vision/LoggingError", e.toString());
+                    // Log full Pose3d struct with only yaw (heading) for proper 3D visualization
+                    Rotation3d robotYawRotation = new Rotation3d(0, 0, yaw);
+                    Pose3d robotPose3d = new Pose3d(
+                            meterPose.getTranslation().getX(),
+                            meterPose.getTranslation().getY(),
+                            0.35, // bumper height in meters
+                            robotYawRotation);
+                    robotPose3dLogger.append(robotPose3d);
                 }
+
+                // IMPORTANT: Log camera->target transform (distance/bearing to tag)
+                // Camera frame coordinates (from PhotonVision):
+                // - X: forward distance (away from camera, along optical axis)
+                // - Y: left offset (horizontal, left of optical axis)
+                // - Z: up offset (vertical, above optical axis)
+                // AdvantageScope can use this to show tag position relative to camera
+                Transform3d camToTarget = target.getBestCameraToTarget();
+                bestTagXLogger.append(camToTarget.getTranslation().getX());
+                bestTagYLogger.append(camToTarget.getTranslation().getY());
+                bestTagZLogger.append(camToTarget.getTranslation().getZ());
+                // get yaw/pitch from tracked target
+                bestTagYawLogger.append(target.getYaw());
+                bestTagPitchLogger.append(target.getPitch());
+
+                // Log full Transform3d struct for proper camera->target 3D visualization
+                targetTransformLogger.append(camToTarget);
+
+                // SmartDashboard 3D values for debugging
+                Transform3d cameraToTarget = target.getBestCameraToTarget();
+                Translation3d translation = cameraToTarget.getTranslation();
+                double x = translation.getX();
+                double y = translation.getY();
+                double z = translation.getZ();
+
+                Rotation3d rotation = cameraToTarget.getRotation();
+                double yaw = Math.toDegrees(rotation.getZ());
+
+                SmartDashboard.putNumber("3D/X_Meters", x);
+                SmartDashboard.putNumber("3D/Y_Meters", y);
+                SmartDashboard.putNumber("3D/Z_Meters", z);
+                SmartDashboard.putNumber("3D/Yaw_Degrees", yaw);
+                SmartDashboard.putNumber("3D/Ambiguity", target.getPoseAmbiguity());
+
+                // Debug: log estimated robot position for AdvantageScope
+                if (estimated.isPresent()) {
+                    Pose3d est = estimated.get().estimatedPose;
+                    SmartDashboard.putNumber("Est/Robot/X", est.getX());
+                    SmartDashboard.putNumber("Est/Robot/Y", est.getY());
+                    SmartDashboard.putNumber("Est/Robot/Z", est.getZ());
+                    SmartDashboard.putNumber("Est/Robot/RotDeg", Math.toDegrees(est.getRotation().getZ()));
+                }
+
+            } catch (Exception e) {
+                SmartDashboard.putString("Vision/LoggingError", e.toString());
             }
 
-            lastLogTime = now;
         }
 
     }

@@ -3,6 +3,7 @@
 // the WPILib BSD license file in the root directory of this project.
 
 package frc.robot;
+
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -29,7 +30,7 @@ import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
-
+import edu.wpi.first.wpilibj.PS5Controller;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -40,7 +41,7 @@ import edu.wpi.first.wpilibj.Alert.AlertType;
  * build.gradle file in the
  * project.
  */
-public class Robot extends LoggedRobot {
+public class Robot extends TimedRobot {
     private Command m_autonomousCommand;
 
     private RobotContainer m_robotContainer;
@@ -48,7 +49,8 @@ public class Robot extends LoggedRobot {
     DoubleLogEntry myBatteryLog;
     StringLogEntry myStringLog;
     Alert alertTest = new Alert("This is a test!", AlertType.kError);
-     
+    DoubleLogEntry joystickLog;
+    PS5Controller driver = new PS5Controller(0);
 
     /**
      * This function is run when the robot is first started up and should be used
@@ -57,11 +59,6 @@ public class Robot extends LoggedRobot {
      */
     @Override
     public void robotInit() {
-        // Initialize AdvantageKit logging
-        Logger.addDataReceiver(new NT4Publisher()); // Publish data to NetworkTables
-        Logger.addDataReceiver(new WPILOGWriter()); // Save data to WPILOG file
-        Logger.start(); // Start logging
-        
         // Start Logging
         // Instantiate our RobotContainer. This will perform all our button bindings,
         // and put our autonomous chooser on the dashboard.
@@ -74,9 +71,9 @@ public class Robot extends LoggedRobot {
         Logger.recordMetadata("RobotMACAddress", "10");
         Logger.recordMetadata("RobotInstance", "Trojans");
         Logger.recordMetadata("BuildDate", "11/12/25");
-        
-        alertTest.set(true); //Show alertTest
-        
+
+        alertTest.set(true); // Show alertTest
+
         DataLogManager.start();
         // Set up custom log entries
         DataLog log = DataLogManager.getLog();
@@ -85,9 +82,12 @@ public class Robot extends LoggedRobot {
         myBatteryLog = new DoubleLogEntry(log, "/my/BatteryVoltage");
         myStringLog = new StringLogEntry(log, "/my/string");
 
-        // Note: addPeriodic not supported by LoggedRobot, battery logging moved to robotPeriodic
-   
-        DriverStation.startDataLog(DataLogManager.getLog());
+        addPeriodic(() -> {
+            myBatteryLog.update(RobotController.getBatteryVoltage(), RobotController.getFPGATime());
+        }, 2.00, 0.00);
+        DataLogManager.start();
+        DataLog Log = DataLogManager.getLog();
+        joystickLog = new DoubleLogEntry(Log, "/driver/leftStick");
 
     }
 
@@ -112,14 +112,22 @@ public class Robot extends LoggedRobot {
         // and running subsystem periodic() methods. This must be called from the
         // robot's periodic
         // block in order for anything in the Command-based framework to work.
-        CommandScheduler.getInstance().run();
-        m_robotContainer.robotPeriodic();
+        try {
+            CommandScheduler.getInstance().run();
+            if (m_robotContainer != null) {
+                m_robotContainer.robotPeriodic();
+            }
+        } catch (Exception e) {
+            SmartDashboard.putString("Robot/robotPeriodic Error", e.toString());
+        }
 
-        /* double batteryVoltage = RobotController.getBatteryVoltage();
-        long microsecondTimestamp = RobotController.getFPGATime();
-        if(microsecondTimestamp-)
-        myBatteryLog.update(batteryVoltage,microsecondTimestamp); */
-        
+        /*
+         * double batteryVoltage = RobotController.getBatteryVoltage();
+         * long microsecondTimestamp = RobotController.getFPGATime();
+         * if(microsecondTimestamp-)
+         * myBatteryLog.update(batteryVoltage,microsecondTimestamp);
+         */
+
     }
 
     /** This function is called once each time the robot enters Disabled mode. */
@@ -173,21 +181,26 @@ public class Robot extends LoggedRobot {
     /** This function is called periodically during operator control. */
     @Override
     public void teleopPeriodic() {
-        // m_robotContainer.getLeds().Rainbow();
+        try {
+            // Get current pose safely
+            if (m_robotContainer != null && m_robotContainer.swerve != null) {
+                // Pose2d currentPose = m_robotContainer.swerve.getPose();
+                // Pose2d tagPose = m_robotContainer.vision.getPoseOfClosestReef();
+                // ... rest of pose handling ...
+            }
 
-        Pose2d currentPose = m_robotContainer.swerve.getPose();
-        //Pose2d tagPose = m_robotContainer.vision.getPoseOfClosestReef();
+            // Get joystick input safely
+            if (driver != null) {
+                double speed = driver.getLeftY();
+                if (joystickLog != null) {
+                    joystickLog.append(speed);
+                }
+            }
+        } catch (Exception e) {
+            SmartDashboard.putString("Robot/teleopPeriodic Error", e.toString());
 
-        // if (tagPose != null)
-        // {
-        //     Translation2d currentTranslation = currentPose.getTranslation();
-        //     Translation2d newTranslation = tagPose.getTranslation();
+        }
 
-        //     double distance = currentTranslation.getDistance(newTranslation);
-        //     SmartDashboard.putNumber("LockOnDistance", distance);
-        //     SmartDashboard.putNumber("LockOnDistance - X", Units.metersToInches(currentTranslation.getX() - newTranslation.getX()));
-        //     SmartDashboard.putNumber("LockOnDistance - Y", Units.metersToInches(currentTranslation.getY() - newTranslation.getY()));
-        // }
     }
 
     @Override
@@ -200,7 +213,13 @@ public class Robot extends LoggedRobot {
     /** This function is called periodically during test mode. */
     @Override
     public void testPeriodic() {
-        m_robotContainer.getLeds().Rainbow();
+        try {
+            if (m_robotContainer != null && m_robotContainer.getLeds() != null) {
+                m_robotContainer.getLeds().Rainbow();
+            }
+        } catch (Exception e) {
+            SmartDashboard.putString("Robot/testPeriodic Error", e.toString());
+        }
     }
 
     /** This function is called once when the robot is first started up. */
@@ -212,5 +231,5 @@ public class Robot extends LoggedRobot {
     @Override
     public void simulationPeriodic() {
     }
-    
+
 }

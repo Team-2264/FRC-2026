@@ -60,11 +60,11 @@ public class DriveToTag extends Command {
             
             double distanceToGo = tagX - targetDistance;
             
-            // Check if we've reached the target
+            // Check if we've reached the target and are flat to the tag
             if (distanceToGo <= 0.1 && Math.abs(tagY) < 0.15) {
                 reachedTarget = true;
                 swerve.drive(new Translation2d(0, 0), 0);
-                swerve.setFieldRelative(true);  // Reset field relative immediately
+                swerve.setFieldRelative(true);
                 SmartDashboard.putString("DriveToTag/Status", "REACHED");
                 return;
             }
@@ -77,12 +77,13 @@ public class DriveToTag extends Command {
                 forwardSpeed = Math.max(forwardSpeed, 0.15);
             }
             
-            // Strafe speed - move sideways to center on tag (reduced gain)
-            double strafeSpeed = tagY * 1.0;  // Proportional to offset
+            // Strafe speed - move sideways to center on tag
+            double strafeSpeed = tagY * 1.0;
             strafeSpeed = clamp(strafeSpeed, -MAX_STRAFE_SPEED, MAX_STRAFE_SPEED);
             
-            // Rotation speed - turn to face the tag (reduced gain)
-            double rotSpeed = angleToTag * 1.5;  // Proportional to angle
+            // Rotation speed - drive tagY to zero so robot ends up FLAT (perpendicular) to the tag
+            // When tagY is 0, we are directly in front of the tag = flat/square alignment
+            double rotSpeed = tagY * 2.0;
             rotSpeed = clamp(rotSpeed, -MAX_ROT_SPEED, MAX_ROT_SPEED);
             
             swerve.setFieldRelative(false);
