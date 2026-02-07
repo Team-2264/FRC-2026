@@ -138,7 +138,7 @@ public class RobotContainer {
 
         // on target acquired -> short green pulse + small rumble
         hasVisionTarget.onTrue(new InstantCommand(() -> {
-            setLedOverride(0, 255, 0, 0.25); // green transient
+            setLedOverride(0, 255, 0, 1.0); // green transient (1s)
             controller.getHID().setRumble(GenericHID.RumbleType.kLeftRumble, 0.35);
         }).andThen(new WaitCommand(0.15)).andThen(new InstantCommand(() -> {
             controller.getHID().setRumble(GenericHID.RumbleType.kLeftRumble, 0.0);
@@ -186,6 +186,12 @@ public class RobotContainer {
         double battery = edu.wpi.first.wpilibj.RobotController.getBatteryVoltage();
         if (battery < 7.5) {
             leds.setRGB(255, 0, 0); // critical red
+            return;
+        }
+
+        // Vision has next priority: if we have an estimated pose, show green while present
+        if (visionPose.isPresent()) {
+            leds.setRGB(0, 255, 0);
             return;
         }
 
