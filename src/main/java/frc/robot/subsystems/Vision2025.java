@@ -551,16 +551,16 @@ public class Vision2025 extends SubsystemBase {
                     robotPoseXLogger.append(meterPose.getTranslation().getX());
                     robotPoseYLogger.append(meterPose.getTranslation().getY());
                     // log rotation in degrees (yaw)
-                    robotPoseRotLogger.append(Math.toDegrees(meterPose.getRotation().getZ()));
+                    double yaw = meterPose.getRotation().getZ(); // radians
+                    robotPoseRotLogger.append(Math.toDegrees(yaw));
 
-                    // Log full Pose3d struct with realistic bumper height (~0.35m)
-                    // for proper 3D visualization in AdvantageScope
-                    // AdvantageScope expects Z > 0 so robot appears above ground plane
+                    // Log full Pose3d struct with only yaw (heading) for proper 3D visualization
+                    Rotation3d robotYawRotation = new Rotation3d(0, 0, yaw);
                     Pose3d robotPose3d = new Pose3d(
                             meterPose.getTranslation().getX(),
                             meterPose.getTranslation().getY(),
                             0.35, // bumper height in meters
-                            meterPose.getRotation());
+                            robotYawRotation);
                     robotPose3dLogger.append(robotPose3d);
                 }
 
