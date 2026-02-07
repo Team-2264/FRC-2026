@@ -107,6 +107,20 @@ public class RobotContainer {
             edu.wpi.first.wpilibj2.command.CommandScheduler.getInstance().cancel(driveToTagCommand);
         }));
     }
+        // on target acquired -> short green pulse + small rumble
+        hasVisionTarget.onTrue(new InstantCommand(() -> {
+            setLedOverride(0, 255, 0, 1.0); // green transient (1s)
+            controller.getHID().setRumble(GenericHID.RumbleType.kLeftRumble, 0.35);
+        }).andThen(new WaitCommand(0.15)).andThen(new InstantCommand(() -> {
+            controller.getHID().setRumble(GenericHID.RumbleType.kLeftRumble, 0.0);
+        })));
+
+        // on target lost -> short red pulse
+        hasVisionTarget.onFalse(new InstantCommand(() -> setLedOverride(255, 0, 0, 0.3)));
+
+        // NOTE: don't set a default LED command (we control LEDs from robotPeriodic() to enforce priorities)
+    }
+    
 
      /**
      * Returns the command to run in autonomous mode.
@@ -132,6 +146,57 @@ public class RobotContainer {
         }
 
         
+        // --- LED priority handling ---
+        long now = System.currentTimeMillis();
+        // If a transient override is active, apply it
+        if (now < ledOverrideUntil) {
+            leds.setRGB(ledOverrideR, ledOverrideG, ledOverrideB);
+            return;
+        }
+
+        // Low battery has highest priority for this set
+        double battery = edu.wpi.first.wpilibj.RobotController.getBatteryVoltage();
+        if (battery < 7.5) {
+            leds.setRGB(255, 0, 0); // critical red
+            return;
+        }
+
+        // Vision has next priority: if we have an estimated pose, show green while present
+        if (visionPose.isPresent()) {
+            leds.setRGB(0, 255, 0);
+            return;
+        }
+
+        // Intake status
+        try {
+            var intakeStatus = m_intake.getIntakeStatus();
+            if (intakeStatus == frc.robot.enums.CoralIntakeStatus.INTAKING) {
+                leds.setRGB(0, 0, 255); // blue while intaking
+                return;
+            }
+            if (m_intake.isCoralPresent()) {
+                leds.setRGB(128, 0, 128); // purple when holding
+                return;
+            }
+        } catch (Exception e) {
+            // if intake subsystem not ready, continue to default
+        }
+
+        // Default team color
+        leds.setRGB(255, 255, 0);
+
+        
+    }
+
+    /**
+     * Request a transient LED override color for a duration in seconds.
+     * This is used for confirmations like gyro-zero or vision acquire.
+     */
+    private void setLedOverride(int r, int g, int b, double durationSeconds) {
+        ledOverrideR = r;
+        ledOverrideG = g;
+        ledOverrideB = b;
+        ledOverrideUntil = System.currentTimeMillis() + (long)(durationSeconds * 1000.0);
     }
 
     public Leds getLeds() {
