@@ -4,8 +4,8 @@
 
 package frc.robot;
 
-import frc.robot.commands.AlignToTag;
 import frc.robot.commands.AlignHeadingToTag10;
+import frc.robot.commands.AlignToTag;
 import frc.robot.commands.DriveToTag;
 import frc.robot.commands.TeleopSwerve;
 import frc.robot.commands.ToggleTurbo;
@@ -14,28 +14,22 @@ import frc.robot.commands.locks.UnlockSwerve;
 import frc.robot.subsystems.Leds;
 import frc.robot.subsystems.Swerve;
 import frc.robot.subsystems.Vision2025;
+import edu.wpi.first.wpilibj.GenericHID;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandPS4Controller;
-import edu.wpi.first.wpilibj.GenericHID;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import java.util.Optional;
 import org.photonvision.EstimatedRobotPose;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import frc.robot.subsystems.CoralArm;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
 
 /**
- * This class is where the bulk of the robot should be declared. Since
- * Command-based is a "declarative" paradigm, very little robot logic should
- * actually be handled in the {@link Robot} periodic methods (other than the
- * scheduler calls). Instead, the structure of the robot (including subsystems,
- * commands, and trigger mappings) should be declared here.
+ * This class is where the bulk of the robot should be declared.
  */
 public class RobotContainer {
     // Subsystems
@@ -65,18 +59,13 @@ public class RobotContainer {
      * The container for the robot. Contains subsystems, OI devices, and commands.
      */
     public RobotContainer() {
-        // Register named commands for autonomous - pathplanner
-
         NamedCommands.registerCommand("lockSwerve", new LockSwerve(swerve));
         NamedCommands.registerCommand("unlockSwerve", new UnlockSwerve(swerve));
 
-        // Configure the button bindings
         configureBindings();
 
-        // Set up autonomous
-        autoChooser = AutoBuilder.buildAutoChooser(); // Default auto will be `Commands.none()`
+        autoChooser = AutoBuilder.buildAutoChooser();
         SmartDashboard.putData("Auto Mode", autoChooser);
-
     }
 
     /**
@@ -131,10 +120,6 @@ public class RobotContainer {
         }).andThen(new WaitCommand(0.15)).andThen(new InstantCommand(() -> {
             controller.getHID().setRumble(GenericHID.RumbleType.kLeftRumble, 0.0);
         })));
-
-        // on target lost -> short red pulse
-        hasVisionTarget.onFalse(new InstantCommand(() -> setLedOverride(255, 0, 0, 0.3)));
-
         // NOTE: don't set a default LED command (we control LEDs from robotPeriodic()
         // to enforce priorities)
     }
@@ -146,7 +131,6 @@ public class RobotContainer {
      */
     public Command getAutonomousCommand() {
         return autoChooser.getSelected();
-
     }
 
     /**
@@ -157,7 +141,6 @@ public class RobotContainer {
         Optional<EstimatedRobotPose> visionPose = vision.getEstimatedPose();
         SmartDashboard.putBoolean("vision pose", visionPose.isPresent());
 
-        // add vision pose to
         if (visionPose.isPresent()) {
             swerve.addVisionMeasurement(visionPose.get());
         }
@@ -211,5 +194,4 @@ public class RobotContainer {
     public Leds getLeds() {
         return leds;
     }
-
 }

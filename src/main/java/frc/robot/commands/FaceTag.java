@@ -25,6 +25,11 @@ public class FaceTag extends Command {
 
     @Override
     public void initialize(){
+        // Guard against null or empty targetIds array to prevent crash
+        if (vision.targetIds == null || vision.targetIds.length == 0 || tagId >= vision.targetIds.length) {
+            return;  // No targets visible, do nothing
+        }
+        
         Translation2d tagtranslation = switch(vision.targetIds[tagId]){ //vision.targetIds[vision.getClosestTarget()]
             case 6 -> Constants.ReefTagLocation.tag6.getWpiBlue().getTranslation().toTranslation2d();
             case 7 -> Constants.ReefTagLocation.tag7.getWpiBlue().getTranslation().toTranslation2d();

@@ -12,17 +12,17 @@ import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
-
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.DataLogManager;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.util.datalog.DataLog;
 import edu.wpi.first.util.datalog.IntegerLogEntry;
 import edu.wpi.first.util.datalog.DoubleLogEntry;
@@ -47,16 +47,23 @@ public class Vision2025 extends SubsystemBase {
      */
     public Vision2025() {
         camera = new PhotonCamera(Constants.Vision.cameraName);
-        aprilTagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2025ReefscapeWelded);
+        aprilTagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
 
+        // Construct the estimator with PoseStrategy.LOWEST_AMBIGUITY
+        // The 3-argument constructor takes (layout, strategy, robotToCamera)
         estimator = new PhotonPoseEstimator(
                 aprilTagFieldLayout,
                 Constants.Vision.robotToCamera);
 
-        estimator.setRobotToCameraTransform(Constants.Vision.robotToCamera);
+        // Set initial pose to middle of field (for coprocessor multi-tag sync if
+        // enabled)
+        // 2025 field is 16.54m x 8.23m, blue origin at (0,0)
+        // Center is approximately at (8.27, 4.11) in field coordinates
+        estimator.setLastPose(new Pose3d(8.27, 4.11, 0.35, new Rotation3d()));
 
         field = new Field2d();
 
+        // Start data logging and create entries
         DataLogManager.start();
         DataLog log = DataLogManager.getLog();
         tagNumberLogger = new IntegerLogEntry(log, "/Vision/TagNumber");
@@ -80,7 +87,6 @@ public class Vision2025 extends SubsystemBase {
             // take the last (most recent) unread result
             latestResult = results.get(results.size() - 1);
         }
-        // if there are no unread results, latestResult stays as-is
     }
 
     /**
@@ -420,11 +426,6 @@ public class Vision2025 extends SubsystemBase {
         return Optional.of(Math.toDegrees(headingError));
     }
 
-    /**
-     * track IDs of detected April Tags
-     */
-    public int[] targetIds;
-
     // ========== DriveToTag Helper Methods ==========
 
     /**
@@ -452,6 +453,23 @@ public class Vision2025 extends SubsystemBase {
             return Optional.empty();
         }
         return tagPose(bestId.get());
+    }
+
+    /**
+     * Returns the camera-to-target transform for a specific tag ID if visible.
+     * 
+     * @param tagId fiducial ID to search for
+     * @return Optional containing Transform3d camera->target, or empty if not
+     *         visible
+     */
+    public Optional<Transform3d> getTransformToTag(int tagId) {
+        if (latestResult == null || !latestResult.hasTargets()) {
+            return Optional.empty();
+        }
+        return latestResult.getTargets().stream()
+                .filter(t -> t.getFiducialId() == tagId)
+                .findFirst()
+                .map(t -> t.getBestCameraToTarget());
     }
 
     /**
@@ -526,6 +544,11 @@ public class Vision2025 extends SubsystemBase {
     }
 
     /**
+     * track IDs of detected April Tags
+     */
+    public int[] targetIds;
+
+    /**
      * Periodicly update SmartDashboard and track april tags.
      */
     @Override
@@ -565,11 +588,13 @@ public class Vision2025 extends SubsystemBase {
         if (estimated.isEmpty()) {
             estimated = estimator.estimateLowestAmbiguityPose(latestResult);
         }
+
         SmartDashboard.putBoolean("vision-estimated:", estimated.isPresent());
 
         if (estimated.isPresent()) {
             Pose3d meterPose = estimated.get().estimatedPose;
-            field.setRobotPose(meterPose.getX(), meterPose.getY(), meterPose.getRotation().toRotation2d());
+            // Update Field2d with a Pose2d (use Pose2d constructor)
+            field.setRobotPose(new Pose2d(meterPose.getX(), meterPose.getY(), meterPose.getRotation().toRotation2d()));
 
             Pose3d inchPose = new Pose3d(
                     meterPose.getTranslation().getX() * 39.3701,
@@ -596,7 +621,7 @@ public class Vision2025 extends SubsystemBase {
             if (latestResult.hasTargets()) {
                 var target = latestResult.getBestTarget();
                 int tagNumber = target.getFiducialId();
-                double dist = latestResult.getBestTarget().getBestCameraToTarget().getX();
+                double dist = target.getBestCameraToTarget().getX();
 
                 tagNumberLogger.append(tagNumber); // log the tag number
                 distancelog.append(dist); // log the distance from the tag
