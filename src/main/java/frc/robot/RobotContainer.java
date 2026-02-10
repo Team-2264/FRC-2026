@@ -6,6 +6,7 @@ package frc.robot;
 
 import frc.robot.commands.AlignToShoot;
 import frc.robot.commands.DriveToTag;
+import frc.robot.commands.DriveToTag10;
 import frc.robot.commands.FaceGoal;
 import frc.robot.commands.ShootBall;
 import frc.robot.commands.TeleopSwerve;
@@ -27,14 +28,14 @@ import org.photonvision.EstimatedRobotPose;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 
-
 /**
  * This class is where the bulk of the robot should be declared.
  */
 public class RobotContainer {
     // Subsystems
     public final Swerve swerve = new Swerve();
-    public final Leds leds = new Leds(Constants.LedStrip.pwmPort, Constants.LedStrip.numLeds, Constants.LedStrip.scaleFactor);
+    public final Leds leds = new Leds(Constants.LedStrip.pwmPort, Constants.LedStrip.numLeds,
+            Constants.LedStrip.scaleFactor);
     public final Vision2025 vision = new Vision2025();
     public final Shooter shooter = new Shooter();
 
@@ -71,11 +72,12 @@ public class RobotContainer {
         controller.triangle().whileTrue(new ShootBall(shooter, vision));
 
         // Cross (X) - TOGGLE: strafe left from tag 12 until sees 9/10, then align to 10
-        //             Press X to start, press X again to cancel
+        // Press X to start, press X again to cancel
         AlignToShoot alignToShootCommand = new AlignToShoot(swerve, vision);
         controller.cross().toggleOnTrue(alignToShootCommand);
 
-        // Square - Press once to drive toward the nearest visible tag (auto-stops at 0.5m)
+        // Square - Press once to drive toward the nearest visible tag (auto-stops at
+        // 0.5m)
         DriveToTag driveToTagCommand = new DriveToTag(swerve, vision);
         controller.square().onTrue(driveToTagCommand);
 
@@ -88,6 +90,9 @@ public class RobotContainer {
 
         // D-pad DOWN - Face Goal: rotate to face the reef center from any position
         controller.pov(180).onTrue(new FaceGoal(swerve));
+
+        // D-pad LEFT - Drive to 5 feet in front of AprilTag 10
+        controller.pov(270).onTrue(new DriveToTag10(swerve, vision));
     }
 
     public Command getAutonomousCommand() {

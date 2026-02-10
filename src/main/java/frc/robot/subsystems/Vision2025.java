@@ -465,6 +465,7 @@ public class Vision2025 extends SubsystemBase {
 
     /**
      * Get the fiducial ID of the best visible target.
+     * 
      * @return Optional containing the tag ID, or empty if no target visible
      */
     public Optional<Integer> getBestTargetId() {
@@ -476,8 +477,10 @@ public class Vision2025 extends SubsystemBase {
 
     /**
      * Get the transform to a specific AprilTag by ID.
+     * 
      * @param tagId The fiducial ID of the tag to find
-     * @return Optional containing the Transform3d to that tag, or empty if not visible
+     * @return Optional containing the Transform3d to that tag, or empty if not
+     *         visible
      */
     public Optional<Transform3d> getTransformToTag(int tagId) {
         if (latestResult == null || !latestResult.hasTargets()) {
@@ -493,7 +496,8 @@ public class Vision2025 extends SubsystemBase {
 
     /**
      * Calculate the target pose for the robot to be positioned in front of a tag.
-     * @param tagPose The field pose of the AprilTag
+     * 
+     * @param tagPose  The field pose of the AprilTag
      * @param distance How far in front of the tag to position (meters)
      * @return The target Pose2d for the robot
      */
@@ -503,6 +507,26 @@ public class Vision2025 extends SubsystemBase {
         double offsetY = tagPose.getY() + distance * tagRotation.getSin();
         Rotation2d robotRotation = tagRotation.plus(Rotation2d.fromDegrees(180));
         return new Pose2d(offsetX, offsetY, robotRotation);
+    }
+
+    /**
+     * Returns the Pose2d the robot should drive to in order to be a given distance
+     * directly in front of AprilTag 10, facing the tag.
+     *
+     * Uses the field layout to look up tag 10's 3D pose, then offsets along the
+     * tag's facing direction so the robot ends up in front of it.
+     *
+     * @param distanceMeters how far in front of the tag (meters)
+     * @return Optional containing the target Pose2d, or empty if tag 10 is not in
+     *         the layout
+     */
+    public Optional<Pose2d> getTag10TargetPose(double distanceMeters) {
+        Optional<Pose3d> tag10Pose3d = aprilTagFieldLayout.getTagPose(10);
+        if (tag10Pose3d.isEmpty()) {
+            return Optional.empty();
+        }
+        Pose2d tag10Pose = tag10Pose3d.get().toPose2d();
+        return Optional.of(calculateTargetPose(tag10Pose, distanceMeters));
     }
 
     /**
