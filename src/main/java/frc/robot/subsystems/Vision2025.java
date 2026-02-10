@@ -502,9 +502,13 @@ public class Vision2025 extends SubsystemBase {
      * @return The target Pose2d for the robot
      */
     public Pose2d calculateTargetPose(Pose2d tagPose, double distance) {
+        // AprilTag rotation points OUTWARD from the surface it's mounted on.
+        // To place the robot IN FRONT of the tag (facing it), we subtract the
+        // offset so the target is on the field side of the tag, not behind it.
         Rotation2d tagRotation = tagPose.getRotation();
-        double offsetX = tagPose.getX() + distance * tagRotation.getCos();
-        double offsetY = tagPose.getY() + distance * tagRotation.getSin();
+        double offsetX = tagPose.getX() - distance * tagRotation.getCos();
+        double offsetY = tagPose.getY() - distance * tagRotation.getSin();
+        // Robot should face toward the tag (opposite of the tag's outward direction)
         Rotation2d robotRotation = tagRotation.plus(Rotation2d.fromDegrees(180));
         return new Pose2d(offsetX, offsetY, robotRotation);
     }

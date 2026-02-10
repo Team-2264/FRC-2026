@@ -45,7 +45,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.util.datalog.DataLog;
 
-
 /**
  * The Swerve class represents a swerve drive subsystem for a robot.
  * This class handles swerve modules, odometry, and gyro integration.
@@ -62,11 +61,20 @@ public class Swerve extends SubsystemBase {
 
     private boolean fieldRelative = true;
 
-    private PIDController xPID = new PIDController(Constants.Swerve.translationKp, Constants.Swerve.translationKi, Constants.Swerve.translationKd);
-    private PIDController yPID = new PIDController(Constants.Swerve.translationKp, Constants.Swerve.translationKi, Constants.Swerve.translationKd);
-    private PIDController rotationController = new PIDController(Constants.Swerve.rotationKp, Constants.Swerve.rotationKi, Constants.Swerve.rotationKd);
+    private PIDController xPID = new PIDController(Constants.Swerve.translationKp, Constants.Swerve.translationKi,
+            Constants.Swerve.translationKd);
+    private PIDController yPID = new PIDController(Constants.Swerve.translationKp, Constants.Swerve.translationKi,
+            Constants.Swerve.translationKd);
+    private PIDController rotationController = new PIDController(Constants.Swerve.rotationKp,
+            Constants.Swerve.rotationKi, Constants.Swerve.rotationKd);
 
-    private PIDController rotationLockController = new PIDController(Constants.Swerve.rotationLockKP, Constants.Swerve.rotationLockKI, Constants.Swerve.rotationLockKD);
+    private PIDController rotationLockController = new PIDController(Constants.Swerve.rotationLockKP,
+            Constants.Swerve.rotationLockKI, Constants.Swerve.rotationLockKD);
+    {
+        // Enable continuous input so the PID takes the shortest path around
+        // the circle (e.g. 170° → -170° is a 20° error, not 340°).
+        rotationLockController.enableContinuousInput(-Math.PI, Math.PI);
+    }
     private Optional<Translation2d> lockedOnto = Optional.empty();
 
     private final SwerveDrivePoseEstimator poseEstimator;
@@ -85,7 +93,7 @@ public class Swerve extends SubsystemBase {
     private DoubleLogEntry gyroRollLog;
     private DoubleLogEntry gyroYawRateLog;
 
-    //Alert Mod0Alert = new Alert()
+    // Alert Mod0Alert = new Alert()
 
     /**
      * Constructs a Swerve subsystem instance.
@@ -98,29 +106,29 @@ public class Swerve extends SubsystemBase {
 
         // Init Modules
         swerveModules = new SwerveModule[] {
-            new SwerveModule(0,
-                Constants.Swerve.Mod0.driveMotorID,
-                Constants.Swerve.Mod0.angleMotorID,
-                Constants.Swerve.Mod0.angleEncoderID,
-                Constants.Swerve.Mod0.angleOffset),
+                new SwerveModule(0,
+                        Constants.Swerve.Mod0.driveMotorID,
+                        Constants.Swerve.Mod0.angleMotorID,
+                        Constants.Swerve.Mod0.angleEncoderID,
+                        Constants.Swerve.Mod0.angleOffset),
 
-            new SwerveModule(1,
-                Constants.Swerve.Mod1.driveMotorID,
-                Constants.Swerve.Mod1.angleMotorID,
-                Constants.Swerve.Mod1.angleEncoderID,
-                Constants.Swerve.Mod1.angleOffset),
+                new SwerveModule(1,
+                        Constants.Swerve.Mod1.driveMotorID,
+                        Constants.Swerve.Mod1.angleMotorID,
+                        Constants.Swerve.Mod1.angleEncoderID,
+                        Constants.Swerve.Mod1.angleOffset),
 
-            new SwerveModule(2,
-                Constants.Swerve.Mod2.driveMotorID,
-                Constants.Swerve.Mod2.angleMotorID,
-                Constants.Swerve.Mod2.angleEncoderID,
-                Constants.Swerve.Mod2.angleOffset),
+                new SwerveModule(2,
+                        Constants.Swerve.Mod2.driveMotorID,
+                        Constants.Swerve.Mod2.angleMotorID,
+                        Constants.Swerve.Mod2.angleEncoderID,
+                        Constants.Swerve.Mod2.angleOffset),
 
-            new SwerveModule(3,
-                Constants.Swerve.Mod3.driveMotorID,
-                Constants.Swerve.Mod3.angleMotorID,
-                Constants.Swerve.Mod3.angleEncoderID,
-                Constants.Swerve.Mod3.angleOffset),
+                new SwerveModule(3,
+                        Constants.Swerve.Mod3.driveMotorID,
+                        Constants.Swerve.Mod3.angleMotorID,
+                        Constants.Swerve.Mod3.angleEncoderID,
+                        Constants.Swerve.Mod3.angleOffset),
 
         };
 
@@ -135,36 +143,34 @@ public class Swerve extends SubsystemBase {
         Module3SpeedLog = new DoubleLogEntry(log, "/my/SpeedModule3");
         Module3AngleLog = new DoubleLogEntry(log, "/my/AngleModule3");
 
-        poseEstimator = new SwerveDrivePoseEstimator(Constants.Swerve.swerveKinematics, getGyroAngle(), getModulePositions(), Constants.Swerve.initialPose);
-        
+        poseEstimator = new SwerveDrivePoseEstimator(Constants.Swerve.swerveKinematics, getGyroAngle(),
+                getModulePositions(), Constants.Swerve.initialPose);
+
         gyroYawLog = new DoubleLogEntry(log, "/swerve/gyro/yaw");
         gyroPitchLog = new DoubleLogEntry(log, "/swerve/gyro/pitch");
         gyroRollLog = new DoubleLogEntry(log, "/swerve/gyro/roll");
         gyroYawRateLog = new DoubleLogEntry(log, "/swerve/gyro/yawRate");
 
-
-        
         // Configure AutoBuilder
         AutoBuilder.configure(
-            this::getPose, 
-            this::setPose, 
-            this::getChassisSpeeds, 
-            (speeds, feedforwards) -> drive(speeds), 
-            Constants.Swerve.pathFollowerConfig, // controller
-            Constants.Swerve.config,// add robot configuration here
-            () -> {
-                // Boolean supplier that controls when the path will be mirrored for the red alliance
-                // This will flip the path being followed to the red side of the field.
-                // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
-                var alliance = DriverStation.getAlliance();
-                if (alliance.isPresent()) {
-                    return alliance.get() == DriverStation.Alliance.Red;
-                }
-                return false;
-            },
-            this
-        );
-
+                this::getPose,
+                this::setPose,
+                this::getChassisSpeeds,
+                (speeds, feedforwards) -> drive(speeds),
+                Constants.Swerve.pathFollowerConfig, // controller
+                Constants.Swerve.config, // add robot configuration here
+                () -> {
+                    // Boolean supplier that controls when the path will be mirrored for the red
+                    // alliance
+                    // This will flip the path being followed to the red side of the field.
+                    // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
+                    var alliance = DriverStation.getAlliance();
+                    if (alliance.isPresent()) {
+                        return alliance.get() == DriverStation.Alliance.Red;
+                    }
+                    return false;
+                },
+                this);
 
         // Init Field
         field = new Field2d();
@@ -186,26 +192,26 @@ public class Swerve extends SubsystemBase {
             field.getObject("path").setPoses(poses);
 
         });
-        
+
     }
-    
+
     public void lockOnto(Translation2d translation2d) {
         rotationLockController.reset();
-        
+
         lockedOnto = Optional.of(translation2d);
 
     }
 
     public void unlock() {
         lockedOnto = Optional.empty();
-        
+
     }
 
     public boolean locked() {
         return lockedOnto.isPresent();
 
     }
-    
+
     /**
      * Drives the swerve drive based on field-relative {@link ChassisSpeeds}.
      */
@@ -222,23 +228,27 @@ public class Swerve extends SubsystemBase {
     public boolean getFieldRelative() {
         return fieldRelative;
     }
-    
+
     /**
      * Drives the swerve drive based on translation and rotation inputs.
      *
-     * @param translation The translation vector representing movement in x and y directions.
+     * @param translation The translation vector representing movement in x and y
+     *                    directions.
      * @param rotation    The rotation value for the swerve drive.
      */
     public void drive(Translation2d translation, double rotation) {
-        if(lockedOnto.isPresent()) {
+        if (lockedOnto.isPresent()) {
             swerveStatus = SwerveStatus.LOCKED;
 
             Pose2d robot_pose = getPose();
 
-            Translation2d look_vector = lockedOnto.get().minus(robot_pose.getTranslation()); // Vector from robot to target
-            Rotation2d look_rotation = new Rotation2d(look_vector.getX(), look_vector.getY()).rotateBy(new Rotation2d(Math.PI)); // Rotation of vector
+            Translation2d look_vector = lockedOnto.get().minus(robot_pose.getTranslation()); // Vector from robot to
+                                                                                             // target
+            Rotation2d look_rotation = new Rotation2d(look_vector.getX(), look_vector.getY())
+                    .rotateBy(new Rotation2d(Math.PI)); // Rotation of vector
 
-            double targetRotationOffest = MathUtil.angleModulus(look_rotation.minus(robot_pose.getRotation()).getRadians());
+            double targetRotationOffest = MathUtil
+                    .angleModulus(look_rotation.minus(robot_pose.getRotation()).getRadians());
 
             double targetRotation = robot_pose.getRotation().getRadians() + targetRotationOffest;
 
@@ -248,7 +258,6 @@ public class Swerve extends SubsystemBase {
                 rotation = rotationLockController.calculate(robot_pose.getRotation().getRadians(), targetRotation) * 3;
             }
 
-
         } else {
             swerveStatus = SwerveStatus.TELEOP;
 
@@ -257,37 +266,48 @@ public class Swerve extends SubsystemBase {
         rotation = Math2264.limitMagnitude(rotation, Constants.Swerve.maxAngularVelocity);
         Translation2d limitedTranslation = Math2264.limitMagnitude(translation, maximumSpeed());
 
-        ChassisSpeeds chassisSpeeds = fieldRelative ? ChassisSpeeds.fromFieldRelativeSpeeds(limitedTranslation.getX(), limitedTranslation.getY(), rotation, getGyroAngle()): new ChassisSpeeds(limitedTranslation.getX(), limitedTranslation.getY(), rotation);
+        ChassisSpeeds chassisSpeeds = fieldRelative
+                ? ChassisSpeeds.fromFieldRelativeSpeeds(limitedTranslation.getX(), limitedTranslation.getY(), rotation,
+                        getGyroAngle())
+                : new ChassisSpeeds(limitedTranslation.getX(), limitedTranslation.getY(), rotation);
 
         drive(chassisSpeeds);
     }
 
-    /** 
-     * Will drive to a supplied Pose2d. Must be called repeatedly, in the corresponding command.
+    /**
+     * Will drive to a supplied Pose2d. Must be called repeatedly, in the
+     * corresponding command.
+     * 
      * @param targetPose The desired Pose2d to drive to.
      */
     public void driveToPose(Pose2d targetPose) {
-        
-        Pose2d currentPose = getPose(); 
+
+        Pose2d currentPose = getPose();
         // Translation2d currentTranslation = currentPose.getTranslation();
         // Translation2d newTranslation = targetPose.getTranslation();
         // Rotation2d currentRotation = currentPose.getRotation();
         // Rotation2d newRotation = targetPose.getRotation();
-        
+
         // // calculate new x and y movement
-        // double xSpeed = xPID.calculate(currentTranslation.getX(), newTranslation.getX());
-        // double ySpeed = yPID.calculate(currentTranslation.getY(), newTranslation.getY());
-        
+        // double xSpeed = xPID.calculate(currentTranslation.getX(),
+        // newTranslation.getX());
+        // double ySpeed = yPID.calculate(currentTranslation.getY(),
+        // newTranslation.getY());
+
         // // calculate new rotation
-        // double rotationSpeed = rotationController.calculate(currentRotation.getRadians(), newRotation.getRadians());
+        // double rotationSpeed =
+        // rotationController.calculate(currentRotation.getRadians(),
+        // newRotation.getRadians());
 
         // // limit the speed, so we don't break anything
         // xSpeed = Math2264.limitMagnitude(xSpeed, maximumSpeed());
         // ySpeed = Math2264.limitMagnitude(ySpeed, maximumSpeed());
-        // rotationSpeed = Math2264.limitMagnitude(rotationSpeed, Constants.Swerve.maxAngularVelocity);
-        
+        // rotationSpeed = Math2264.limitMagnitude(rotationSpeed,
+        // Constants.Swerve.maxAngularVelocity);
+
         // //make chassisSpeeds, and drive!!
-        // ChassisSpeeds chassisSpeeds = new ChassisSpeeds(xSpeed, ySpeed, rotationSpeed);
+        // ChassisSpeeds chassisSpeeds = new ChassisSpeeds(xSpeed, ySpeed,
+        // rotationSpeed);
         // drive(chassisSpeeds);
 
         if (targetPose == null) {
@@ -297,12 +317,13 @@ public class Swerve extends SubsystemBase {
         double xSpeed = xPID.calculate(currentPose.getX(), targetPose.getX());
         double ySpeed = yPID.calculate(currentPose.getY(), targetPose.getY());
 
-        double goalSpeed = rotationLockController.calculate(currentPose.getRotation().getRadians(), targetPose.getRotation().getRadians());
+        double goalSpeed = rotationLockController.calculate(currentPose.getRotation().getRadians(),
+                targetPose.getRotation().getRadians());
 
         double[] errors = { currentPose.getX() - targetPose.getX(),
-                            currentPose.getY() - targetPose.getY(), 
-                            currentPose.getRotation().getRadians() - targetPose.getRotation().getRadians()};
-        double[] speeds = {xSpeed, ySpeed, goalSpeed};
+                currentPose.getY() - targetPose.getY(),
+                currentPose.getRotation().getRadians() - targetPose.getRotation().getRadians() };
+        double[] speeds = { xSpeed, ySpeed, goalSpeed };
         SmartDashboard.putString("LockOnErrors", Arrays.toString(errors));
         SmartDashboard.putString("LockOnSpeeds", Arrays.toString(speeds));
 
@@ -312,14 +333,14 @@ public class Swerve extends SubsystemBase {
     /**
      * Get maximum speed based on turbo mode status
      */
-    public double maximumSpeed(){
-        if(turboModeStatus == true){
+    public double maximumSpeed() {
+        if (turboModeStatus == true) {
             return Constants.Swerve.turboMaxSpeed;
-        }else{
+        } else {
             return Constants.Swerve.maxSpeed;
         }
     }
-    
+
     /**
      * Sets the desired states for swerve modules.
      *
@@ -331,7 +352,7 @@ public class Swerve extends SubsystemBase {
         }
     }
 
-     /**
+    /**
      * Gets the current pose (position and orientation) of the robot.
      *
      * @return The current robot pose.
@@ -341,7 +362,7 @@ public class Swerve extends SubsystemBase {
 
     }
 
-     /**
+    /**
      * Sets the pose (position and orientation) of the robot.
      *
      * @param pose The desired pose for the robot.
@@ -358,7 +379,7 @@ public class Swerve extends SubsystemBase {
         return Constants.Swerve.swerveKinematics.toChassisSpeeds(getModuleStates());
     }
 
-     /**
+    /**
      * Gets the current states of swerve modules.
      *
      * @return The array of current swerve module states.
@@ -383,7 +404,7 @@ public class Swerve extends SubsystemBase {
         for (SwerveModule mod : swerveModules) {
             positions[mod.moduleNumber] = mod.getPosition();
         }
-        
+
         return positions;
 
     }
@@ -396,10 +417,10 @@ public class Swerve extends SubsystemBase {
 
     }
 
-    public void setGyro(){
+    public void setGyro() {
         pidgey.setYaw(180);
     }
-    
+
     /**
      * Gets the current gyro angle (yaw) of the robot.
      *
@@ -424,11 +445,13 @@ public class Swerve extends SubsystemBase {
                 path,
                 this::getPose, // Robot pose supplier
                 this::getChassisSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
-                (speeds, feedforwards) -> drive(speeds), // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds
+                (speeds, feedforwards) -> drive(speeds), // Method that will drive the robot given ROBOT RELATIVE
+                                                         // ChassisSpeeds
                 Constants.Swerve.pathFollowerConfig, // PathFollowerConfig
                 Constants.Swerve.config,
                 () -> {
-                    // Boolean supplier that controls when the path will be mirrored for the red alliance
+                    // Boolean supplier that controls when the path will be mirrored for the red
+                    // alliance
                     // This will flip the path being followed to the red side of the field.
                     // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
                     var alliance = DriverStation.getAlliance();
@@ -446,33 +469,34 @@ public class Swerve extends SubsystemBase {
     /**
      * Turns on/off turbo mode
      */
-    public void toggleTurboMode(boolean condition){
+    public void toggleTurboMode(boolean condition) {
         turboModeStatus = condition;
     }
-    
-    /** 
+
+    /**
      * Returns if turbo mode is on
-     */ 
-    public boolean getTurboStatus(){
+     */
+    public boolean getTurboStatus() {
         return turboModeStatus;
     }
 
     public boolean addedVision;
 
     /**
-     * Adds a vision measurement to the pose estimator. This will correct the robot's pose.
+     * Adds a vision measurement to the pose estimator. This will correct the
+     * robot's pose.
      * 
      * @param pose The estimated robot pose.
      */
     public void addVisionMeasurement(EstimatedRobotPose pose) {
         // if(pose.targetsUsed.size() == 1) {
-        //     return;
+        // return;
         // }
 
         Pose2d measuredPose = pose.estimatedPose.toPose2d();
 
         double totalDistance = 0;
-        for(PhotonTrackedTarget target: pose.targetsUsed) {
+        for (PhotonTrackedTarget target : pose.targetsUsed) {
             totalDistance += target.getBestCameraToTarget().getTranslation().getNorm();
         }
         double averageDistance = totalDistance / pose.targetsUsed.size();
@@ -496,55 +520,47 @@ public class Swerve extends SubsystemBase {
         poseEstimator.update(getGyroAngle(), getModulePositions());
 
         double now = Timer.getFPGATimestamp();
-        
+
         // Log speed ang angle of the swerve modules every second
-         if (now - lastLogTime >= 1.0) {
-             Module0SpeedLog.append(
-                 swerveModules[0].getState().speedMetersPerSecond
-             );
-             Module0AngleLog.append(
-                 swerveModules[0].getState().angle.getDegrees()
-             );
-             Module1SpeedLog.append(
-                 swerveModules[1].getState().speedMetersPerSecond
-             );
-             Module1AngleLog.append(
-                 swerveModules[1].getState().angle.getDegrees()
-             );
-             Module2SpeedLog.append(
-                 swerveModules[2].getState().speedMetersPerSecond
-             );
-             Module2AngleLog.append(
-                 swerveModules[2].getState().angle.getDegrees()
-             );
-             Module3SpeedLog.append(
-                 swerveModules[3].getState().speedMetersPerSecond
-             );
-             Module3AngleLog.append(
-                 swerveModules[3].getState().angle.getDegrees()
-            );
+        if (now - lastLogTime >= 1.0) {
+            Module0SpeedLog.append(
+                    swerveModules[0].getState().speedMetersPerSecond);
+            Module0AngleLog.append(
+                    swerveModules[0].getState().angle.getDegrees());
+            Module1SpeedLog.append(
+                    swerveModules[1].getState().speedMetersPerSecond);
+            Module1AngleLog.append(
+                    swerveModules[1].getState().angle.getDegrees());
+            Module2SpeedLog.append(
+                    swerveModules[2].getState().speedMetersPerSecond);
+            Module2AngleLog.append(
+                    swerveModules[2].getState().angle.getDegrees());
+            Module3SpeedLog.append(
+                    swerveModules[3].getState().speedMetersPerSecond);
+            Module3AngleLog.append(
+                    swerveModules[3].getState().angle.getDegrees());
 
-             double yaw = pidgey.getYaw().refresh().getValueAsDouble();
-             double pitch = pidgey.getPitch().refresh().getValueAsDouble();
-             double roll = pidgey.getRoll().refresh().getValueAsDouble();
-             double yawRate = pidgey.getAngularVelocityZWorld().refresh().getValueAsDouble();
+            double yaw = pidgey.getYaw().refresh().getValueAsDouble();
+            double pitch = pidgey.getPitch().refresh().getValueAsDouble();
+            double roll = pidgey.getRoll().refresh().getValueAsDouble();
+            double yawRate = pidgey.getAngularVelocityZWorld().refresh().getValueAsDouble();
 
-             gyroYawLog.append(yaw);
-             gyroPitchLog.append(pitch);
-             gyroRollLog.append(roll);
-             gyroYawRateLog.append(yawRate);
+            gyroYawLog.append(yaw);
+            gyroPitchLog.append(pitch);
+            gyroRollLog.append(roll);
+            gyroYawRateLog.append(yawRate);
 
-             SmartDashboard.putNumber("Gyro Yaw", yaw);
-             SmartDashboard.putNumber("Gyro Pitch", pitch);
-             SmartDashboard.putNumber("Gyro Roll", roll);
-             SmartDashboard.putNumber("Gyro Yaw Rate", yawRate);
+            SmartDashboard.putNumber("Gyro Yaw", yaw);
+            SmartDashboard.putNumber("Gyro Pitch", pitch);
+            SmartDashboard.putNumber("Gyro Roll", roll);
+            SmartDashboard.putNumber("Gyro Yaw Rate", yawRate);
 
-             lastLogTime = now;
-         }
+            lastLogTime = now;
+        }
 
-         for (SwerveModule mod : swerveModules) {
+        for (SwerveModule mod : swerveModules) {
             SmartDashboard.putNumber("Mod " + mod.moduleNumber, mod.getState().angle.getDegrees());
 
-         }
+        }
     }
 }

@@ -65,6 +65,7 @@ public class DriveToTag10 extends Command {
         }
 
         swerve.setFieldRelative(true);
+        swerve.unlock(); // Clear any previous lock-on so it doesn't override rotation
         SmartDashboard.putBoolean("DriveToTag10/Active", true);
     }
 
