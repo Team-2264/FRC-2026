@@ -75,7 +75,7 @@ public final class Constants {
      */
     public static final class LedStrip {
         public static final int pwmPort = 0;
-        public static final int numLeds = 8;
+        public static final int numLeds = 12;
         public static final float scaleFactor = 0.5f;
     }
 
@@ -170,7 +170,9 @@ public final class Constants {
             public static final int angleMotorID = 41;
             public static final int angleEncoderID = 48;
 
-            public static final double angleOffset = 95; //-0.4384765625 * 360 + 3; // 0.244873 * 360;
+            public static final double angleOffset = -0.4384765625 * 360 + 3;
+            // The following was for the module that was swapped in at competition.
+            //public static final double angleOffset = 95; //-0.4384765625 * 360 + 3; // 0.244873 * 360;
 
         }
 
