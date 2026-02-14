@@ -58,7 +58,7 @@ public class Swerve extends SubsystemBase {
 
     private PIDController xPID = new PIDController(Constants.Swerve.translationKp, Constants.Swerve.translationKi, Constants.Swerve.translationKd);
     private PIDController yPID = new PIDController(Constants.Swerve.translationKp, Constants.Swerve.translationKi, Constants.Swerve.translationKd);
-    private PIDController rotationController = new PIDController(Constants.Swerve.rotationKp, Constants.Swerve.rotationKi, Constants.Swerve.rotationKd);
+    //private PIDController rotationController = new PIDController(Constants.Swerve.rotationKp, Constants.Swerve.rotationKi, Constants.Swerve.rotationKd);
 
     private PIDController rotationLockController = new PIDController(Constants.Swerve.rotationLockKP, Constants.Swerve.rotationLockKI, Constants.Swerve.rotationLockKD);
     private Optional<Translation2d> lockedOnto = Optional.empty();
