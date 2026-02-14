@@ -6,7 +6,6 @@ package frc.robot;
 
 import frc.robot.commands.AlignToShoot;
 import frc.robot.commands.DriveToTag;
-import frc.robot.commands.DriveToTag10;
 import frc.robot.commands.FaceGoal;
 import frc.robot.commands.ShootBall;
 import frc.robot.commands.TeleopSwerve;
@@ -71,10 +70,8 @@ public class RobotContainer {
         // Triangle - HOLD to shoot (speed adjusts based on distance to tag)
         controller.triangle().whileTrue(new ShootBall(shooter, vision));
 
-        // Cross (X) - TOGGLE: strafe left from tag 12 until sees 9/10, then align to 10
-        // Press X to start, press X again to cancel
-        AlignToShoot alignToShootCommand = new AlignToShoot(swerve, vision);
-        controller.cross().toggleOnTrue(alignToShootCommand);
+        // Cross (X) - currently unused
+        // (AlignToShoot moved to left D-pad)
 
         // Square - Press once to drive toward the nearest visible tag (auto-stops at
         // 0.5m)
@@ -91,8 +88,10 @@ public class RobotContainer {
         // D-pad DOWN - Face Goal: rotate to face the reef center from any position
         controller.pov(180).onTrue(new FaceGoal(swerve));
 
-        // D-pad LEFT - Drive to 5 feet in front of AprilTag 10
-        controller.pov(270).onTrue(new DriveToTag10(swerve, vision));
+        // D-pad LEFT - AlignToShoot: strafe from coral station to reef center, then align
+        //              Press to start, press again to cancel (toggleOnTrue)
+        AlignToShoot alignToShootCommand = new AlignToShoot(swerve, vision);
+        controller.pov(270).toggleOnTrue(alignToShootCommand);
     }
 
     public Command getAutonomousCommand() {
@@ -111,15 +110,17 @@ public class RobotContainer {
             swerve.addVisionMeasurement(visionPose.get());
         }
 
-        // LED based on visible tag ID
-        // Tag 12 = red (top 4 LEDs only), Tag 9 or 10 = green, else = purple
+        // LED based on visible tag ID (2026 field layout)
+        // Coral station tags (7,12 Red / 17,22,23,28 Blue) = red (top 4 LEDs)
+        // Center reef tags (9,10 Red / 19,20 Blue) = green (all LEDs)
+        // Any other tag = purple
         Optional<Integer> tagId = vision.getBestTargetId();
         if (tagId.isPresent()) {
             int id = tagId.get();
-            if (id == 12) {
-                leds.setRGBRange(255, 0, 0, 0, 3); // red on top 4 LEDs only
-            } else if (id == 9 || id == 10) {
-                leds.setRGB(0, 255, 0); // green all LEDs
+            if (id == 7 || id == 12 || id == 17 || id == 22 || id == 23 || id == 28) {
+                leds.setRGBRange(255, 0, 0, 0, 3); // red on top 4 LEDs — coral station
+            } else if (id == 9 || id == 10 || id == 19 || id == 20) {
+                leds.setRGB(0, 255, 0); // green all LEDs — reef center (shooting position)
             } else {
                 leds.setRGB(128, 0, 128); // purple for any other tag
             }

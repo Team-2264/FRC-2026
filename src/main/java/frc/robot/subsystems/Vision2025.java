@@ -73,9 +73,9 @@ public class Vision2025 extends SubsystemBase {
 
         // Set initial pose to middle of field (for coprocessor multi-tag sync if
         // enabled)
-        // 2025 field is 16.54m x 8.23m, blue origin at (0,0)
-        // Center is approximately at (8.27, 4.11) in field coordinates
-        estimator.setLastPose(new Pose3d(8.27, 4.11, 0.35, new Rotation3d()));
+        // 2026 field is 16.541m x 8.069m, blue origin at (0,0)
+        // Center is approximately at (8.27, 4.035) in field coordinates
+        estimator.setLastPose(new Pose3d(8.27, 4.035, 0.35, new Rotation3d()));
 
         field = new Field2d();
 
@@ -222,97 +222,49 @@ public class Vision2025 extends SubsystemBase {
      */
     public Optional<Pose2d> tagPose(int tagID) {
         try {
+            // 2026: Constants now stores positions in meters directly.
+            // TagLocation has: 1,6,7,12 (Red coral), 17,22,23,28 (Blue coral),
+            //                  13-16 (Red barge), 29-32 (Blue barge)
+            // ReefTagLocation has: 2-5,8-11 (Red reef), 18-21,24-27 (Blue reef)
             Pose2d tagPose = switch (tagID) {
-                case 1 -> new Pose2d(
-                        Units.inchesToMeters(Constants.TagLocation.tag1.get().getX()),
-                        Units.inchesToMeters(Constants.TagLocation.tag1.get().getY()),
-                        Constants.TagLocation.tag1.get().getRotation().toRotation2d());
-                case 2 -> new Pose2d(
-                        Units.inchesToMeters(Constants.TagLocation.tag2.get().getX()),
-                        Units.inchesToMeters(Constants.TagLocation.tag2.get().getY()),
-                        Constants.TagLocation.tag2.get().getRotation().toRotation2d());
-                case 3 -> new Pose2d(
-                        Units.inchesToMeters(Constants.TagLocation.tag3.get().getX()),
-                        Units.inchesToMeters(Constants.TagLocation.tag3.get().getY()),
-                        Constants.TagLocation.tag3.get().getRotation().toRotation2d());
-                case 4 -> new Pose2d(
-                        Units.inchesToMeters(Constants.TagLocation.tag4.get().getX()),
-                        Units.inchesToMeters(Constants.TagLocation.tag4.get().getY()),
-                        Constants.TagLocation.tag4.get().getRotation().toRotation2d());
-                case 5 -> new Pose2d(
-                        Units.inchesToMeters(Constants.TagLocation.tag5.get().getX()),
-                        Units.inchesToMeters(Constants.TagLocation.tag5.get().getY()),
-                        Constants.TagLocation.tag5.get().getRotation().toRotation2d());
-                case 6 -> new Pose2d(
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag6.get().getX()),
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag6.get().getY()),
-                        Constants.ReefTagLocation.tag6.get().getRotation().toRotation2d());
-                case 7 -> new Pose2d(
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag7.get().getX()),
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag7.get().getY()),
-                        Constants.ReefTagLocation.tag7.get().getRotation().toRotation2d());
-                case 8 -> new Pose2d(
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag8.get().getX()),
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag8.get().getY()),
-                        Constants.ReefTagLocation.tag8.get().getRotation().toRotation2d());
-                case 9 -> new Pose2d(
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag9.get().getX()),
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag9.get().getY()),
-                        Constants.ReefTagLocation.tag9.get().getRotation().toRotation2d());
-                case 10 -> new Pose2d(
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag10.get().getX()),
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag10.get().getY()),
-                        Constants.ReefTagLocation.tag10.get().getRotation().toRotation2d());
-                case 11 -> new Pose2d(
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag11.get().getX()),
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag11.get().getY()),
-                        Constants.ReefTagLocation.tag11.get().getRotation().toRotation2d());
-                case 12 -> new Pose2d(
-                        Units.inchesToMeters(Constants.TagLocation.tag12.get().getX()),
-                        Units.inchesToMeters(Constants.TagLocation.tag12.get().getY()),
-                        Constants.TagLocation.tag12.get().getRotation().toRotation2d());
-                case 13 -> new Pose2d(
-                        Units.inchesToMeters(Constants.TagLocation.tag13.get().getX()),
-                        Units.inchesToMeters(Constants.TagLocation.tag13.get().getY()),
-                        Constants.TagLocation.tag13.get().getRotation().toRotation2d());
-                case 14 -> new Pose2d(
-                        Units.inchesToMeters(Constants.TagLocation.tag14.get().getX()),
-                        Units.inchesToMeters(Constants.TagLocation.tag14.get().getY()),
-                        Constants.TagLocation.tag14.get().getRotation().toRotation2d());
-                case 15 -> new Pose2d(
-                        Units.inchesToMeters(Constants.TagLocation.tag15.get().getX()),
-                        Units.inchesToMeters(Constants.TagLocation.tag15.get().getY()),
-                        Constants.TagLocation.tag15.get().getRotation().toRotation2d());
-                case 16 -> new Pose2d(
-                        Units.inchesToMeters(Constants.TagLocation.tag16.get().getX()),
-                        Units.inchesToMeters(Constants.TagLocation.tag16.get().getY()),
-                        Constants.TagLocation.tag16.get().getRotation().toRotation2d());
-
-                case 17 -> new Pose2d(
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag17.get().getX()),
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag17.get().getY()),
-                        Constants.ReefTagLocation.tag17.get().getRotation().toRotation2d());
-                case 18 -> new Pose2d(
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag18.get().getX()),
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag18.get().getY()),
-                        Constants.ReefTagLocation.tag18.get().getRotation().toRotation2d());
-                case 19 -> new Pose2d(
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag19.get().getX()),
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag19.get().getY()),
-                        Constants.ReefTagLocation.tag19.get().getRotation().toRotation2d());
-                case 20 -> new Pose2d(
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag20.get().getX()),
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag20.get().getY()),
-                        Constants.ReefTagLocation.tag20.get().getRotation().toRotation2d());
-                case 21 -> new Pose2d(
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag21.get().getX()),
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag21.get().getY()),
-                        Constants.ReefTagLocation.tag21.get().getRotation().toRotation2d());
-                case 22 -> new Pose2d(
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag22.get().getX()),
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag22.get().getY()),
-                        Constants.ReefTagLocation.tag22.get().getRotation().toRotation2d());
-
+                // Red coral stations
+                case 1 -> toPose2d(Constants.TagLocation.tag1);
+                case 6 -> toPose2d(Constants.TagLocation.tag6);
+                case 7 -> toPose2d(Constants.TagLocation.tag7);
+                case 12 -> toPose2d(Constants.TagLocation.tag12);
+                // Red reef
+                case 2 -> toPose2d(Constants.ReefTagLocation.tag2);
+                case 3 -> toPose2d(Constants.ReefTagLocation.tag3);
+                case 4 -> toPose2d(Constants.ReefTagLocation.tag4);
+                case 5 -> toPose2d(Constants.ReefTagLocation.tag5);
+                case 8 -> toPose2d(Constants.ReefTagLocation.tag8);
+                case 9 -> toPose2d(Constants.ReefTagLocation.tag9);
+                case 10 -> toPose2d(Constants.ReefTagLocation.tag10);
+                case 11 -> toPose2d(Constants.ReefTagLocation.tag11);
+                // Red barge
+                case 13 -> toPose2d(Constants.TagLocation.tag13);
+                case 14 -> toPose2d(Constants.TagLocation.tag14);
+                case 15 -> toPose2d(Constants.TagLocation.tag15);
+                case 16 -> toPose2d(Constants.TagLocation.tag16);
+                // Blue coral stations
+                case 17 -> toPose2d(Constants.TagLocation.tag17);
+                case 22 -> toPose2d(Constants.TagLocation.tag22);
+                case 23 -> toPose2d(Constants.TagLocation.tag23);
+                case 28 -> toPose2d(Constants.TagLocation.tag28);
+                // Blue reef
+                case 18 -> toPose2d(Constants.ReefTagLocation.tag18);
+                case 19 -> toPose2d(Constants.ReefTagLocation.tag19);
+                case 20 -> toPose2d(Constants.ReefTagLocation.tag20);
+                case 21 -> toPose2d(Constants.ReefTagLocation.tag21);
+                case 24 -> toPose2d(Constants.ReefTagLocation.tag24);
+                case 25 -> toPose2d(Constants.ReefTagLocation.tag25);
+                case 26 -> toPose2d(Constants.ReefTagLocation.tag26);
+                case 27 -> toPose2d(Constants.ReefTagLocation.tag27);
+                // Blue barge
+                case 29 -> toPose2d(Constants.TagLocation.tag29);
+                case 30 -> toPose2d(Constants.TagLocation.tag30);
+                case 31 -> toPose2d(Constants.TagLocation.tag31);
+                case 32 -> toPose2d(Constants.TagLocation.tag32);
                 default -> null;
             };
 
@@ -326,6 +278,12 @@ public class Vision2025 extends SubsystemBase {
             return Optional.empty();
         }
 
+    }
+
+    /** Helper: convert a FieldPose to Pose2d (values already in meters) */
+    private static Pose2d toPose2d(frc.lib.FieldPose fp) {
+        Pose3d p = fp.getWpiBlue();
+        return new Pose2d(p.getX(), p.getY(), p.getRotation().toRotation2d());
     }
 
     // /**

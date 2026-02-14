@@ -22,13 +22,14 @@ public class FaceGoal extends Command {
 
     private final Swerve swerve;
 
-    // Red reef center (average of tags 6-11)
-    private static final double RED_GOAL_X = 514.13 * 0.0254;  // meters
-    private static final double RED_GOAL_Y = 158.50 * 0.0254;
+    // 2026 reef/cage centers (average of reef tag positions, in meters)
+    // Red reef: tags 2,3,4,5,8,9,10,11
+    private static final double RED_GOAL_X = 12.004;  // meters
+    private static final double RED_GOAL_Y = 4.035;
 
-    // Blue reef center (average of tags 17-22)
-    private static final double BLUE_GOAL_X = 176.75 * 0.0254;
-    private static final double BLUE_GOAL_Y = 158.50 * 0.0254;
+    // Blue reef: tags 18,19,20,21,24,25,26,27
+    private static final double BLUE_GOAL_X = 4.537;
+    private static final double BLUE_GOAL_Y = 4.035;
 
     // Rotation control
     private static final double ROT_KP = 3.0;

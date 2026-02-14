@@ -245,215 +245,225 @@ public final class Constants {
     }
 
     /**
-     * April Tag field poses (inches).
+     * 2026 AprilTag field poses (meters, from 2026-rebuilt-welded.json).
+     * Coral station tags: 1,6,7,12 (Red), 17,22,23,28 (Blue)
+     * Barge tags: 13,14,15,16 (Red wall), 29,30,31,32 (Blue wall)
      */
     public static final class TagLocation{
-        //--------------Red Alliance--------------
+        //--------------Red Side Coral Stations--------------
 
-        /**
-         * Red - Coral Station 1
-         */
+        /** Tag 1 - Red Coral Station (top, faces 180°) */
         public static FieldPose tag1 = FieldPose.fromWpiBlue(new Pose3d(
-            new Translation3d(
-                Units.inchesToMeters(657.37), // X
-                Units.inchesToMeters(25.80), // Y
-                Units.inchesToMeters(58.50)), // Z
-                new Rotation3d(0,0,Units.degreesToRadians(126)) // X, Y, Z
-        ));
-        
-        /**
-         * Red - Coral Station 2
-         */
-        public static FieldPose tag2 = FieldPose.fromWpiBlue(new Pose3d(
-            new Translation3d(
-                Units.inchesToMeters(657.37), // X
-                Units.inchesToMeters(291.20), // Y
-                Units.inchesToMeters(58.50)), // Z
-                new Rotation3d(0,0,Units.degreesToRadians(234))
+            new Translation3d(11.8779798, 7.4247756, 0.889),
+            new Rotation3d(0, 0, Math.PI) // faces -X (180°)
         ));
 
-        /**
-         * Red Processor
-         */
-        public static FieldPose tag3 = FieldPose.fromWpiBlue(new Pose3d(
-            new Translation3d(
-                Units.inchesToMeters(455.15), // X
-                Units.inchesToMeters(317.15), // Y
-                Units.inchesToMeters(51.25)), // Z
-                new Rotation3d(0,0,Units.degreesToRadians(270))
+        /** Tag 6 - Red Coral Station (bottom, faces 180°) */
+        public static FieldPose tag6 = FieldPose.fromWpiBlue(new Pose3d(
+            new Translation3d(11.8779798, 0.6444996, 0.889),
+            new Rotation3d(0, 0, Math.PI)
         ));
 
-        public static FieldPose tag4 = FieldPose.fromWpiBlue(new Pose3d(
-            new Translation3d(
-                Units.inchesToMeters(365.20), // X
-                Units.inchesToMeters(241.64), // Y
-                Units.inchesToMeters(73.54)), // Z
-                new Rotation3d(0,30,0)
+        /** Tag 7 - Red Coral Station (bottom, faces 0°) */
+        public static FieldPose tag7 = FieldPose.fromWpiBlue(new Pose3d(
+            new Translation3d(11.9528844, 0.6444996, 0.889),
+            new Rotation3d(0, 0, 0) // faces +X (0°)
         ));
 
-        public static FieldPose tag5 = FieldPose.fromWpiBlue(new Pose3d(
-            new Translation3d(
-                Units.inchesToMeters(365.20), // X
-                Units.inchesToMeters(75.39), // Y
-                Units.inchesToMeters(73.54)), // Z
-                new Rotation3d(0,30,0)
-        ));
-
-        //--------------Blue Alliance--------------
-
-        /**
-         * Blue - Coral Station 1
-         */
+        /** Tag 12 - Red Coral Station (top, faces 0°) */
         public static FieldPose tag12 = FieldPose.fromWpiBlue(new Pose3d(
-            new Translation3d(
-                Units.inchesToMeters(33.51 ), // X
-                Units.inchesToMeters(25.80), // Y
-                Units.inchesToMeters(58.50)), // Z
-                new Rotation3d(0,0,Units.degreesToRadians(54))
+            new Translation3d(11.9528844, 7.4247756, 0.889),
+            new Rotation3d(0, 0, 0)
         ));
 
-        /**
-         * Blue - Coral Station 2
-         */
+        //--------------Blue Side Coral Stations--------------
+
+        /** Tag 17 - Blue Coral Station (bottom, faces 0°) */
+        public static FieldPose tag17 = FieldPose.fromWpiBlue(new Pose3d(
+            new Translation3d(4.6630844, 0.6444996, 0.889),
+            new Rotation3d(0, 0, 0)
+        ));
+
+        /** Tag 22 - Blue Coral Station (top, faces 0°) */
+        public static FieldPose tag22 = FieldPose.fromWpiBlue(new Pose3d(
+            new Translation3d(4.6630844, 7.4247756, 0.889),
+            new Rotation3d(0, 0, 0)
+        ));
+
+        /** Tag 23 - Blue Coral Station (top, faces 180°) */
+        public static FieldPose tag23 = FieldPose.fromWpiBlue(new Pose3d(
+            new Translation3d(4.5881798, 7.4247756, 0.889),
+            new Rotation3d(0, 0, Math.PI)
+        ));
+
+        /** Tag 28 - Blue Coral Station (bottom, faces 180°) */
+        public static FieldPose tag28 = FieldPose.fromWpiBlue(new Pose3d(
+            new Translation3d(4.5881798, 0.6444996, 0.889),
+            new Rotation3d(0, 0, Math.PI)
+        ));
+
+        //--------------Red Barge Tags--------------
+
+        /** Tag 13 - Red Barge (far wall, faces 180°) */
         public static FieldPose tag13 = FieldPose.fromWpiBlue(new Pose3d(
-            new Translation3d(
-                Units.inchesToMeters(33.51), // X
-                Units.inchesToMeters(291.20), // Y
-                Units.inchesToMeters(58.50)), // Z
-                new Rotation3d(0,0,Units.degreesToRadians(306))
+            new Translation3d(16.5333172, 7.4033126, 0.55245),
+            new Rotation3d(0, 0, Math.PI)
         ));
 
+        /** Tag 14 - Red Barge (far wall, faces 180°) */
         public static FieldPose tag14 = FieldPose.fromWpiBlue(new Pose3d(
-            new Translation3d(
-                Units.inchesToMeters(325.68), // X
-                Units.inchesToMeters(241.64), // Y
-                Units.inchesToMeters(73.54)), // Z
-                new Rotation3d(0,Units.degreesToRadians(30),Units.degreesToRadians(180))
+            new Translation3d(16.5333172, 6.9715126, 0.55245),
+            new Rotation3d(0, 0, Math.PI)
         ));
 
+        /** Tag 15 - Red Barge (far wall, faces 180°) */
         public static FieldPose tag15 = FieldPose.fromWpiBlue(new Pose3d(
-            new Translation3d(
-                Units.inchesToMeters(325.68), // X
-                Units.inchesToMeters(75.39), // Y
-                Units.inchesToMeters(73.54)), // Z
-                new Rotation3d(0,Units.degreesToRadians(30),Units.degreesToRadians(180))
+            new Translation3d(16.5329616, 4.3235626, 0.55245),
+            new Rotation3d(0, 0, Math.PI)
         ));
 
-        /**
-         * Blue Processor
-         */
+        /** Tag 16 - Red Barge (far wall, faces 180°) */
         public static FieldPose tag16 = FieldPose.fromWpiBlue(new Pose3d(
-            new Translation3d(
-                Units.inchesToMeters(235.73), // X
-                Units.inchesToMeters(-0.15), // Y
-                Units.inchesToMeters(51.25)), // Z
-                new Rotation3d(0,0,Units.degreesToRadians(90))
+            new Translation3d(16.5329616, 3.8917626, 0.55245),
+            new Rotation3d(0, 0, Math.PI)
         ));
 
+        //--------------Blue Barge Tags--------------
+
+        /** Tag 29 - Blue Barge (near wall, faces 0°) */
+        public static FieldPose tag29 = FieldPose.fromWpiBlue(new Pose3d(
+            new Translation3d(0.0077470, 0.6659626, 0.55245),
+            new Rotation3d(0, 0, 0)
+        ));
+
+        /** Tag 30 - Blue Barge (near wall, faces 0°) */
+        public static FieldPose tag30 = FieldPose.fromWpiBlue(new Pose3d(
+            new Translation3d(0.0077470, 1.0977626, 0.55245),
+            new Rotation3d(0, 0, 0)
+        ));
+
+        /** Tag 31 - Blue Barge (near wall, faces 0°) */
+        public static FieldPose tag31 = FieldPose.fromWpiBlue(new Pose3d(
+            new Translation3d(0.0080772, 3.7457126, 0.55245),
+            new Rotation3d(0, 0, 0)
+        ));
+
+        /** Tag 32 - Blue Barge (near wall, faces 0°) */
+        public static FieldPose tag32 = FieldPose.fromWpiBlue(new Pose3d(
+            new Translation3d(0.0080772, 4.1775126, 0.55245),
+            new Rotation3d(0, 0, 0)
+        ));
     }
 
     /**
-     * April Tag field poses for reef (inches).
+     * 2026 AprilTag field poses for reef/cage (meters, from 2026-rebuilt-welded.json).
+     * Red reef: tags 2-5 (inner), 8-11 (outer)
+     * Blue reef: tags 18-21 (inner), 24-27 (outer)
      */
     public static final class ReefTagLocation{
 
-        //--------------Red Alliance--------------
-        public static FieldPose tag6 = FieldPose.fromWpiBlue(new Pose3d(
-            new Translation3d(
-                Units.inchesToMeters(530.49), // X
-                Units.inchesToMeters(130.17), // Y
-                Units.inchesToMeters(12.13)), // Z
-                new Rotation3d(0,0,Units.degreesToRadians(300))
+        //--------------Red Reef (inner cage)--------------
+
+        /** Tag 2 - Red Reef inner (faces 90°, +Y) */
+        public static FieldPose tag2 = FieldPose.fromWpiBlue(new Pose3d(
+            new Translation3d(11.9154194, 4.6380400, 1.12395),
+            new Rotation3d(0, 0, Math.PI / 2) // 90°
         ));
 
-        public static FieldPose tag7 = FieldPose.fromWpiBlue(new Pose3d(
-            new Translation3d(
-                Units.inchesToMeters(546.87), // X
-                Units.inchesToMeters(158.50), // Y
-                Units.inchesToMeters(12.13)), // Z
-                new Rotation3d(0,0,0)
+        /** Tag 3 - Red Reef inner (faces 180°) */
+        public static FieldPose tag3 = FieldPose.fromWpiBlue(new Pose3d(
+            new Translation3d(11.3118646, 4.3902376, 1.12395),
+            new Rotation3d(0, 0, Math.PI) // 180°
         ));
 
+        /** Tag 4 - Red Reef inner (faces 180°) */
+        public static FieldPose tag4 = FieldPose.fromWpiBlue(new Pose3d(
+            new Translation3d(11.3118646, 4.0346376, 1.12395),
+            new Rotation3d(0, 0, Math.PI) // 180°
+        ));
+
+        /** Tag 5 - Red Reef inner (faces -90° / 270°) */
+        public static FieldPose tag5 = FieldPose.fromWpiBlue(new Pose3d(
+            new Translation3d(11.9154194, 3.4312352, 1.12395),
+            new Rotation3d(0, 0, -Math.PI / 2) // -90°
+        ));
+
+        //--------------Red Reef (outer cage)--------------
+
+        /** Tag 8 - Red Reef outer (faces -90° / 270°) */
         public static FieldPose tag8 = FieldPose.fromWpiBlue(new Pose3d(
-            new Translation3d(
-                Units.inchesToMeters(530.49), // X
-                Units.inchesToMeters(186.83), // Y
-                Units.inchesToMeters(12.13)), // Z
-                new Rotation3d(0,0,Units.degreesToRadians(60))
+            new Translation3d(12.2710194, 3.4312352, 1.12395),
+            new Rotation3d(0, 0, -Math.PI / 2) // -90°
         ));
 
+        /** Tag 9 - Red Reef outer (faces 0°) — CENTER REEF SHOOTING TAG */
         public static FieldPose tag9 = FieldPose.fromWpiBlue(new Pose3d(
-            new Translation3d(
-                Units.inchesToMeters(497.77), // X
-                Units.inchesToMeters(186.83), // Y
-                Units.inchesToMeters(12.13 )), // Z
-                new Rotation3d(0,0,Units.degreesToRadians(120))
+            new Translation3d(12.5191774, 3.6790376, 1.12395),
+            new Rotation3d(0, 0, 0) // 0°
         ));
 
+        /** Tag 10 - Red Reef outer (faces 0°) — CENTER REEF SHOOTING TAG */
         public static FieldPose tag10 = FieldPose.fromWpiBlue(new Pose3d(
-            new Translation3d(
-                Units.inchesToMeters(481.39), // X
-                Units.inchesToMeters(158.50), // Y
-                Units.inchesToMeters(12.13)), // Z
-                new Rotation3d(0,0,Units.degreesToRadians(180))
+            new Translation3d(12.5191774, 4.0346376, 1.12395),
+            new Rotation3d(0, 0, 0) // 0°
         ));
 
+        /** Tag 11 - Red Reef outer (faces 90°, +Y) */
         public static FieldPose tag11 = FieldPose.fromWpiBlue(new Pose3d(
-            new Translation3d(
-                Units.inchesToMeters(497.77), // X
-                Units.inchesToMeters(130.17), // Y
-                Units.inchesToMeters(12.13)), // Z
-                new Rotation3d(0,0,Units.degreesToRadians(240))
+            new Translation3d(12.2710194, 4.6380400, 1.12395),
+            new Rotation3d(0, 0, Math.PI / 2) // 90°
         ));
 
-        //--------------Blue Alliance--------------
-        public static FieldPose tag17 = FieldPose.fromWpiBlue(new Pose3d(
-            new Translation3d(
-                Units.inchesToMeters(160.39), // X
-                Units.inchesToMeters(130.17), // Y
-                Units.inchesToMeters(12.13)), // Z
-                new Rotation3d(0,0,Units.degreesToRadians(240))
-        ));
-        
+        //--------------Blue Reef (inner cage)--------------
 
+        /** Tag 18 - Blue Reef inner (faces -90° / 270°) */
         public static FieldPose tag18 = FieldPose.fromWpiBlue(new Pose3d(
-            new Translation3d(
-                Units.inchesToMeters(144.00), // X
-                Units.inchesToMeters(158.50), // Y
-                Units.inchesToMeters(12.13)), // Z
-                new Rotation3d(0,0,Units.degreesToRadians(180))
+            new Translation3d(4.6256194, 3.4312352, 1.12395),
+            new Rotation3d(0, 0, -Math.PI / 2) // -90°
         ));
 
+        /** Tag 19 - Blue Reef inner (faces 0°) */
         public static FieldPose tag19 = FieldPose.fromWpiBlue(new Pose3d(
-            new Translation3d(
-                Units.inchesToMeters(160.39), // X
-                Units.inchesToMeters(186.83), // Y
-                Units.inchesToMeters(12.13)), // Z
-                new Rotation3d(0,0,Units.degreesToRadians(120))
+            new Translation3d(5.2291742, 3.6790376, 1.12395),
+            new Rotation3d(0, 0, 0) // 0°
         ));
 
+        /** Tag 20 - Blue Reef inner (faces 0°) */
         public static FieldPose tag20 = FieldPose.fromWpiBlue(new Pose3d(
-            new Translation3d(
-                Units.inchesToMeters(193.10), // X
-                Units.inchesToMeters(186.83), // Y
-                Units.inchesToMeters(12.13)), // Z
-                new Rotation3d(0,0,Units.degreesToRadians(60))
+            new Translation3d(5.2291742, 4.0346376, 1.12395),
+            new Rotation3d(0, 0, 0) // 0°
         ));
 
+        /** Tag 21 - Blue Reef inner (faces 90°, +Y) */
         public static FieldPose tag21 = FieldPose.fromWpiBlue(new Pose3d(
-            new Translation3d(
-                Units.inchesToMeters(209.49), // X
-                Units.inchesToMeters(158.50), // Y
-                Units.inchesToMeters(12.13)), // Z
-                new Rotation3d(0,0,0)
+            new Translation3d(4.6256194, 4.6380400, 1.12395),
+            new Rotation3d(0, 0, Math.PI / 2) // 90°
         ));
 
-        public static FieldPose tag22 = FieldPose.fromWpiBlue(new Pose3d(
-            new Translation3d(
-                Units.inchesToMeters(193.10), // X
-                Units.inchesToMeters(130.17), // Y
-                Units.inchesToMeters(12.13)), // Z
-                new Rotation3d(0,0,Units.degreesToRadians(300))
+        //--------------Blue Reef (outer cage)--------------
+
+        /** Tag 24 - Blue Reef outer (faces 90°, +Y) */
+        public static FieldPose tag24 = FieldPose.fromWpiBlue(new Pose3d(
+            new Translation3d(4.2700194, 4.6380400, 1.12395),
+            new Rotation3d(0, 0, Math.PI / 2) // 90°
+        ));
+
+        /** Tag 25 - Blue Reef outer (faces 180°) */
+        public static FieldPose tag25 = FieldPose.fromWpiBlue(new Pose3d(
+            new Translation3d(4.0218614, 4.3902376, 1.12395),
+            new Rotation3d(0, 0, Math.PI) // 180°
+        ));
+
+        /** Tag 26 - Blue Reef outer (faces 180°) */
+        public static FieldPose tag26 = FieldPose.fromWpiBlue(new Pose3d(
+            new Translation3d(4.0218614, 4.0346376, 1.12395),
+            new Rotation3d(0, 0, Math.PI) // 180°
+        ));
+
+        /** Tag 27 - Blue Reef outer (faces -90° / 270°) */
+        public static FieldPose tag27 = FieldPose.fromWpiBlue(new Pose3d(
+            new Translation3d(4.2700194, 3.4312352, 1.12395),
+            new Rotation3d(0, 0, -Math.PI / 2) // -90°
         ));
 
     }
