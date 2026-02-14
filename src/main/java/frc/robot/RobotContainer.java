@@ -97,11 +97,30 @@ public class RobotContainer {
             swerve.addVisionMeasurement(visionPose.get());
         }
 
-        
+        // LED based on visible tag ID
+        // Tag 12 = red (top 4 LEDs only), Tag 9 or 10 = green, else = purple
+        Optional<Integer> tagId = vision.getBestTargetId();
+        if (tagId.isPresent()) {
+            int id = tagId.get();
+            if (id == 12) {
+                leds.setRGBRange(255, 0, 0, 0, 3); // red on top 4 LEDs only
+            } else if (id == 9 || id == 10) {
+                leds.setRGB(0, 255, 0); // green all LEDs
+            } else {
+                leds.setRGB(128, 0, 128); // purple for any other tag
+            }
+        } else {
+            leds.setRGB(128, 0, 128); // purple when no tag visible
+        }
     }
 
     public Leds getLeds() {
         return leds;
+    }
+
+    public CommandPS4Controller getDriverController()
+    {
+        return controller;
     }
 
 }

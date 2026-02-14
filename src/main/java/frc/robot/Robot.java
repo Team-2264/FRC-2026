@@ -4,12 +4,18 @@
 
 package frc.robot;
 
-import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.Filesystem;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.net.WebServer;
+import edu.wpi.first.util.datalog.DataLog;
+import edu.wpi.first.util.datalog.DoubleLogEntry;
+
+import org.littletonrobotics.junction.Logger;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -25,6 +31,10 @@ public class Robot extends TimedRobot {
 
     private RobotContainer m_robotContainer;
 
+    // Log entries
+    private DoubleLogEntry joystickLog;
+    private DoubleLogEntry batteryVoltageLog;
+
     /**
      * This function is run when the robot is first started up and should be used
      * for any
@@ -38,6 +48,23 @@ public class Robot extends TimedRobot {
 
         WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
 
+        // Record metadata
+        Logger.recordMetadata("ProjectName", "Wayzata2026Test");
+        Logger.recordMetadata("RobotMACAddress", "10");
+        Logger.recordMetadata("RobotInstance", "Trojans");
+        Logger.recordMetadata("BuildDate", "11/12/25");
+
+        DataLogManager.start();
+        // Set up custom log entries
+        DataLog log = DataLogManager.getLog();
+        DataLogManager.log("Testing Wayzata");
+
+        batteryVoltageLog = new DoubleLogEntry(log, "/BatteryVoltage");
+        addPeriodic(() -> {
+                batteryVoltageLog.update(RobotController.getBatteryVoltage(), RobotController.getFPGATime()); 
+            }, 2.00, 0.00);
+
+        joystickLog = new DoubleLogEntry(log, "/driver/leftStick");
     }
 
     /**
@@ -59,9 +86,14 @@ public class Robot extends TimedRobot {
         // and running subsystem periodic() methods. This must be called from the
         // robot's periodic
         // block in order for anything in the Command-based framework to work.
-        CommandScheduler.getInstance().run();
-        m_robotContainer.robotPeriodic();
-        
+        try {
+            CommandScheduler.getInstance().run();
+            if (m_robotContainer != null) {
+                m_robotContainer.robotPeriodic();
+            }
+        } catch (Exception e) {
+            SmartDashboard.putString("Robot/robotPeriodic Error", e.toString());
+        }
     }
 
     /** This function is called once each time the robot enters Disabled mode. */
@@ -115,21 +147,23 @@ public class Robot extends TimedRobot {
     /** This function is called periodically during operator control. */
     @Override
     public void teleopPeriodic() {
-        // m_robotContainer.getLeds().Rainbow();
+        try {
+            // Get current pose safely
+            if (m_robotContainer != null && m_robotContainer.swerve != null) {
+                // ... rest of pose handling ...
+            }
 
-        Pose2d currentPose = m_robotContainer.swerve.getPose();
-        //Pose2d tagPose = m_robotContainer.vision.getPoseOfClosestReef();
-
-        // if (tagPose != null)
-        // {
-        //     Translation2d currentTranslation = currentPose.getTranslation();
-        //     Translation2d newTranslation = tagPose.getTranslation();
-
-        //     double distance = currentTranslation.getDistance(newTranslation);
-        //     SmartDashboard.putNumber("LockOnDistance", distance);
-        //     SmartDashboard.putNumber("LockOnDistance - X", Units.metersToInches(currentTranslation.getX() - newTranslation.getX()));
-        //     SmartDashboard.putNumber("LockOnDistance - Y", Units.metersToInches(currentTranslation.getY() - newTranslation.getY()));
-        // }
+            // Get joystick input safely
+            var driverController = m_robotContainer.getDriverController();
+            if (driverController != null) {
+                double speed = driverController.getLeftY();
+                if (joystickLog != null) {
+                    joystickLog.append(speed);
+                }
+            }
+        } catch (Exception e) {
+            SmartDashboard.putString("Robot/teleopPeriodic Error", e.toString());
+        }
     }
 
     @Override
@@ -142,7 +176,13 @@ public class Robot extends TimedRobot {
     /** This function is called periodically during test mode. */
     @Override
     public void testPeriodic() {
-        m_robotContainer.getLeds().Rainbow();
+        try {
+            if (m_robotContainer != null && m_robotContainer.getLeds() != null) {
+                m_robotContainer.getLeds().Rainbow();
+            }
+        } catch (Exception e) {
+            SmartDashboard.putString("Robot/testPeriodic Error", e.toString());
+        }
     }
 
     /** This function is called once when the robot is first started up. */
@@ -154,5 +194,4 @@ public class Robot extends TimedRobot {
     @Override
     public void simulationPeriodic() {
     }
-    
 }
