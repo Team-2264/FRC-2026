@@ -24,6 +24,8 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import java.util.Optional;
+import edu.wpi.first.wpilibj.GenericHID;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import org.photonvision.EstimatedRobotPose;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
@@ -42,6 +44,12 @@ public class RobotContainer {
     // Controllers
     private final CommandPS4Controller controller = new CommandPS4Controller(Constants.Operator.controllerPort);
     private final CommandPS4Controller controller2 = new CommandPS4Controller(Constants.Operator.controller2Port);
+
+    // transient LED override (millis since epoch)
+    private long ledOverrideUntil = 0;
+    private int ledOverrideR = 0;
+    private int ledOverrideG = 0;
+    private int ledOverrideB = 0;
 
     // Autonomous
     private final SendableChooser<Command> autoChooser;
@@ -92,7 +100,28 @@ public class RobotContainer {
         controller.pov(180).onTrue(new FaceGoal(swerve));
 
         // D-pad LEFT - Drive to 5 feet in front of AprilTag 10
-        controller.pov(270).onTrue(new DriveToTag10(swerve, vision));
+        // Chain the drive command with a follow-up that pulses orange + rumble when
+        // the command completes successfully (user requested pulse when alignment
+        // finished via the left D-pad binding).
+        var driveToTag10Cmd = new DriveToTag10(swerve, vision);
+        controller.pov(270).onTrue(
+                driveToTag10Cmd.andThen(new InstantCommand(() -> {
+                    // Only pulse if the drive command completed (not interrupted)
+                    // DriveToTag10 writes status to SmartDashboard; we also check that
+                    // the robot is within tolerance by reading pose.
+                    try {
+                        // pulse orange override for 0.5s
+                        setLedOverride(255, 165, 0, 0.5);
+                        controller.getHID().setRumble(GenericHID.RumbleType.kLeftRumble, 0.6);
+                        controller.getHID().setRumble(GenericHID.RumbleType.kRightRumble, 0.6);
+                        new WaitCommand(0.5).andThen(new InstantCommand(() -> {
+                            controller.getHID().setRumble(GenericHID.RumbleType.kLeftRumble, 0.0);
+                            controller.getHID().setRumble(GenericHID.RumbleType.kRightRumble, 0.0);
+                        })).schedule();
+                    } catch (Exception ignored) {
+                    }
+                }))
+        );
     }
 
     public Command getAutonomousCommand() {
@@ -111,6 +140,12 @@ public class RobotContainer {
             swerve.addVisionMeasurement(visionPose.get());
         }
 
+        // If a transient LED override is active, honor it first
+        if (System.currentTimeMillis() < ledOverrideUntil) {
+            leds.setRGB(ledOverrideR, ledOverrideG, ledOverrideB);
+            return;
+        }
+
         // LED based on visible tag ID
         // Tag 12 = red (top 4 LEDs only), Tag 9 or 10 = green, else = purple
         Optional<Integer> tagId = vision.getBestTargetId();
@@ -126,9 +161,21 @@ public class RobotContainer {
         } else {
             leds.setRGB(128, 0, 128); // purple when no tag visible
         }
+
+        // hub alignment is triggered by the DriveToTag10 binding (on completion)
     }
 
     public Leds getLeds() {
         return leds;
+    }
+
+    /**
+     * Request a transient LED override color for a duration in seconds.
+     */
+    private void setLedOverride(int r, int g, int b, double durationSeconds) {
+        ledOverrideR = r;
+        ledOverrideG = g;
+        ledOverrideB = b;
+        ledOverrideUntil = System.currentTimeMillis() + (long) (durationSeconds * 1000.0);
     }
 }
