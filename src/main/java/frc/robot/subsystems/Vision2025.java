@@ -476,6 +476,23 @@ public class Vision2025 extends SubsystemBase {
     }
 
     /**
+     * Returns the yaw angle (degrees) of the best visible target, if present.
+     * Positive = left of optical axis.
+     */
+    public java.util.OptionalDouble getBestTargetYawDeg() {
+        if (latestResult == null || !latestResult.hasTargets()) {
+            return java.util.OptionalDouble.empty();
+        }
+        try {
+            double yaw = latestResult.getBestTarget().getYaw();
+            return java.util.OptionalDouble.of(yaw);
+        } catch (Exception e) {
+            SmartDashboard.putString("Vision/BestYawError", e.toString());
+            return java.util.OptionalDouble.empty();
+        }
+    }
+
+    /**
      * Get the transform to a specific AprilTag by ID.
      * 
      * @param tagId The fiducial ID of the tag to find

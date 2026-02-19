@@ -153,8 +153,46 @@ public class RobotContainer {
             int id = tagId.get();
             if (id == 12) {
                 leds.setRGBRange(255, 0, 0, 0, 3); // red on top 4 LEDs only
-            } else if (id == 9 || id == 10) {
-                leds.setRGB(0, 255, 0); // green all LEDs
+   
+            } 
+            else if (id == 10) {
+                // Tag 10 -> progressive green based on how centered the tag is
+                // (more centered => more LEDs lit). We'll map yaw -> number of LEDs.
+                try {
+                    java.util.OptionalDouble yawOpt = vision.getBestTargetYawDeg();
+                    if (yawOpt.isPresent()) {
+                        double yawDeg = Math.abs(yawOpt.getAsDouble());
+                        // Define how wide "barely sees" is. Adjust as needed.
+                        final double MAX_YAW_DEG = 15.0; // at this yaw we show minimal green
+                        // fraction 0..1 where 1 == perfectly centered
+                        double frac = 1.0 - Math.min(yawDeg / MAX_YAW_DEG, 1.0);
+                        int numLeds = Constants.LedStrip.numLeds;
+                        int lit = (int) Math.round(frac * numLeds);
+                        if (lit <= 0) {
+                            // show a single faint center LED to indicate detection
+                            int center = numLeds / 2;
+                            leds.setRGBRange(0, 255, 0, center, center);
+                        } else if (lit >= numLeds) {
+                            leds.setRGB(0, 255, 0);
+                        } else {
+                            // light `lit` LEDs centered on the strip
+                            int center = numLeds / 2;
+                            int half = lit / 2;
+                            int start = center - half;
+                            int end = start + lit - 1;
+                            // clamp
+                            if (start < 0) start = 0;
+                            if (end >= numLeds) end = numLeds - 1;
+                            leds.setRGBRange(0, 255, 0, start, end);
+                        }
+                    } else {
+                        // no yaw info -> fallback to single center LED
+                        int center = Constants.LedStrip.numLeds / 2;
+                        leds.setRGBRange(0, 255, 0, center, center);
+                    }
+                } catch (Exception ignored) {
+                    leds.setRGB(0, 255, 0);
+                }
             } else {
                 leds.setRGB(128, 0, 128); // purple for any other tag
             }
