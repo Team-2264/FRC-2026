@@ -140,8 +140,20 @@ public class RobotContainer {
             swerve.addVisionMeasurement(visionPose.get());
         }
 
-        // If a transient LED override is active, honor it first
-        if (System.currentTimeMillis() < ledOverrideUntil) {
+        // Debug: show whether a transient LED override is active
+        long now = System.currentTimeMillis();
+        long remainingMs = Math.max(0, ledOverrideUntil - now);
+        SmartDashboard.putNumber("LEDs/OverrideRemainingMs", remainingMs);
+
+        // If a transient LED override is active, honor it first — but allow
+        // Tag 10 progressive green to bypass the override so the driver sees
+        // detection/centering feedback even during short confirmations.
+        Optional<Integer> peekTag = vision.getBestTargetId();
+        boolean bypassOverrideForTag10 = false;
+        if (peekTag.isPresent() && peekTag.get() == 10) {
+            bypassOverrideForTag10 = true;
+        }
+        if (System.currentTimeMillis() < ledOverrideUntil && !bypassOverrideForTag10) {
             leds.setRGB(ledOverrideR, ledOverrideG, ledOverrideB);
             return;
         }
@@ -151,6 +163,7 @@ public class RobotContainer {
         Optional<Integer> tagId = vision.getBestTargetId();
         if (tagId.isPresent()) {
             int id = tagId.get();
+            SmartDashboard.putNumber("LEDs/BestTagId", id);
             if (id == 12) {
                 leds.setRGBRange(255, 0, 0, 0, 3); // red on top 4 LEDs only
    
@@ -162,12 +175,14 @@ public class RobotContainer {
                     java.util.OptionalDouble yawOpt = vision.getBestTargetYawDeg();
                     if (yawOpt.isPresent()) {
                         double yawDeg = Math.abs(yawOpt.getAsDouble());
+                        SmartDashboard.putNumber("LEDs/Tag10YawDeg", yawDeg);
                         // Define how wide "barely sees" is. Adjust as needed.
                         final double MAX_YAW_DEG = 15.0; // at this yaw we show minimal green
                         // fraction 0..1 where 1 == perfectly centered
                         double frac = 1.0 - Math.min(yawDeg / MAX_YAW_DEG, 1.0);
                         int numLeds = Constants.LedStrip.numLeds;
                         int lit = (int) Math.round(frac * numLeds);
+                        SmartDashboard.putNumber("LEDs/Tag10Lit", lit);
                         if (lit <= 0) {
                             // show a single faint center LED to indicate detection
                             int center = numLeds / 2;
@@ -190,7 +205,8 @@ public class RobotContainer {
                         int center = Constants.LedStrip.numLeds / 2;
                         leds.setRGBRange(0, 255, 0, center, center);
                     }
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    SmartDashboard.putString("LEDs/Error", e.toString());
                     leds.setRGB(0, 255, 0);
                 }
             } else {
