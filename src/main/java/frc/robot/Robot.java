@@ -59,36 +59,39 @@ public class Robot extends TimedRobot {
      */
     @Override
     public void robotInit() {
-        // Start Logging
-        // Instantiate our RobotContainer. This will perform all our button bindings,
-        // and put our autonomous chooser on the dashboard.
+        // ── Start WPILib data logging (writes .wpilog files to USB / roboRIO) ──
+        DataLogManager.start();
+        DataLogManager.log("Testing Wayzata");
+
+        // ── AdvantageKit Logger ──
+        // Publishes ALL logged data to NetworkTables so AdvantageScope can
+        // visualise the robot in 3D in real-time (not just from log files).
+        Logger.recordMetadata("ProjectName", "Wayzata2026");
+        Logger.recordMetadata("RobotInstance", "Trojans");
+        Logger.recordMetadata("BuildDate", "02/18/26");
+
+        // Write to .wpilog AND stream over NT4 at the same time
+        Logger.addDataReceiver(new WPILOGWriter()); // log to USB stick / roboRIO
+        Logger.addDataReceiver(new NT4Publisher()); // publish to NetworkTables for live 3D
+        Logger.start(); // must be called before any subsystem init
+
+        // ── Instantiate robot container (subsystems, commands, button bindings) ──
         m_robotContainer = new RobotContainer();
 
         WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
 
-        // Record metadata
-        Logger.recordMetadata("ProjectName", "Wayzata2026Test");
-        Logger.recordMetadata("RobotMACAddress", "10");
-        Logger.recordMetadata("RobotInstance", "Trojans");
-        Logger.recordMetadata("BuildDate", "11/12/25");
+        alertTest.set(true);
 
-        alertTest.set(true); // Show alertTest
-
-        DataLogManager.start();
-        // Set up custom log entries
+        // Custom log entries
         DataLog log = DataLogManager.getLog();
-        DataLogManager.log("Testing Wayzata");
         myBooleanLog = new BooleanLogEntry(log, "/my/boolean");
         myBatteryLog = new DoubleLogEntry(log, "/my/BatteryVoltage");
         myStringLog = new StringLogEntry(log, "/my/string");
+        joystickLog = new DoubleLogEntry(log, "/driver/leftStick");
 
         addPeriodic(() -> {
             myBatteryLog.update(RobotController.getBatteryVoltage(), RobotController.getFPGATime());
         }, 2.00, 0.00);
-        DataLogManager.start();
-        DataLog Log = DataLogManager.getLog();
-        joystickLog = new DoubleLogEntry(Log, "/driver/leftStick");
-
     }
 
     /**
