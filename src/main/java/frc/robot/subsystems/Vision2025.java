@@ -624,7 +624,7 @@ public class Vision2025 extends SubsystemBase {
             Pose3d cameraPoseField = meterPose.transformBy(Constants.Vision.robotToCamera);
             cameraPose3dPub.set(cameraPoseField);
         }
-        SmartDashboard.putData("Vision - Field", field);
+    ElasticDashboard.putData("Vision - Field", field);
 
         // Detected tag poses (AdvantageScope renders these as highlighted tags)
         if (hasTargets) {
@@ -669,19 +669,19 @@ public class Vision2025 extends SubsystemBase {
         if (periodicCounter >= 5) {
             periodicCounter = 0;
 
-            SmartDashboard.putBoolean("Vision - Has Targets", hasTargets);
-            SmartDashboard.putString("Vision - Tracked Targets", Arrays.toString(targetIds));
-            SmartDashboard.putBoolean("vision-estimated:", estimated.isPresent());
+            ElasticDashboard.putBoolean("Vision - Has Targets", hasTargets);
+            ElasticDashboard.putString("Vision - Tracked Targets", Arrays.toString(targetIds));
+            ElasticDashboard.putBoolean("vision-estimated:", estimated.isPresent());
 
             if (estimated.isPresent()) {
-                SmartDashboard.putString("Rotation - vision: ",
+                ElasticDashboard.putString("Rotation - vision:",
                         estimated.get().estimatedPose.getRotation().toString());
 
                 Pose3d estPose = estimated.get().estimatedPose;
-                SmartDashboard.putNumber("Est/Robot/X", estPose.getX());
-                SmartDashboard.putNumber("Est/Robot/Y", estPose.getY());
-                SmartDashboard.putNumber("Est/Robot/Z", estPose.getZ());
-                SmartDashboard.putNumber("Est/Robot/RotDeg",
+                ElasticDashboard.putNumber("Est/Robot/X", estPose.getX());
+                ElasticDashboard.putNumber("Est/Robot/Y", estPose.getY());
+                ElasticDashboard.putNumber("Est/Robot/Z", estPose.getZ());
+                ElasticDashboard.putNumber("Est/Robot/RotDeg",
                         Math.toDegrees(estPose.getRotation().getZ()));
             }
 
@@ -689,14 +689,14 @@ public class Vision2025 extends SubsystemBase {
                 try {
                     var bestTarget = latestResult.getBestTarget();
                     Transform3d camToTarget = bestTarget.getBestCameraToTarget();
-                    SmartDashboard.putNumber("3D/X_Meters", camToTarget.getX());
-                    SmartDashboard.putNumber("3D/Y_Meters", camToTarget.getY());
-                    SmartDashboard.putNumber("3D/Z_Meters", camToTarget.getZ());
-                    SmartDashboard.putNumber("3D/Yaw_Degrees",
+                    ElasticDashboard.putNumber("3D/X_Meters", camToTarget.getX());
+                    ElasticDashboard.putNumber("3D/Y_Meters", camToTarget.getY());
+                    ElasticDashboard.putNumber("3D/Z_Meters", camToTarget.getZ());
+                    ElasticDashboard.putNumber("3D/Yaw_Degrees",
                             Math.toDegrees(camToTarget.getRotation().getZ()));
-                    SmartDashboard.putNumber("3D/Ambiguity", bestTarget.getPoseAmbiguity());
+                    ElasticDashboard.putNumber("3D/Ambiguity", bestTarget.getPoseAmbiguity());
                 } catch (Exception e) {
-                    SmartDashboard.putString("Vision/LoggingError", e.toString());
+                    ElasticDashboard.putString("Vision/LoggingError", e.toString());
                 }
             }
         }

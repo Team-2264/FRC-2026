@@ -22,10 +22,8 @@ import edu.wpi.first.util.datalog.StringLogEntry;
 
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
-import edu.wpi.first.wpilibj.PS5Controller;
 import edu.wpi.first.wpilibj.PS5Controller;
 
 /**
@@ -45,8 +43,6 @@ public class Robot extends TimedRobot {
     DoubleLogEntry myBatteryLog;
     StringLogEntry myStringLog;
     Alert alertTest = new Alert("This is a test!", AlertType.kError);
-    DoubleLogEntry joystickLog;
-    PS5Controller driver = new PS5Controller(0);
     DoubleLogEntry joystickLog;
     PS5Controller driver = new PS5Controller(0);
 

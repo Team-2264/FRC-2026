@@ -238,24 +238,6 @@ public class Swerve extends SubsystemBase {
                     return false;
                 },
                 this);
-                this::getPose,
-                this::setPose,
-                this::getChassisSpeeds,
-                (speeds, feedforwards) -> drive(speeds),
-                Constants.Swerve.pathFollowerConfig, // controller
-                Constants.Swerve.config, // add robot configuration here
-                () -> {
-                    // Boolean supplier that controls when the path will be mirrored for the red
-                    // alliance
-                    // This will flip the path being followed to the red side of the field.
-                    // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
-                    var alliance = DriverStation.getAlliance();
-                    if (alliance.isPresent()) {
-                        return alliance.get() == DriverStation.Alliance.Red;
-                    }
-                    return false;
-                },
-                this);
 
         // Init Field
         field = new Field2d();
@@ -637,7 +619,7 @@ public class Swerve extends SubsystemBase {
 
         // Field2d for 2D field view (every cycle)
         field.setRobotPose(currentPose);
-        ElasticDashboard.putData(field);
+    ElasticDashboard.putData("Swerve/Field", field);
 
         // ── Flush NT immediately so AdvantageScope gets data ASAP ──
         // Without this, data sits in the NT buffer up to 100ms before being sent.
