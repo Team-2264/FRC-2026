@@ -5,8 +5,8 @@
 package frc.robot;
 
 import frc.robot.commands.AlignToShoot;
+import frc.robot.commands.DriveAndFaceGoal;
 import frc.robot.commands.DriveToTag;
-import frc.robot.commands.DriveToTag10;
 import frc.robot.commands.FaceGoal;
 import frc.robot.commands.ShootBall;
 import frc.robot.commands.TeleopSwerve;
@@ -79,14 +79,11 @@ public class RobotContainer {
         // Triangle - HOLD to shoot (speed adjusts based on distance to tag)
         controller.triangle().whileTrue(new ShootBall(shooter, vision));
 
-        // Cross (X) - TOGGLE: strafe left from tag 12 until sees 9/10, then align to 10
-        // Press X to start, press X again to cancel
-        AlignToShoot alignToShootCommand = new AlignToShoot(swerve, vision);
-        controller.cross().toggleOnTrue(alignToShootCommand);
+        // Cross (X) - currently unused
+        // (AlignToShoot moved to left D-pad)
 
-        // Square - Press once to drive toward the nearest visible tag (auto-stops at
-        // 0.5m)
-        DriveToTag driveToTagCommand = new DriveToTag(swerve, vision);
+        // Square - Press once to drive within 3.0m of tag 10 and center it in camera
+        DriveToTag driveToTagCommand = new DriveToTag(swerve, vision, 3.0, 10);
         controller.square().onTrue(driveToTagCommand);
 
         // Circle - Press to CANCEL DriveToTag
@@ -99,29 +96,10 @@ public class RobotContainer {
         // D-pad DOWN - Face Goal: rotate to face the reef center from any position
         controller.pov(180).onTrue(new FaceGoal(swerve));
 
-        // D-pad LEFT - Drive to 5 feet in front of AprilTag 10
-        // Chain the drive command with a follow-up that pulses orange + rumble when
-        // the command completes successfully (user requested pulse when alignment
-        // finished via the left D-pad binding).
-        var driveToTag10Cmd = new DriveToTag10(swerve, vision);
-        controller.pov(270).onTrue(
-                driveToTag10Cmd.andThen(new InstantCommand(() -> {
-                    // Only pulse if the drive command completed (not interrupted)
-                    // DriveToTag10 writes status to SmartDashboard; we also check that
-                    // the robot is within tolerance by reading pose.
-                    try {
-                        // pulse orange override for 0.5s
-                        setLedOverride(255, 165, 0, 0.5);
-                        controller.getHID().setRumble(GenericHID.RumbleType.kLeftRumble, 0.6);
-                        controller.getHID().setRumble(GenericHID.RumbleType.kRightRumble, 0.6);
-                        new WaitCommand(0.5).andThen(new InstantCommand(() -> {
-                            controller.getHID().setRumble(GenericHID.RumbleType.kLeftRumble, 0.0);
-                            controller.getHID().setRumble(GenericHID.RumbleType.kRightRumble, 0.0);
-                        })).schedule();
-                    } catch (Exception ignored) {
-                    }
-                }))
-        );
+        // D-pad LEFT - DriveAndFaceGoal: face goal, drive to tag, align + re-center
+        //              Press to start, press again to cancel (toggleOnTrue)
+        DriveAndFaceGoal driveAndFaceCommand = new DriveAndFaceGoal(swerve, vision);
+        controller.pov(270).toggleOnTrue(driveAndFaceCommand);
     }
 
     public Command getAutonomousCommand() {
