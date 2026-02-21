@@ -167,6 +167,12 @@ public class Swerve extends SubsystemBase {
         rollSignal = pidgey.getRoll();
         yawRateSignal = pidgey.getAngularVelocityZWorld();
 
+        // Increase Pigeon2 update rate to 100Hz for smoother pose data
+        // Default is 50Hz (every 20ms) — at 100Hz we get fresh data every 10ms,
+        // so every robot cycle has fresh gyro with minimal stale-data lag.
+        BaseStatusSignal.setUpdateFrequencyForAll(100, yawSignal, pitchSignal, rollSignal, yawRateSignal);
+        pidgey.optimizeBusUtilization(); // suppress unused signals to save CAN bandwidth
+
         // ── AdvantageScope 3D: publish structs to NetworkTables ──
         var nt = NetworkTableInstance.getDefault();
         robotPose3dPub = nt.getStructTopic("SmartDashboard/Swerve/RobotPose3d", Pose3d.struct).publish();
@@ -458,7 +464,9 @@ public class Swerve extends SubsystemBase {
      * @return The current gyro angle.
      */
     public Rotation2d getGyroAngle() {
-        double yaw = pidgey.getYaw().refresh().getValueAsDouble();
+        // Use the cached yaw signal — it's batch-refreshed in periodic() via
+        // BaseStatusSignal.refreshAll(). Avoids extra CAN bus round-trips.
+        double yaw = yawSignal.getValueAsDouble();
         return (Constants.Swerve.invertGyro) ? Rotation2d.fromDegrees(360 - yaw)
                 : Rotation2d.fromDegrees(yaw);
 
@@ -537,19 +545,19 @@ public class Swerve extends SubsystemBase {
 
     @Override
     public void periodic() {
-        // Update odometry every cycle (this is the core 50Hz loop — must stay fast)
-        poseEstimator.update(getGyroAngle(), getModulePositions());
-
-        Pose2d currentPose = getPose();
-
-        // ── Batch-refresh all Pigeon2 signals in one CAN frame ──
-        // This is faster than 4 separate .refresh() calls and ensures all values
-        // come from the same CAN timestamp (no inter-sample skew = smoother 3D).
+        // ── 1. Batch-refresh all Pigeon2 signals in one CAN frame FIRST ──
+        // Must happen before getGyroAngle() / odometry update so they use fresh data.
         BaseStatusSignal.refreshAll(yawSignal, pitchSignal, rollSignal, yawRateSignal);
         double yaw = yawSignal.getValueAsDouble();
         double pitch = pitchSignal.getValueAsDouble();
         double roll = rollSignal.getValueAsDouble();
         double yawRate = yawRateSignal.getValueAsDouble();
+
+        // ── 2. Update odometry (uses fresh gyro from step 1 + latest vision from
+        // robotPeriodic) ──
+        poseEstimator.update(getGyroAngle(), getModulePositions());
+
+        Pose2d currentPose = getPose();
 
         // ── AdvantageScope 3D: Publish robot Pose3d (every cycle = smooth) ──
         Pose3d robotPose3d = new Pose3d(
