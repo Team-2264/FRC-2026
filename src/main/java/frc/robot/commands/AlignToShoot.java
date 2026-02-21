@@ -4,7 +4,7 @@ import java.util.Optional;
 
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.ElasticDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.Swerve;
 import frc.robot.subsystems.Vision2025;
@@ -53,14 +53,14 @@ public class AlignToShoot extends Command {
         Optional<Integer> tagId = vision.getBestTargetId();
         if (tagId.isPresent() && tagId.get() == 12) {
             state = AlignState.STRAFE_LEFT;
-            SmartDashboard.putString("AlignToShoot/Status", "SEES 12 - STRAFING LEFT");
+            ElasticDashboard.putString("AlignToShoot/Status", "SEES 12 - STRAFING LEFT");
         } else {
             // Don't do anything if we don't see tag 12
             state = AlignState.DONE;
-            SmartDashboard.putString("AlignToShoot/Status", "NO TAG 12 - ABORTED");
+            ElasticDashboard.putString("AlignToShoot/Status", "NO TAG 12 - ABORTED");
         }
 
-        SmartDashboard.putBoolean("AlignToShoot/Active", true);
+    ElasticDashboard.putBoolean("AlignToShoot/Active", true);
     }
 
     @Override
@@ -71,7 +71,7 @@ public class AlignToShoot extends Command {
         if (cycleCount > TIMEOUT_CYCLES) {
             state = AlignState.DONE;
             swerve.drive(new Translation2d(0, 0), 0);
-            SmartDashboard.putString("AlignToShoot/Status", "TIMEOUT");
+            ElasticDashboard.putString("AlignToShoot/Status", "TIMEOUT");
             return;
         }
 
@@ -83,11 +83,11 @@ public class AlignToShoot extends Command {
             if (seesTarget) {
                 // Found tag 9 or 10! Switch to alignment phase
                 state = AlignState.ALIGN_TO_10;
-                SmartDashboard.putString("AlignToShoot/Status", "FOUND TAG " + tagId.get() + " - ALIGNING");
+                ElasticDashboard.putString("AlignToShoot/Status", "FOUND TAG " + tagId.get() + " - ALIGNING");
             } else {
                 // Keep strafing left
                 swerve.drive(new Translation2d(0, STRAFE_SPEED), 0);
-                SmartDashboard.putString("AlignToShoot/Status", "STRAFING LEFT");
+                ElasticDashboard.putString("AlignToShoot/Status", "STRAFING LEFT");
             }
         } else if (state == AlignState.ALIGN_TO_10) {
             // Try to get transform specifically to tag 10
@@ -97,7 +97,7 @@ public class AlignToShoot extends Command {
                 // Can't see tag 10 specifically — hold still briefly
                 swerve.drive(new Translation2d(0, 0), 0);
                 noTagCount++;
-                SmartDashboard.putString("AlignToShoot/Status", "LOOKING FOR TAG 10");
+                ElasticDashboard.putString("AlignToShoot/Status", "LOOKING FOR TAG 10");
                 if (noTagCount > 50) {
                     state = AlignState.DONE; // Give up after ~1s
                 }
@@ -110,19 +110,19 @@ public class AlignToShoot extends Command {
             double tagX = transform.getX();
             double angleDeg = Math.toDegrees(Math.atan2(tagY, tagX));
 
-            SmartDashboard.putNumber("AlignToShoot/AngleDeg", angleDeg);
+            ElasticDashboard.putNumber("AlignToShoot/AngleDeg", angleDeg);
 
             if (Math.abs(angleDeg) < ANGLE_TOLERANCE) {
                 // Aligned!
                 state = AlignState.DONE;
                 swerve.drive(new Translation2d(0, 0), 0);
-                SmartDashboard.putString("AlignToShoot/Status", "ALIGNED!");
+                ElasticDashboard.putString("AlignToShoot/Status", "ALIGNED!");
             } else {
                 // Rotate to center tag 10
                 double rot = angleDeg * ROT_KP * (Math.PI / 180.0);
                 rot = Math.max(-MAX_ROT, Math.min(MAX_ROT, rot));
                 swerve.drive(new Translation2d(0, 0), rot);
-                SmartDashboard.putString("AlignToShoot/Status", "ROTATING TO TAG 10");
+                ElasticDashboard.putString("AlignToShoot/Status", "ROTATING TO TAG 10");
             }
         }
     }
@@ -136,7 +136,7 @@ public class AlignToShoot extends Command {
     public void end(boolean interrupted) {
         swerve.drive(new Translation2d(0, 0), 0);
         swerve.setFieldRelative(true);
-        SmartDashboard.putBoolean("AlignToShoot/Active", false);
-        SmartDashboard.putString("AlignToShoot/Status", interrupted ? "CANCELLED" : "DONE");
+    ElasticDashboard.putBoolean("AlignToShoot/Active", false);
+    ElasticDashboard.putString("AlignToShoot/Status", interrupted ? "CANCELLED" : "DONE");
     }
 }

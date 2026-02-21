@@ -5,7 +5,7 @@ import java.util.Optional;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.ElasticDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.Swerve;
 import frc.robot.subsystems.Vision2025;
@@ -54,19 +54,19 @@ public class DriveToTag10 extends Command {
         Optional<Pose2d> goal = vision.getTag10TargetPose(STANDOFF_METERS);
         if (goal.isPresent()) {
             targetPose = goal.get();
-            SmartDashboard.putString("DriveToTag10/Goal",
+            ElasticDashboard.putString("DriveToTag10/Goal",
                     String.format("(%.2f, %.2f) @ %.1f°",
                             targetPose.getX(), targetPose.getY(),
                             targetPose.getRotation().getDegrees()));
         } else {
             // Tag 10 not in the field layout (should never happen) – cancel immediately
             targetPose = null;
-            SmartDashboard.putString("DriveToTag10/Goal", "TAG 10 NOT FOUND");
+            ElasticDashboard.putString("DriveToTag10/Goal", "TAG 10 NOT FOUND");
         }
 
         swerve.setFieldRelative(true);
         swerve.unlock(); // Clear any previous lock-on so it doesn't override rotation
-        SmartDashboard.putBoolean("DriveToTag10/Active", true);
+    ElasticDashboard.putBoolean("DriveToTag10/Active", true);
     }
 
     @Override
@@ -82,8 +82,8 @@ public class DriveToTag10 extends Command {
         Pose2d current = swerve.getPose();
         double distErr = current.getTranslation().getDistance(targetPose.getTranslation());
         double rotErr = Math.abs(current.getRotation().minus(targetPose.getRotation()).getRadians());
-        SmartDashboard.putNumber("DriveToTag10/DistError", distErr);
-        SmartDashboard.putNumber("DriveToTag10/RotError", Math.toDegrees(rotErr));
+    ElasticDashboard.putNumber("DriveToTag10/DistError", distErr);
+    ElasticDashboard.putNumber("DriveToTag10/RotError", Math.toDegrees(rotErr));
     }
 
     @Override
@@ -94,7 +94,7 @@ public class DriveToTag10 extends Command {
 
         // Timeout safety
         if (edu.wpi.first.wpilibj.Timer.getFPGATimestamp() - startTime > TIMEOUT_SECONDS) {
-            SmartDashboard.putString("DriveToTag10/Status", "TIMEOUT");
+            ElasticDashboard.putString("DriveToTag10/Status", "TIMEOUT");
             return true;
         }
 
@@ -104,7 +104,7 @@ public class DriveToTag10 extends Command {
         double rotErr = Math.abs(current.getRotation().minus(targetPose.getRotation()).getRadians());
 
         if (distErr < POS_TOLERANCE && rotErr < ROT_TOLERANCE) {
-            SmartDashboard.putString("DriveToTag10/Status", "REACHED");
+            ElasticDashboard.putString("DriveToTag10/Status", "REACHED");
             return true;
         }
 
@@ -114,8 +114,8 @@ public class DriveToTag10 extends Command {
     @Override
     public void end(boolean interrupted) {
         swerve.drive(new Translation2d(0, 0), 0);
-        SmartDashboard.putBoolean("DriveToTag10/Active", false);
-        SmartDashboard.putString("DriveToTag10/Status",
-                interrupted ? "INTERRUPTED" : "COMPLETE");
+    ElasticDashboard.putBoolean("DriveToTag10/Active", false);
+    ElasticDashboard.putString("DriveToTag10/Status",
+        interrupted ? "INTERRUPTED" : "COMPLETE");
     }
 }

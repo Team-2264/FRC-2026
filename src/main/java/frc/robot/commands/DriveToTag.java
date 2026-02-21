@@ -4,7 +4,7 @@ import java.util.Optional;
 
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.ElasticDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.Swerve;
 import frc.robot.subsystems.Vision2025;
@@ -41,7 +41,7 @@ public class DriveToTag extends Command {
     @Override
     public void initialize() {
         reachedTarget = false;
-        SmartDashboard.putBoolean("DriveToTag/Active", true);
+    ElasticDashboard.putBoolean("DriveToTag/Active", true);
     }
 
     @Override
@@ -65,7 +65,7 @@ public class DriveToTag extends Command {
                 reachedTarget = true;
                 swerve.drive(new Translation2d(0, 0), 0);
                 swerve.setFieldRelative(true);
-                SmartDashboard.putString("DriveToTag/Status", "REACHED");
+                ElasticDashboard.putString("DriveToTag/Status", "REACHED");
                 return;
             }
             
@@ -89,15 +89,15 @@ public class DriveToTag extends Command {
             swerve.setFieldRelative(false);
             swerve.drive(new Translation2d(forwardSpeed, strafeSpeed), rotSpeed);
             
-            SmartDashboard.putNumber("DriveToTag/Distance", tagX);
-            SmartDashboard.putNumber("DriveToTag/Offset", tagY);
-            SmartDashboard.putNumber("DriveToTag/Angle", Math.toDegrees(angleToTag));
-            SmartDashboard.putNumber("DriveToTag/Speed", forwardSpeed);
-            SmartDashboard.putString("DriveToTag/Status", "DRIVING");
+            ElasticDashboard.putNumber("DriveToTag/Distance", tagX);
+            ElasticDashboard.putNumber("DriveToTag/Offset", tagY);
+            ElasticDashboard.putNumber("DriveToTag/Angle", Math.toDegrees(angleToTag));
+            ElasticDashboard.putNumber("DriveToTag/Speed", forwardSpeed);
+            ElasticDashboard.putString("DriveToTag/Status", "DRIVING");
         } else {
             // No tag visible - stop but keep command running briefly
             swerve.drive(new Translation2d(0, 0), 0);
-            SmartDashboard.putString("DriveToTag/Status", "NO TAG");
+            ElasticDashboard.putString("DriveToTag/Status", "NO TAG");
         }
     }
     
@@ -115,7 +115,7 @@ public class DriveToTag extends Command {
         // Make sure robot is fully stopped and reset
         swerve.drive(new Translation2d(0, 0), 0);
         swerve.setFieldRelative(true);
-        SmartDashboard.putBoolean("DriveToTag/Active", false);
-        SmartDashboard.putString("DriveToTag/Status", interrupted ? "INTERRUPTED" : "COMPLETE");
+    ElasticDashboard.putBoolean("DriveToTag/Active", false);
+    ElasticDashboard.putString("DriveToTag/Status", interrupted ? "INTERRUPTED" : "COMPLETE");
     }
 }

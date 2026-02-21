@@ -6,7 +6,7 @@ import edu.wpi.first.math.controller.ElevatorFeedforward;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.filter.MedianFilter;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.ElasticDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.lib.LimitSwitch;
 import frc.lib.Math2264;
@@ -155,8 +155,8 @@ public class Elevator extends SubsystemBase {
         double currentVelocityRps = motors[0].getVelocity();
         double currentVelocityIpsps = currentVelocityRps * Constants.ElevatorConfig.final_inches_per_motor_rev;
 
-        SmartDashboard.putBoolean("Elevator Position Known", homingState == HomingState.COMPLETE);
-        SmartDashboard.putNumber("Elevator Position (Inches)", currentPosition);
+    ElasticDashboard.putBoolean("Elevator Position Known", homingState == HomingState.COMPLETE);
+    ElasticDashboard.putNumber("Elevator Position (Inches)", currentPosition);
         // if (targetPositionInches.isPresent()) {
         //     SmartDashboard.putNumber("Elevator Target (Inches)", targetPositionInches.getAsDouble());
         // }
@@ -224,9 +224,9 @@ public class Elevator extends SubsystemBase {
             double feedback = pidController.calculate(currentPosition, targetInches);
             double voltage = Math2264.limitMagnitude(ff + feedback, Constants.ElevatorConfig.maxVoltage);
 
-            // SmartDashboard.putNumber("Elevator FF", ff);
-            // SmartDashboard.putNumber("Elevator Feedback", feedback);
-            // SmartDashboard.putNumber("Elevator Voltage", voltage);
+        // ElasticDashboard.putNumber("Elevator FF", ff);
+        // ElasticDashboard.putNumber("Elevator Feedback", feedback);
+        // ElasticDashboard.putNumber("Elevator Voltage", voltage);
 
             motors[0].setVoltage(voltage);
         }

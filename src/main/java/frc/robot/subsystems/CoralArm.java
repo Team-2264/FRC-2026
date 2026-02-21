@@ -7,7 +7,7 @@ import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.filter.MedianFilter;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.ElasticDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.lib.Math2264;
 import frc.lib.motors.Neo;
@@ -170,7 +170,7 @@ public class CoralArm extends SubsystemBase{
         }
 
         desiredAngle = OptionalDouble.of(angle);
-        SmartDashboard.putNumber("coral angle target", desiredAngle.getAsDouble());
+    ElasticDashboard.putNumber("coral angle target", desiredAngle.getAsDouble());
     }
 
     
@@ -182,7 +182,7 @@ public class CoralArm extends SubsystemBase{
      */
     public void rotateOpenLoop(double volts) {
         angleMotor.setVoltage(volts);
-        SmartDashboard.putNumber("coral angle volts", volts);
+    ElasticDashboard.putNumber("coral angle volts", volts);
 
         if (Math.abs(volts) < 0.01) {
             pidController.reset(getAbsEncoderDegrees());
@@ -238,7 +238,7 @@ public class CoralArm extends SubsystemBase{
         double currentAngle = this.getAbsEncoderDegrees();
         //double currentMotorDegrees = this.getMotorPositonDegrees();
 
-        SmartDashboard.putNumber("Coral Intake Angle", currentAngle);
+    ElasticDashboard.putNumber("Coral Intake Angle", currentAngle);
         //SmartDashboard.putNumber("Coral Intake pos (motor)", angleMotor.getPosition());
         //SmartDashboard.putNumber("Coral Intake pos (motor deg)", getMotorPositonDegrees());
         //SmartDashboard.putNumber("Coral Intake voltage", angleMotor.getAppliedOutput());
@@ -253,7 +253,7 @@ public class CoralArm extends SubsystemBase{
 
         //SmartDashboard.putNumber("Coral End Effector Amps", intakeMotorCurrent);
         //SmartDashboard.putNumber("Coral End Effector Filtered Ams", intakeMotorFilteredCurrent);
-        SmartDashboard.putBoolean("Coral Present", isCoralPresent());
+    ElasticDashboard.putBoolean("Coral Present", isCoralPresent());
 
         double targetAngle = 1000;
         //double targetMotorDegrees = 1000;

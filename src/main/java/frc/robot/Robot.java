@@ -9,7 +9,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.ElasticDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.math.util.Units;
@@ -118,7 +118,7 @@ public class Robot extends TimedRobot {
                 m_robotContainer.robotPeriodic();
             }
         } catch (Exception e) {
-            SmartDashboard.putString("Robot/robotPeriodic Error", e.toString());
+            ElasticDashboard.putString("Robot/robotPeriodic Error", e.toString());
         }
 
         /*
@@ -197,7 +197,7 @@ public class Robot extends TimedRobot {
                 }
             }
         } catch (Exception e) {
-            SmartDashboard.putString("Robot/teleopPeriodic Error", e.toString());
+            ElasticDashboard.putString("Robot/teleopPeriodic Error", e.toString());
 
         }
 
@@ -218,7 +218,7 @@ public class Robot extends TimedRobot {
                 m_robotContainer.getLeds().Rainbow();
             }
         } catch (Exception e) {
-            SmartDashboard.putString("Robot/testPeriodic Error", e.toString());
+            ElasticDashboard.putString("Robot/testPeriodic Error", e.toString());
         }
     }
 

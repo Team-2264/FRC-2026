@@ -2,7 +2,7 @@ package frc.robot.subsystems;
 
 
 import edu.wpi.first.math.filter.MedianFilter;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.ElasticDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.lib.motors.Neo;
 import frc.robot.Constants;
@@ -101,9 +101,9 @@ public class AlgaeManipulator extends SubsystemBase {
 
         motor.rotateAtSpeed(targetMotorDutyCycle);
 
-        SmartDashboard.putBoolean("Algae Present", algaePresent);
-        SmartDashboard.putNumber("Aglae Intake Current", motorFilteredCurrent);
-        SmartDashboard.putNumber("Aglae Intake Duty", targetMotorDutyCycle);
+    ElasticDashboard.putBoolean("Algae Present", algaePresent);
+    ElasticDashboard.putNumber("Aglae Intake Current", motorFilteredCurrent);
+    ElasticDashboard.putNumber("Aglae Intake Duty", targetMotorDutyCycle);
     }
 
 }

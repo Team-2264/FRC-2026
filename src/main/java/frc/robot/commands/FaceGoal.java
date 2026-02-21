@@ -5,7 +5,7 @@ import java.util.Optional;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.ElasticDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.Swerve;
 
@@ -57,16 +57,16 @@ public class FaceGoal extends Command {
         if (alliance.isPresent() && alliance.get() == DriverStation.Alliance.Blue) {
             goalX = BLUE_GOAL_X;
             goalY = BLUE_GOAL_Y;
-            SmartDashboard.putString("FaceGoal/Alliance", "BLUE");
+            ElasticDashboard.putString("FaceGoal/Alliance", "BLUE");
         } else {
             // Default to red if unknown
             goalX = RED_GOAL_X;
             goalY = RED_GOAL_Y;
-            SmartDashboard.putString("FaceGoal/Alliance", "RED");
+            ElasticDashboard.putString("FaceGoal/Alliance", "RED");
         }
 
-        SmartDashboard.putBoolean("FaceGoal/Active", true);
-        SmartDashboard.putString("FaceGoal/Status", "ROTATING");
+    ElasticDashboard.putBoolean("FaceGoal/Active", true);
+    ElasticDashboard.putString("FaceGoal/Status", "ROTATING");
     }
 
     @Override
@@ -75,7 +75,7 @@ public class FaceGoal extends Command {
         if (cycleCount > TIMEOUT_CYCLES) {
             isDone = true;
             swerve.drive(new Translation2d(0, 0), 0);
-            SmartDashboard.putString("FaceGoal/Status", "TIMEOUT");
+            ElasticDashboard.putString("FaceGoal/Status", "TIMEOUT");
             return;
         }
 
@@ -98,13 +98,13 @@ public class FaceGoal extends Command {
 
         double errorDeg = Math.toDegrees(errorRad);
 
-        SmartDashboard.putNumber("FaceGoal/ErrorDeg", errorDeg);
-        SmartDashboard.putNumber("FaceGoal/TargetAngleDeg", Math.toDegrees(targetAngleRad));
+    ElasticDashboard.putNumber("FaceGoal/ErrorDeg", errorDeg);
+    ElasticDashboard.putNumber("FaceGoal/TargetAngleDeg", Math.toDegrees(targetAngleRad));
 
         if (Math.abs(errorDeg) < ANGLE_TOLERANCE) {
             isDone = true;
             swerve.drive(new Translation2d(0, 0), 0);
-            SmartDashboard.putString("FaceGoal/Status", "FACING GOAL!");
+            ElasticDashboard.putString("FaceGoal/Status", "FACING GOAL!");
             return;
         }
 
@@ -114,7 +114,7 @@ public class FaceGoal extends Command {
 
         // Drive with zero translation, just rotation (field-relative stays on so heading is correct)
         swerve.drive(new Translation2d(0, 0), rot);
-        SmartDashboard.putString("FaceGoal/Status", "ROTATING");
+    ElasticDashboard.putString("FaceGoal/Status", "ROTATING");
     }
 
     @Override
@@ -125,7 +125,7 @@ public class FaceGoal extends Command {
     @Override
     public void end(boolean interrupted) {
         swerve.drive(new Translation2d(0, 0), 0);
-        SmartDashboard.putBoolean("FaceGoal/Active", false);
-        SmartDashboard.putString("FaceGoal/Status", interrupted ? "CANCELLED" : "DONE");
+    ElasticDashboard.putBoolean("FaceGoal/Active", false);
+    ElasticDashboard.putString("FaceGoal/Status", interrupted ? "CANCELLED" : "DONE");
     }
 }

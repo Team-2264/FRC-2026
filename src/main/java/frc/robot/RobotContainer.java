@@ -21,7 +21,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandPS4Controller;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.ElasticDashboard;
 
 import java.util.Optional;
 import edu.wpi.first.wpilibj.GenericHID;
@@ -60,8 +60,8 @@ public class RobotContainer {
 
         configureBindings();
 
-        autoChooser = AutoBuilder.buildAutoChooser();
-        SmartDashboard.putData("Auto Mode", autoChooser);
+    autoChooser = AutoBuilder.buildAutoChooser();
+    ElasticDashboard.putData("Auto Mode", autoChooser);
     }
 
     /**
@@ -133,8 +133,8 @@ public class RobotContainer {
      */
     public void robotPeriodic() {
         vision.get();
-        Optional<EstimatedRobotPose> visionPose = vision.getEstimatedPose();
-        SmartDashboard.putBoolean("vision pose", visionPose.isPresent());
+    Optional<EstimatedRobotPose> visionPose = vision.getEstimatedPose();
+    ElasticDashboard.putBoolean("vision pose", visionPose.isPresent());
 
         if (visionPose.isPresent()) {
             swerve.addVisionMeasurement(visionPose.get());
@@ -143,77 +143,72 @@ public class RobotContainer {
         // Debug: show whether a transient LED override is active
         long now = System.currentTimeMillis();
         long remainingMs = Math.max(0, ledOverrideUntil - now);
-        SmartDashboard.putNumber("LEDs/OverrideRemainingMs", remainingMs);
+    ElasticDashboard.putNumber("LEDs/OverrideRemainingMs", remainingMs);
 
         // If a transient LED override is active, honor it first — but allow
         // Tag 10 progressive green to bypass the override so the driver sees
         // detection/centering feedback even during short confirmations.
-        Optional<Integer> peekTag = vision.getBestTargetId();
-        boolean bypassOverrideForTag10 = false;
-        if (peekTag.isPresent() && peekTag.get() == 10) {
-            bypassOverrideForTag10 = true;
-        }
+        Optional<edu.wpi.first.math.geometry.Transform3d> tag10Tf = vision.getTransformToTag(10);
+        boolean bypassOverrideForTag10 = tag10Tf.isPresent();
         if (System.currentTimeMillis() < ledOverrideUntil && !bypassOverrideForTag10) {
             leds.setRGB(ledOverrideR, ledOverrideG, ledOverrideB);
             return;
         }
 
-        // LED based on visible tag ID
-        // Tag 12 = red (top 4 LEDs only), Tag 9 or 10 = green, else = purple
-        Optional<Integer> tagId = vision.getBestTargetId();
-        if (tagId.isPresent()) {
-            int id = tagId.get();
-            SmartDashboard.putNumber("LEDs/BestTagId", id);
-            if (id == 12) {
-                leds.setRGBRange(255, 0, 0, 0, 3); // red on top 4 LEDs only
-   
-            } 
-            else if (id == 10) {
-                // Tag 10 -> progressive green based on how centered the tag is
-                // (more centered => more LEDs lit). We'll map yaw -> number of LEDs.
-                try {
-                    java.util.OptionalDouble yawOpt = vision.getBestTargetYawDeg();
-                    if (yawOpt.isPresent()) {
-                        double yawDeg = Math.abs(yawOpt.getAsDouble());
-                        SmartDashboard.putNumber("LEDs/Tag10YawDeg", yawDeg);
-                        // Define how wide "barely sees" is. Adjust as needed.
-                        final double MAX_YAW_DEG = 15.0; // at this yaw we show minimal green
-                        // fraction 0..1 where 1 == perfectly centered
-                        double frac = 1.0 - Math.min(yawDeg / MAX_YAW_DEG, 1.0);
-                        int numLeds = Constants.LedStrip.numLeds;
-                        int lit = (int) Math.round(frac * numLeds);
-                        SmartDashboard.putNumber("LEDs/Tag10Lit", lit);
-                        if (lit <= 0) {
-                            // show a single faint center LED to indicate detection
-                            int center = numLeds / 2;
-                            leds.setRGBRange(0, 255, 0, center, center);
-                        } else if (lit >= numLeds) {
-                            leds.setRGB(0, 255, 0);
-                        } else {
-                            // light `lit` LEDs centered on the strip
-                            int center = numLeds / 2;
-                            int half = lit / 2;
-                            int start = center - half;
-                            int end = start + lit - 1;
-                            // clamp
-                            if (start < 0) start = 0;
-                            if (end >= numLeds) end = numLeds - 1;
-                            leds.setRGBRange(0, 255, 0, start, end);
-                        }
-                    } else {
-                        // no yaw info -> fallback to single center LED
-                        int center = Constants.LedStrip.numLeds / 2;
-                        leds.setRGBRange(0, 255, 0, center, center);
-                    }
-                } catch (Exception e) {
-                    SmartDashboard.putString("LEDs/Error", e.toString());
+        // Prefer Tag 10 progressive green if Tag 10 is visible at all (even if
+        // Photon reports another 'best' target). This prevents tag 9 from
+        // overriding tag 10 centering feedback.
+        if (tag10Tf.isPresent()) {
+            try {
+                var tf = tag10Tf.get();
+                // Debug both rotation-based yaw and translation-based bearing.
+                double yawDegRot = Math.toDegrees(tf.getRotation().getZ());
+                double tx = tf.getTranslation().getX();
+                double ty = tf.getTranslation().getY();
+                double yawDegXY = Math.toDegrees(Math.atan2(ty, tx));
+                double yawDeg = Math.abs(yawDegXY); // prefer translation-based bearing
+                ElasticDashboard.putNumber("LEDs/Tag10YawDeg_Rot", Math.abs(yawDegRot));
+                ElasticDashboard.putNumber("LEDs/Tag10YawDeg_XY", yawDegXY);
+                ElasticDashboard.putNumber("LEDs/Tag10DistMeters", tx);
+                ElasticDashboard.putNumber("LEDs/Tag10YawDeg", yawDeg);
+
+                final double MAX_YAW_DEG = 15.0; // adjust as needed
+                double frac = 1.0 - Math.min(yawDeg / MAX_YAW_DEG, 1.0);
+                int numLeds = Constants.LedStrip.numLeds;
+                int lit = (int) Math.round(frac * numLeds);
+                ElasticDashboard.putNumber("LEDs/Tag10Lit", lit);
+                if (lit <= 0) {
+                    int center = numLeds / 2;
+                    leds.setRGBRange(0, 255, 0, center, center);
+                } else if (lit >= numLeds) {
                     leds.setRGB(0, 255, 0);
+                } else {
+                    int center = numLeds / 2;
+                    int half = lit / 2;
+                    int start = center - half;
+                    int end = start + lit - 1;
+                    if (start < 0) start = 0;
+                    if (end >= numLeds) end = numLeds - 1;
+                    leds.setRGBRange(0, 255, 0, start, end);
                 }
-            } else {
-                leds.setRGB(128, 0, 128); // purple for any other tag
+            } catch (Exception e) {
+                ElasticDashboard.putString("LEDs/Error", e.toString());
+                leds.setRGB(0, 255, 0);
             }
         } else {
-            leds.setRGB(128, 0, 128); // purple when no tag visible
+            // Fallback: use best-target logic (red for 12, purple otherwise)
+            Optional<Integer> tagId = vision.getBestTargetId();
+            if (tagId.isPresent()) {
+                int id = tagId.get();
+                ElasticDashboard.putNumber("LEDs/BestTagId", id);
+                if (id == 12) {
+                    leds.setRGBRange(255, 0, 0, 0, 3); // red on top 4 LEDs only
+                } else {
+                    leds.setRGB(128, 0, 128); // purple for any other tag
+                }
+            } else {
+                leds.setRGB(128, 0, 128); // purple when no tag visible
+            }
         }
 
         // hub alignment is triggered by the DriveToTag10 binding (on completion)

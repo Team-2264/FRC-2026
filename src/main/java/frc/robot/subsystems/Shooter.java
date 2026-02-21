@@ -1,6 +1,6 @@
 package frc.robot.subsystems;
 
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.ElasticDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.lib.motors.Neo;
 import frc.lib.motors.NeoConfiguration;
@@ -41,10 +41,10 @@ public class Shooter extends SubsystemBase {
 
     @Override
     public void periodic() {
-        SmartDashboard.putBoolean("Shooter/Active", isShooting);
-        SmartDashboard.putNumber("Shooter/Velocity", motor.getVelocity());
-        SmartDashboard.putNumber("Shooter/Current", motor.getOutputCurrent());
-        SmartDashboard.putNumber("Shooter/Speed", currentSpeed);
+    ElasticDashboard.putBoolean("Shooter/Active", isShooting);
+    ElasticDashboard.putNumber("Shooter/Velocity", motor.getVelocity());
+    ElasticDashboard.putNumber("Shooter/Current", motor.getOutputCurrent());
+    ElasticDashboard.putNumber("Shooter/Speed", currentSpeed);
     }
 
     /**
@@ -61,8 +61,8 @@ public class Shooter extends SubsystemBase {
         double ratio = (clampedDistance - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE);
         double speed = MIN_SPEED + ratio * (MAX_SPEED - MIN_SPEED);
         
-        SmartDashboard.putNumber("Shooter/TargetDistance", distanceMeters);
-        SmartDashboard.putNumber("Shooter/CalculatedSpeed", speed);
+    ElasticDashboard.putNumber("Shooter/TargetDistance", distanceMeters);
+    ElasticDashboard.putNumber("Shooter/CalculatedSpeed", speed);
         
         return speed;
     }

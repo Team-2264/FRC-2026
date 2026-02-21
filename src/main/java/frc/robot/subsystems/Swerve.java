@@ -38,7 +38,7 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.ElasticDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -324,8 +324,8 @@ public class Swerve extends SubsystemBase {
                 currentPose.getY() - targetPose.getY(),
                 currentPose.getRotation().getRadians() - targetPose.getRotation().getRadians() };
         double[] speeds = { xSpeed, ySpeed, goalSpeed };
-        SmartDashboard.putString("LockOnErrors", Arrays.toString(errors));
-        SmartDashboard.putString("LockOnSpeeds", Arrays.toString(speeds));
+    ElasticDashboard.putString("LockOnErrors", Arrays.toString(errors));
+    ElasticDashboard.putString("LockOnSpeeds", Arrays.toString(speeds));
 
         drive(new Translation2d(xSpeed, ySpeed), goalSpeed);
     }
@@ -510,12 +510,12 @@ public class Swerve extends SubsystemBase {
 
     @Override
     public void periodic() {
-        SmartDashboard.putString("Swerve Status", swerveStatus.toString());
-        SmartDashboard.putBoolean("added vision in swerve:", addedVision);
+    ElasticDashboard.putString("Swerve Status", swerveStatus.toString());
+    ElasticDashboard.putBoolean("added vision in swerve:", addedVision);
 
-        field.setRobotPose(getPose());
+    field.setRobotPose(getPose());
 
-        SmartDashboard.putData(field);
+    ElasticDashboard.putData("Swerve - Field", field);
 
         poseEstimator.update(getGyroAngle(), getModulePositions());
 
@@ -550,16 +550,16 @@ public class Swerve extends SubsystemBase {
             gyroRollLog.append(roll);
             gyroYawRateLog.append(yawRate);
 
-            SmartDashboard.putNumber("Gyro Yaw", yaw);
-            SmartDashboard.putNumber("Gyro Pitch", pitch);
-            SmartDashboard.putNumber("Gyro Roll", roll);
-            SmartDashboard.putNumber("Gyro Yaw Rate", yawRate);
+            ElasticDashboard.putNumber("Gyro Yaw", yaw);
+            ElasticDashboard.putNumber("Gyro Pitch", pitch);
+            ElasticDashboard.putNumber("Gyro Roll", roll);
+            ElasticDashboard.putNumber("Gyro Yaw Rate", yawRate);
 
             lastLogTime = now;
         }
 
         for (SwerveModule mod : swerveModules) {
-            SmartDashboard.putNumber("Mod " + mod.moduleNumber, mod.getState().angle.getDegrees());
+            ElasticDashboard.putNumber("Mod " + mod.moduleNumber, mod.getState().angle.getDegrees());
 
         }
     }

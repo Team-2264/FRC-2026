@@ -20,7 +20,7 @@ import edu.wpi.first.math.geometry.Transform3d;
 // removed unused import
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.ElasticDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import edu.wpi.first.util.datalog.DoubleLogEntry;
@@ -116,7 +116,7 @@ public class Vision2025 extends SubsystemBase {
             }
             // if there are no unread results, latestResult stays as-is
         } catch (Exception e) {
-            SmartDashboard.putString("Vision/GetError", e.toString());
+            ElasticDashboard.putString("Vision/GetError", e.toString());
         }
     }
 
@@ -322,7 +322,7 @@ public class Vision2025 extends SubsystemBase {
                 return Optional.empty();
             }
         } catch (Exception e) {
-            SmartDashboard.putString("Vision/TagPoseError", "tagID " + tagID + ": " + e.toString());
+            ElasticDashboard.putString("Vision/TagPoseError", "tagID " + tagID + ": " + e.toString());
             return Optional.empty();
         }
 
@@ -445,7 +445,7 @@ public class Vision2025 extends SubsystemBase {
                 return Optional.of(robot_pose.get());
             }
         } catch (Exception e) {
-            SmartDashboard.putString("Vision/GetEstimatedPoseError", e.toString());
+            ElasticDashboard.putString("Vision/GetEstimatedPoseError", e.toString());
         }
 
         return lastEstimatedRobotBose;
@@ -487,7 +487,7 @@ public class Vision2025 extends SubsystemBase {
             double yaw = latestResult.getBestTarget().getYaw();
             return java.util.OptionalDouble.of(yaw);
         } catch (Exception e) {
-            SmartDashboard.putString("Vision/BestYawError", e.toString());
+            ElasticDashboard.putString("Vision/BestYawError", e.toString());
             return java.util.OptionalDouble.empty();
         }
     }
@@ -567,23 +567,23 @@ public class Vision2025 extends SubsystemBase {
             return;
         }
 
-        SmartDashboard.putBoolean("Vision - Has Targets", latestResult.hasTargets());
+    ElasticDashboard.putBoolean("Vision - Has Targets", latestResult.hasTargets());
 
         // Tracked targets ids
         targetIds = new int[latestResult.targets.size()];
         for (int i = 0; i < latestResult.targets.size(); i++) {
             targetIds[i] = latestResult.targets.get(i).getFiducialId();
         }
-        SmartDashboard.putString("Vision - Tracked Targets", Arrays.toString(targetIds));
+    ElasticDashboard.putString("Vision - Tracked Targets", Arrays.toString(targetIds));
         // SmartDashboard.putNumber("Vision - Closest Target",
         // targetIds[getClosestTarget()]);
 
         if (targetIds.length != 0 && latestResult.hasTargets()) {
             try {
                 Transform3d targetTrans = latestResult.targets.get(0).getBestCameraToTarget();
-                SmartDashboard.putString("PhotonTarget", targetTrans.toString());
+                ElasticDashboard.putString("PhotonTarget", targetTrans.toString());
             } catch (Exception e) {
-                SmartDashboard.putString("Vision/TargetAccessError", e.toString());
+                ElasticDashboard.putString("Vision/TargetAccessError", e.toString());
             }
         }
 
@@ -595,10 +595,10 @@ public class Vision2025 extends SubsystemBase {
                 estimated = estimator.update(latestResult);
             }
         } catch (Exception e) {
-            SmartDashboard.putString("Vision/EstimatorError", e.toString());
+            ElasticDashboard.putString("Vision/EstimatorError", e.toString());
         }
 
-        SmartDashboard.putBoolean("vision-estimated:", estimated.isPresent());
+    ElasticDashboard.putBoolean("vision-estimated:", estimated.isPresent());
 
         if (estimated.isPresent()) {
             Pose3d meterPose = estimated.get().estimatedPose;
@@ -610,13 +610,13 @@ public class Vision2025 extends SubsystemBase {
                     meterPose.getTranslation().getY() * 39.3701,
                     meterPose.getTranslation().getZ() * 39.3701,
                     meterPose.getRotation());
-            SmartDashboard.putString("Vision - Estimated Pose (in)", inchPose.toString());
+            ElasticDashboard.putString("Vision - Estimated Pose (in)", inchPose.toString());
 
-            SmartDashboard.putString("Rotation - vision: ", meterPose.getRotation().toString());
+            ElasticDashboard.putString("Rotation - vision: ", meterPose.getRotation().toString());
         }
 
         // Field
-        SmartDashboard.putData("Vision - Field", field);
+    ElasticDashboard.putData("Vision - Field", field);
 
         // Log every periodic cycle for maximum smoothness
         if ((latestResult != null) && latestResult.hasTargets()) {
@@ -678,23 +678,23 @@ public class Vision2025 extends SubsystemBase {
                 Rotation3d rotation = cameraToTarget.getRotation();
                 double yaw = Math.toDegrees(rotation.getZ());
 
-                SmartDashboard.putNumber("3D/X_Meters", x);
-                SmartDashboard.putNumber("3D/Y_Meters", y);
-                SmartDashboard.putNumber("3D/Z_Meters", z);
-                SmartDashboard.putNumber("3D/Yaw_Degrees", yaw);
-                SmartDashboard.putNumber("3D/Ambiguity", target.getPoseAmbiguity());
+                ElasticDashboard.putNumber("3D/X_Meters", x);
+                ElasticDashboard.putNumber("3D/Y_Meters", y);
+                ElasticDashboard.putNumber("3D/Z_Meters", z);
+                ElasticDashboard.putNumber("3D/Yaw_Degrees", yaw);
+                ElasticDashboard.putNumber("3D/Ambiguity", target.getPoseAmbiguity());
 
                 // Debug: log estimated robot position for AdvantageScope
                 if (estimated.isPresent()) {
                     Pose3d est = estimated.get().estimatedPose;
-                    SmartDashboard.putNumber("Est/Robot/X", est.getX());
-                    SmartDashboard.putNumber("Est/Robot/Y", est.getY());
-                    SmartDashboard.putNumber("Est/Robot/Z", est.getZ());
-                    SmartDashboard.putNumber("Est/Robot/RotDeg", Math.toDegrees(est.getRotation().getZ()));
+                    ElasticDashboard.putNumber("Est/Robot/X", est.getX());
+                    ElasticDashboard.putNumber("Est/Robot/Y", est.getY());
+                    ElasticDashboard.putNumber("Est/Robot/Z", est.getZ());
+                    ElasticDashboard.putNumber("Est/Robot/RotDeg", Math.toDegrees(est.getRotation().getZ()));
                 }
 
             } catch (Exception e) {
-                SmartDashboard.putString("Vision/LoggingError", e.toString());
+                ElasticDashboard.putString("Vision/LoggingError", e.toString());
             }
 
         }

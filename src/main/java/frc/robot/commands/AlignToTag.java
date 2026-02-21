@@ -6,7 +6,7 @@ import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.ElasticDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.Swerve;
 import frc.robot.subsystems.Vision2025;
@@ -67,7 +67,7 @@ public class AlignToTag extends Command {
         xController.reset();
         yController.reset();
         rotController.reset();
-        SmartDashboard.putBoolean("AlignToTag/Active", true);
+    ElasticDashboard.putBoolean("AlignToTag/Active", true);
     }
 
     @Override
@@ -92,7 +92,7 @@ public class AlignToTag extends Command {
         } else {
             // No tag visible - stop
             swerve.drive(new Translation2d(0, 0), 0);
-            SmartDashboard.putNumber("AlignToTag/TagId", -1);
+            ElasticDashboard.putNumber("AlignToTag/TagId", -1);
         }
     }
 
@@ -134,9 +134,9 @@ public class AlignToTag extends Command {
         swerve.drive(new Translation2d(xSpeed, ySpeed), rotSpeed);
         
         // Debug
-        SmartDashboard.putNumber("AlignToTag/TagId", currentTagId);
-        SmartDashboard.putNumber("AlignToTag/Distance", distance);
-        SmartDashboard.putNumber("AlignToTag/RotError", Math.toDegrees(rotError));
+    ElasticDashboard.putNumber("AlignToTag/TagId", currentTagId);
+    ElasticDashboard.putNumber("AlignToTag/Distance", distance);
+    ElasticDashboard.putNumber("AlignToTag/RotError", Math.toDegrees(rotError));
     }
 
     private void driveCameraRelative(Transform3d transform) {
@@ -158,8 +158,8 @@ public class AlignToTag extends Command {
         swerve.setFieldRelative(false);
         swerve.drive(new Translation2d(forwardSpeed, strafeSpeed), rotSpeed);
         
-        SmartDashboard.putNumber("AlignToTag/TagId", currentTagId);
-        SmartDashboard.putNumber("AlignToTag/CamDistance", tagX);
+    ElasticDashboard.putNumber("AlignToTag/TagId", currentTagId);
+    ElasticDashboard.putNumber("AlignToTag/CamDistance", tagX);
     }
 
     private double clamp(double value, double min, double max) {
@@ -175,6 +175,6 @@ public class AlignToTag extends Command {
     public void end(boolean interrupted) {
         swerve.drive(new Translation2d(0, 0), 0);
         swerve.setFieldRelative(true);
-        SmartDashboard.putBoolean("AlignToTag/Active", false);
+    ElasticDashboard.putBoolean("AlignToTag/Active", false);
     }
 }

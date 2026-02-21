@@ -3,7 +3,7 @@ package frc.robot.commands;
 import java.util.Optional;
 
 import edu.wpi.first.math.geometry.Transform3d;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.ElasticDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.Vision2025;
@@ -30,7 +30,7 @@ public class ShootBall extends Command {
 
     @Override
     public void initialize() {
-        SmartDashboard.putBoolean("ShootBall/Active", true);
+    ElasticDashboard.putBoolean("ShootBall/Active", true);
     }
 
     @Override
@@ -42,12 +42,12 @@ public class ShootBall extends Command {
             // Get distance (X component is forward distance to tag)
             double distance = targetTransform.get().getX();
             shooter.shootForDistance(distance);
-            SmartDashboard.putNumber("ShootBall/Distance", distance);
-            SmartDashboard.putBoolean("ShootBall/TagVisible", true);
+            ElasticDashboard.putNumber("ShootBall/Distance", distance);
+            ElasticDashboard.putBoolean("ShootBall/TagVisible", true);
         } else {
             // No tag visible - use default speed
             shooter.shoot();
-            SmartDashboard.putBoolean("ShootBall/TagVisible", false);
+            ElasticDashboard.putBoolean("ShootBall/TagVisible", false);
         }
     }
 
@@ -60,6 +60,6 @@ public class ShootBall extends Command {
     @Override
     public void end(boolean interrupted) {
         shooter.stop();
-        SmartDashboard.putBoolean("ShootBall/Active", false);
+    ElasticDashboard.putBoolean("ShootBall/Active", false);
     }
 }
