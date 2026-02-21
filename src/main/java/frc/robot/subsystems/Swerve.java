@@ -8,11 +8,10 @@ import frc.robot.Constants;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 
-//import edu.wpi.first.util.datalog.DataLogManager;
-
 import edu.wpi.first.util.datalog.DoubleLogEntry;
-import edu.wpi.first.wpilibj.Timer;
 import com.ctre.phoenix6.hardware.Pigeon2;
+import com.ctre.phoenix6.BaseStatusSignal;
+import com.ctre.phoenix6.StatusSignal;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.FollowPathCommand;
 import com.pathplanner.lib.path.PathPlannerPath;
@@ -31,11 +30,16 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructArrayPublisher;
+import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import frc.robot.ElasticDashboard;
@@ -78,7 +82,6 @@ public class Swerve extends SubsystemBase {
     private Optional<Translation2d> lockedOnto = Optional.empty();
 
     private final SwerveDrivePoseEstimator poseEstimator;
-    private double lastLogTime = 0.0;
     DoubleLogEntry Module0SpeedLog;
     DoubleLogEntry Module0AngleLog;
     DoubleLogEntry Module1SpeedLog;
@@ -92,6 +95,24 @@ public class Swerve extends SubsystemBase {
     private DoubleLogEntry gyroPitchLog;
     private DoubleLogEntry gyroRollLog;
     private DoubleLogEntry gyroYawRateLog;
+
+    // ── AdvantageScope 3D struct publishers (published to NetworkTables) ──
+    private final StructPublisher<Pose3d> robotPose3dPub;
+    private final StructArrayPublisher<SwerveModuleState> measuredStatesPub;
+    private final StructArrayPublisher<SwerveModuleState> desiredStatesPub;
+
+    // Store desired states for logging
+    private SwerveModuleState[] lastDesiredStates = new SwerveModuleState[4];
+
+    // Cached Pigeon2 status signals (batched refresh is faster & more consistent)
+    private StatusSignal<?> yawSignal;
+    private StatusSignal<?> pitchSignal;
+    private StatusSignal<?> rollSignal;
+    private StatusSignal<?> yawRateSignal;
+
+    // Cycle counter for throttling SmartDashboard (debug text every 5th cycle =
+    // 100ms)
+    private int periodicCounter = 0;
 
     // Alert Mod0Alert = new Alert()
 
@@ -111,7 +132,17 @@ public class Swerve extends SubsystemBase {
                         Constants.Swerve.Mod0.angleMotorID,
                         Constants.Swerve.Mod0.angleEncoderID,
                         Constants.Swerve.Mod0.angleOffset),
+                new SwerveModule(0,
+                        Constants.Swerve.Mod0.driveMotorID,
+                        Constants.Swerve.Mod0.angleMotorID,
+                        Constants.Swerve.Mod0.angleEncoderID,
+                        Constants.Swerve.Mod0.angleOffset),
 
+                new SwerveModule(1,
+                        Constants.Swerve.Mod1.driveMotorID,
+                        Constants.Swerve.Mod1.angleMotorID,
+                        Constants.Swerve.Mod1.angleEncoderID,
+                        Constants.Swerve.Mod1.angleOffset),
                 new SwerveModule(1,
                         Constants.Swerve.Mod1.driveMotorID,
                         Constants.Swerve.Mod1.angleMotorID,
@@ -123,7 +154,17 @@ public class Swerve extends SubsystemBase {
                         Constants.Swerve.Mod2.angleMotorID,
                         Constants.Swerve.Mod2.angleEncoderID,
                         Constants.Swerve.Mod2.angleOffset),
+                new SwerveModule(2,
+                        Constants.Swerve.Mod2.driveMotorID,
+                        Constants.Swerve.Mod2.angleMotorID,
+                        Constants.Swerve.Mod2.angleEncoderID,
+                        Constants.Swerve.Mod2.angleOffset),
 
+                new SwerveModule(3,
+                        Constants.Swerve.Mod3.driveMotorID,
+                        Constants.Swerve.Mod3.angleMotorID,
+                        Constants.Swerve.Mod3.angleEncoderID,
+                        Constants.Swerve.Mod3.angleOffset),
                 new SwerveModule(3,
                         Constants.Swerve.Mod3.driveMotorID,
                         Constants.Swerve.Mod3.angleMotorID,
@@ -151,8 +192,52 @@ public class Swerve extends SubsystemBase {
         gyroRollLog = new DoubleLogEntry(log, "/swerve/gyro/roll");
         gyroYawRateLog = new DoubleLogEntry(log, "/swerve/gyro/yawRate");
 
+        // Cache Pigeon2 status signals for batched refresh (lower latency, less CAN bus
+        // chatter)
+        yawSignal = pidgey.getYaw();
+        pitchSignal = pidgey.getPitch();
+        rollSignal = pidgey.getRoll();
+        yawRateSignal = pidgey.getAngularVelocityZWorld();
+
+        // Increase Pigeon2 update rate to 100Hz for smoother pose data
+        // Default is 50Hz (every 20ms) — at 100Hz we get fresh data every 10ms,
+        // so every robot cycle has fresh gyro with minimal stale-data lag.
+        BaseStatusSignal.setUpdateFrequencyForAll(100, yawSignal, pitchSignal, rollSignal, yawRateSignal);
+        pidgey.optimizeBusUtilization(); // suppress unused signals to save CAN bandwidth
+
+        // ── AdvantageScope 3D: publish structs to NetworkTables ──
+        var nt = NetworkTableInstance.getDefault();
+        robotPose3dPub = nt.getStructTopic("SmartDashboard/Swerve/RobotPose3d", Pose3d.struct).publish();
+        measuredStatesPub = nt.getStructArrayTopic("SmartDashboard/Swerve/MeasuredStates", SwerveModuleState.struct)
+                .publish();
+        desiredStatesPub = nt.getStructArrayTopic("SmartDashboard/Swerve/DesiredStates", SwerveModuleState.struct)
+                .publish();
+
+        // Init desired states to zero
+        for (int i = 0; i < 4; i++) {
+            lastDesiredStates[i] = new SwerveModuleState();
+        }
+
         // Configure AutoBuilder
         AutoBuilder.configure(
+                this::getPose,
+                this::setPose,
+                this::getChassisSpeeds,
+                (speeds, feedforwards) -> drive(speeds),
+                Constants.Swerve.pathFollowerConfig, // controller
+                Constants.Swerve.config, // add robot configuration here
+                () -> {
+                    // Boolean supplier that controls when the path will be mirrored for the red
+                    // alliance
+                    // This will flip the path being followed to the red side of the field.
+                    // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
+                    var alliance = DriverStation.getAlliance();
+                    if (alliance.isPresent()) {
+                        return alliance.get() == DriverStation.Alliance.Red;
+                    }
+                    return false;
+                },
+                this);
                 this::getPose,
                 this::setPose,
                 this::getChassisSpeeds,
@@ -193,10 +278,13 @@ public class Swerve extends SubsystemBase {
 
         });
 
+
     }
+
 
     public void lockOnto(Translation2d translation2d) {
         rotationLockController.reset();
+
 
         lockedOnto = Optional.of(translation2d);
 
@@ -205,12 +293,14 @@ public class Swerve extends SubsystemBase {
     public void unlock() {
         lockedOnto = Optional.empty();
 
+
     }
 
     public boolean locked() {
         return lockedOnto.isPresent();
 
     }
+
 
     /**
      * Drives the swerve drive based on field-relative {@link ChassisSpeeds}.
@@ -232,6 +322,8 @@ public class Swerve extends SubsystemBase {
     /**
      * Drives the swerve drive based on translation and rotation inputs.
      *
+     * @param translation The translation vector representing movement in x and y
+     *                    directions.
      * @param translation The translation vector representing movement in x and y
      *                    directions.
      * @param rotation    The rotation value for the swerve drive.
@@ -324,8 +416,8 @@ public class Swerve extends SubsystemBase {
                 currentPose.getY() - targetPose.getY(),
                 currentPose.getRotation().getRadians() - targetPose.getRotation().getRadians() };
         double[] speeds = { xSpeed, ySpeed, goalSpeed };
-    ElasticDashboard.putString("LockOnErrors", Arrays.toString(errors));
-    ElasticDashboard.putString("LockOnSpeeds", Arrays.toString(speeds));
+        ElasticDashboard.putString("LockOnErrors", Arrays.toString(errors));
+        ElasticDashboard.putString("LockOnSpeeds", Arrays.toString(speeds));
 
         drive(new Translation2d(xSpeed, ySpeed), goalSpeed);
     }
@@ -350,6 +442,8 @@ public class Swerve extends SubsystemBase {
         for (SwerveModule mod : swerveModules) {
             mod.setDesiredState(desiredStates[mod.moduleNumber]);
         }
+        // Capture for AdvantageScope 3D logging
+        lastDesiredStates = desiredStates;
     }
 
     /**
@@ -427,7 +521,9 @@ public class Swerve extends SubsystemBase {
      * @return The current gyro angle.
      */
     public Rotation2d getGyroAngle() {
-        double yaw = pidgey.getYaw().refresh().getValueAsDouble();
+        // Use the cached yaw signal — it's batch-refreshed in periodic() via
+        // BaseStatusSignal.refreshAll(). Avoids extra CAN bus round-trips.
+        double yaw = yawSignal.getValueAsDouble();
         return (Constants.Swerve.invertGyro) ? Rotation2d.fromDegrees(360 - yaw)
                 : Rotation2d.fromDegrees(yaw);
 
@@ -510,52 +606,63 @@ public class Swerve extends SubsystemBase {
 
     @Override
     public void periodic() {
-    ElasticDashboard.putString("Swerve Status", swerveStatus.toString());
-    ElasticDashboard.putBoolean("added vision in swerve:", addedVision);
+        // ── 1. Batch-refresh all Pigeon2 signals in one CAN frame FIRST ──
+        // Must happen before getGyroAngle() / odometry update so they use fresh data.
+        BaseStatusSignal.refreshAll(yawSignal, pitchSignal, rollSignal, yawRateSignal);
+        double yaw = yawSignal.getValueAsDouble();
+        double pitch = pitchSignal.getValueAsDouble();
+        double roll = rollSignal.getValueAsDouble();
+        double yawRate = yawRateSignal.getValueAsDouble();
 
-    field.setRobotPose(getPose());
-
-    ElasticDashboard.putData("Swerve - Field", field);
-
+        // ── 2. Update odometry (uses fresh gyro from step 1 + latest vision from
+        // robotPeriodic) ──
         poseEstimator.update(getGyroAngle(), getModulePositions());
 
-        double now = Timer.getFPGATimestamp();
+        Pose2d currentPose = getPose();
 
-        // Log speed ang angle of the swerve modules every second
-        if (now - lastLogTime >= 1.0) {
-            Module0SpeedLog.append(
-                    swerveModules[0].getState().speedMetersPerSecond);
-            Module0AngleLog.append(
-                    swerveModules[0].getState().angle.getDegrees());
-            Module1SpeedLog.append(
-                    swerveModules[1].getState().speedMetersPerSecond);
-            Module1AngleLog.append(
-                    swerveModules[1].getState().angle.getDegrees());
-            Module2SpeedLog.append(
-                    swerveModules[2].getState().speedMetersPerSecond);
-            Module2AngleLog.append(
-                    swerveModules[2].getState().angle.getDegrees());
-            Module3SpeedLog.append(
-                    swerveModules[3].getState().speedMetersPerSecond);
-            Module3AngleLog.append(
-                    swerveModules[3].getState().angle.getDegrees());
+        // ── AdvantageScope 3D: Publish robot Pose3d (every cycle = smooth) ──
+        Pose3d robotPose3d = new Pose3d(
+                currentPose.getX(),
+                currentPose.getY(),
+                0.0,
+                new Rotation3d(
+                        Math.toRadians(roll),
+                        Math.toRadians(pitch),
+                        currentPose.getRotation().getRadians()));
+        robotPose3dPub.set(robotPose3d);
 
-            double yaw = pidgey.getYaw().refresh().getValueAsDouble();
-            double pitch = pidgey.getPitch().refresh().getValueAsDouble();
-            double roll = pidgey.getRoll().refresh().getValueAsDouble();
-            double yawRate = pidgey.getAngularVelocityZWorld().refresh().getValueAsDouble();
+        // ── AdvantageScope 3D: Publish swerve module states (every cycle) ──
+        measuredStatesPub.set(getModuleStates());
+        desiredStatesPub.set(lastDesiredStates);
 
-            gyroYawLog.append(yaw);
-            gyroPitchLog.append(pitch);
-            gyroRollLog.append(roll);
-            gyroYawRateLog.append(yawRate);
+        // Field2d for 2D field view (every cycle)
+        field.setRobotPose(currentPose);
+        ElasticDashboard.putData(field);
+
+        // ── Flush NT immediately so AdvantageScope gets data ASAP ──
+        // Without this, data sits in the NT buffer up to 100ms before being sent.
+        NetworkTableInstance.getDefault().flush();
+
+        // Gyro data log (every cycle — these go to .wpilog file, cheap)
+        gyroYawLog.append(yaw);
+        gyroPitchLog.append(pitch);
+        gyroRollLog.append(roll);
+        gyroYawRateLog.append(yawRate);
+
+        // ── Throttle SmartDashboard debug text to every 5th cycle (~100ms) ──
+        // These string/number puts compete with struct data for NT bandwidth.
+        periodicCounter++;
+        if (periodicCounter >= 5) {
+            periodicCounter = 0;
+
+            ElasticDashboard.putString("Swerve Status", swerveStatus.toString());
+            ElasticDashboard.putBoolean("added vision in swerve:", addedVision);
 
             ElasticDashboard.putNumber("Gyro Yaw", yaw);
             ElasticDashboard.putNumber("Gyro Pitch", pitch);
             ElasticDashboard.putNumber("Gyro Roll", roll);
             ElasticDashboard.putNumber("Gyro Yaw Rate", yawRate);
 
-            lastLogTime = now;
         }
 
         for (SwerveModule mod : swerveModules) {

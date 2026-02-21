@@ -18,6 +18,7 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 // removed unused import
+// removed unused import
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import frc.robot.ElasticDashboard;
@@ -28,7 +29,9 @@ import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.util.datalog.DataLog;
 import edu.wpi.first.util.datalog.IntegerLogEntry;
-import edu.wpi.first.util.datalog.StructLogEntry;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructArrayPublisher;
+import edu.wpi.first.networktables.StructPublisher;
 
 /**
  * Subsystem for vision processing using PhotonVision.
@@ -41,7 +44,6 @@ public class Vision2025 extends SubsystemBase {
     private AprilTagFieldLayout aprilTagFieldLayout;
     private Field2d field;
     private DoubleLogEntry distancelog;
-    private double lastLogTime = 0.0;
     private IntegerLogEntry tagNumberLogger;
     private DoubleLogEntry robotPoseXLogger;
     private DoubleLogEntry robotPoseYLogger;
@@ -52,9 +54,13 @@ public class Vision2025 extends SubsystemBase {
     private DoubleLogEntry bestTagYawLogger;
     private DoubleLogEntry bestTagPitchLogger;
 
-    // Struct-based logging for proper 3D visualization in AdvantageScope
-    private StructLogEntry<Pose3d> robotPose3dLogger;
-    private StructLogEntry<Transform3d> targetTransformLogger;
+    // ── AdvantageScope 3D struct publishers ──
+    private final StructPublisher<Pose3d> visionRobotPose3dPub;
+    private final StructPublisher<Pose3d> cameraPose3dPub;
+    private final StructArrayPublisher<Pose3d> detectedTagPosesPub;
+
+    // Cycle counter for throttling SmartDashboard debug text
+    private int periodicCounter = 0;
 
     /**
      * Constructs a new Vision instance.
@@ -85,14 +91,10 @@ public class Vision2025 extends SubsystemBase {
         distancelog = new DoubleLogEntry(log, "Vision/Distance");
         tagNumberLogger = new IntegerLogEntry(log, "Vision/TagNumber");
 
-        // Robot pose log entries for visualization (AdvantageScope / AdvantageKit)
+        // Robot pose log entries for visualization (AdvantageScope)
         robotPoseXLogger = new DoubleLogEntry(log, "Vision/RobotPose/X");
         robotPoseYLogger = new DoubleLogEntry(log, "Vision/RobotPose/Y");
         robotPoseRotLogger = new DoubleLogEntry(log, "Vision/RobotPose/RotDeg");
-
-        // Struct loggers for proper 3D visualization
-        robotPose3dLogger = StructLogEntry.create(log, "Vision/RobotPose3d", Pose3d.struct);
-        targetTransformLogger = StructLogEntry.create(log, "Vision/TargetTransform3d", Transform3d.struct);
 
         // Best-target (camera->target) transform entries
         bestTagXLogger = new DoubleLogEntry(log, "Vision/BestTarget/X");
@@ -100,6 +102,12 @@ public class Vision2025 extends SubsystemBase {
         bestTagZLogger = new DoubleLogEntry(log, "Vision/BestTarget/Z");
         bestTagYawLogger = new DoubleLogEntry(log, "Vision/BestTarget/YawDeg");
         bestTagPitchLogger = new DoubleLogEntry(log, "Vision/BestTarget/PitchDeg");
+
+        // ── AdvantageScope 3D struct publishers ──
+        var nt = NetworkTableInstance.getDefault();
+        visionRobotPose3dPub = nt.getStructTopic("SmartDashboard/Vision/RobotPose3d", Pose3d.struct).publish();
+        cameraPose3dPub = nt.getStructTopic("SmartDashboard/Vision/CameraPose3d", Pose3d.struct).publish();
+        detectedTagPosesPub = nt.getStructArrayTopic("SmartDashboard/Vision/DetectedTagPoses", Pose3d.struct).publish();
 
     }
 
@@ -556,20 +564,25 @@ public class Vision2025 extends SubsystemBase {
     public int[] targetIds;
 
     /**
-     * Periodicly update SmartDashboard and track april tags.
+     * Periodically update SmartDashboard and log data for AdvantageScope 3D.
+     * 
+     * NOTE: The pose estimator is updated via getEstimatedPose() which is called
+     * from RobotContainer.robotPeriodic(). We use the cached result here so we
+     * don't call estimator.update() twice per cycle.
      */
     @Override
     public void periodic() {
-        get(); // Query the camera for the latest result
+        // NOTE: vision.get() is called from RobotContainer.robotPeriodic() already.
+        // Do NOT call get() here — double-consuming camera frames causes jitter.
 
-        // Has targets
         if (null == latestResult) {
             return;
         }
 
     ElasticDashboard.putBoolean("Vision - Has Targets", latestResult.hasTargets());
+        boolean hasTargets = latestResult.hasTargets();
 
-        // Tracked targets ids
+        // Track detected tag IDs
         targetIds = new int[latestResult.targets.size()];
         for (int i = 0; i < latestResult.targets.size(); i++) {
             targetIds[i] = latestResult.targets.get(i).getFiducialId();
@@ -602,103 +615,91 @@ public class Vision2025 extends SubsystemBase {
 
         if (estimated.isPresent()) {
             Pose3d meterPose = estimated.get().estimatedPose;
-            // Update Field2d with a Pose2d (use Pose2d constructor)
-            field.setRobotPose(new Pose2d(meterPose.getX(), meterPose.getY(), meterPose.getRotation().toRotation2d()));
+            field.setRobotPose(meterPose.toPose2d());
 
-            Pose3d inchPose = new Pose3d(
-                    meterPose.getTranslation().getX() * 39.3701,
-                    meterPose.getTranslation().getY() * 39.3701,
-                    meterPose.getTranslation().getZ() * 39.3701,
-                    meterPose.getRotation());
-            ElasticDashboard.putString("Vision - Estimated Pose (in)", inchPose.toString());
+            // Vision-estimated robot pose (shows as "ghost" in AdvantageScope)
+            visionRobotPose3dPub.set(meterPose);
 
-            ElasticDashboard.putString("Rotation - vision: ", meterPose.getRotation().toString());
+            // Camera pose in field coordinates
+            Pose3d cameraPoseField = meterPose.transformBy(Constants.Vision.robotToCamera);
+            cameraPose3dPub.set(cameraPoseField);
+        }
+        SmartDashboard.putData("Vision - Field", field);
+
+        // Detected tag poses (AdvantageScope renders these as highlighted tags)
+        if (hasTargets) {
+            Pose3d[] tagPoses = latestResult.targets.stream()
+                    .map(t -> aprilTagFieldLayout.getTagPose(t.getFiducialId()))
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .toArray(Pose3d[]::new);
+            detectedTagPosesPub.set(tagPoses);
+        } else {
+            detectedTagPosesPub.set(new Pose3d[0]);
         }
 
-        // Field
-    ElasticDashboard.putData("Vision - Field", field);
-
-        // Log every periodic cycle for maximum smoothness
-        if ((latestResult != null) && latestResult.hasTargets()) {
+        // Data log entries (every cycle — cheap, goes to .wpilog file)
+        if (hasTargets) {
             try {
-                var target = latestResult.getBestTarget();
-                int tagNumber = target.getFiducialId();
-                double dist = target.getBestCameraToTarget().getX();
+                var bestTarget = latestResult.getBestTarget();
+                tagNumberLogger.append(bestTarget.getFiducialId());
+                distancelog.append(bestTarget.getBestCameraToTarget().getX());
 
-                tagNumberLogger.append(tagNumber);
-                distancelog.append(dist);
-
-                // Log robot pose (if available) so AdvantageScope can show robot on field
-                // PhotonPoseEstimator returns pose in FIELD frame (meters):
-                // - X: forward (0 = red wall, 16.54 = blue wall)
-                // - Y: left (0 = red wall, 8.23 = blue wall)
-                // - Z: height (0 = ground, bumper ~0.35m)
                 if (estimated.isPresent()) {
-                    Pose3d meterPose = estimated.get().estimatedPose;
-                    robotPoseXLogger.append(meterPose.getTranslation().getX());
-                    robotPoseYLogger.append(meterPose.getTranslation().getY());
-                    // log rotation in degrees (yaw)
-                    double yaw = meterPose.getRotation().getZ(); // radians
-                    robotPoseRotLogger.append(Math.toDegrees(yaw));
-
-                    // Log full Pose3d struct with only yaw (heading) for proper 3D visualization
-                    Rotation3d robotYawRotation = new Rotation3d(0, 0, yaw);
-                    Pose3d robotPose3d = new Pose3d(
-                            meterPose.getTranslation().getX(),
-                            meterPose.getTranslation().getY(),
-                            0.35, // bumper height in meters
-                            robotYawRotation);
-                    robotPose3dLogger.append(robotPose3d);
+                    Pose3d estPose = estimated.get().estimatedPose;
+                    robotPoseXLogger.append(estPose.getX());
+                    robotPoseYLogger.append(estPose.getY());
+                    robotPoseRotLogger.append(Math.toDegrees(estPose.getRotation().getZ()));
                 }
 
-                // IMPORTANT: Log camera->target transform (distance/bearing to tag)
-                // Camera frame coordinates (from PhotonVision):
-                // - X: forward distance (away from camera, along optical axis)
-                // - Y: left offset (horizontal, left of optical axis)
-                // - Z: up offset (vertical, above optical axis)
-                // AdvantageScope can use this to show tag position relative to camera
-                Transform3d camToTarget = target.getBestCameraToTarget();
+                Transform3d camToTarget = bestTarget.getBestCameraToTarget();
                 bestTagXLogger.append(camToTarget.getTranslation().getX());
                 bestTagYLogger.append(camToTarget.getTranslation().getY());
                 bestTagZLogger.append(camToTarget.getTranslation().getZ());
-                // get yaw/pitch from tracked target
-                bestTagYawLogger.append(target.getYaw());
-                bestTagPitchLogger.append(target.getPitch());
-
-                // Log full Transform3d struct for proper camera->target 3D visualization
-                targetTransformLogger.append(camToTarget);
-
-                // SmartDashboard 3D values for debugging
-                Transform3d cameraToTarget = target.getBestCameraToTarget();
-                Translation3d translation = cameraToTarget.getTranslation();
-                double x = translation.getX();
-                double y = translation.getY();
-                double z = translation.getZ();
-
-                Rotation3d rotation = cameraToTarget.getRotation();
-                double yaw = Math.toDegrees(rotation.getZ());
-
-                ElasticDashboard.putNumber("3D/X_Meters", x);
-                ElasticDashboard.putNumber("3D/Y_Meters", y);
-                ElasticDashboard.putNumber("3D/Z_Meters", z);
-                ElasticDashboard.putNumber("3D/Yaw_Degrees", yaw);
-                ElasticDashboard.putNumber("3D/Ambiguity", target.getPoseAmbiguity());
-
-                // Debug: log estimated robot position for AdvantageScope
-                if (estimated.isPresent()) {
-                    Pose3d est = estimated.get().estimatedPose;
-                    ElasticDashboard.putNumber("Est/Robot/X", est.getX());
-                    ElasticDashboard.putNumber("Est/Robot/Y", est.getY());
-                    ElasticDashboard.putNumber("Est/Robot/Z", est.getZ());
-                    ElasticDashboard.putNumber("Est/Robot/RotDeg", Math.toDegrees(est.getRotation().getZ()));
-                }
-
+                bestTagYawLogger.append(bestTarget.getYaw());
+                bestTagPitchLogger.append(bestTarget.getPitch());
             } catch (Exception e) {
-                ElasticDashboard.putString("Vision/LoggingError", e.toString());
+                // Logged below with SmartDashboard if throttle cycle allows
             }
-
         }
 
+        // ── Throttle SmartDashboard debug text to every 5th cycle (~100ms) ──
+        // Keeps NT bandwidth free for the struct publishers above.
+        periodicCounter++;
+        if (periodicCounter >= 5) {
+            periodicCounter = 0;
+
+            SmartDashboard.putBoolean("Vision - Has Targets", hasTargets);
+            SmartDashboard.putString("Vision - Tracked Targets", Arrays.toString(targetIds));
+            SmartDashboard.putBoolean("vision-estimated:", estimated.isPresent());
+
+            if (estimated.isPresent()) {
+                SmartDashboard.putString("Rotation - vision: ",
+                        estimated.get().estimatedPose.getRotation().toString());
+
+                Pose3d estPose = estimated.get().estimatedPose;
+                SmartDashboard.putNumber("Est/Robot/X", estPose.getX());
+                SmartDashboard.putNumber("Est/Robot/Y", estPose.getY());
+                SmartDashboard.putNumber("Est/Robot/Z", estPose.getZ());
+                SmartDashboard.putNumber("Est/Robot/RotDeg",
+                        Math.toDegrees(estPose.getRotation().getZ()));
+            }
+
+            if (hasTargets) {
+                try {
+                    var bestTarget = latestResult.getBestTarget();
+                    Transform3d camToTarget = bestTarget.getBestCameraToTarget();
+                    SmartDashboard.putNumber("3D/X_Meters", camToTarget.getX());
+                    SmartDashboard.putNumber("3D/Y_Meters", camToTarget.getY());
+                    SmartDashboard.putNumber("3D/Z_Meters", camToTarget.getZ());
+                    SmartDashboard.putNumber("3D/Yaw_Degrees",
+                            Math.toDegrees(camToTarget.getRotation().getZ()));
+                    SmartDashboard.putNumber("3D/Ambiguity", bestTarget.getPoseAmbiguity());
+                } catch (Exception e) {
+                    SmartDashboard.putString("Vision/LoggingError", e.toString());
+                }
+            }
+        }
     }
 
 }

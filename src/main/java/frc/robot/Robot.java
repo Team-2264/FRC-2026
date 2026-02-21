@@ -4,6 +4,7 @@
 
 package frc.robot;
 
+
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -19,17 +20,12 @@ import edu.wpi.first.util.datalog.DataLog;
 import edu.wpi.first.util.datalog.DoubleLogEntry;
 import edu.wpi.first.util.datalog.StringLogEntry;
 
-import org.littletonrobotics.junction.LogFileUtil;
-import org.littletonrobotics.junction.LoggedRobot;
-import org.littletonrobotics.junction.Logger;
-import org.littletonrobotics.junction.networktables.NT4Publisher;
-import org.littletonrobotics.junction.wpilog.WPILOGReader;
-import org.littletonrobotics.junction.wpilog.WPILOGWriter;
-
 import edu.wpi.first.wpilibj.DataLogManager;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
+import edu.wpi.first.wpilibj.PS5Controller;
 import edu.wpi.first.wpilibj.PS5Controller;
 
 /**
@@ -51,6 +47,8 @@ public class Robot extends TimedRobot {
     Alert alertTest = new Alert("This is a test!", AlertType.kError);
     DoubleLogEntry joystickLog;
     PS5Controller driver = new PS5Controller(0);
+    DoubleLogEntry joystickLog;
+    PS5Controller driver = new PS5Controller(0);
 
     /**
      * This function is run when the robot is first started up and should be used
@@ -59,28 +57,24 @@ public class Robot extends TimedRobot {
      */
     @Override
     public void robotInit() {
-        // Start Logging
-        // Instantiate our RobotContainer. This will perform all our button bindings,
-        // and put our autonomous chooser on the dashboard.
+        // ── Start WPILib data logging (writes .wpilog files to USB / roboRIO) ──
+        DataLogManager.start();
+        DataLogManager.log("Testing Wayzata");
+
+        // ── Instantiate robot container (subsystems, commands, button bindings) ──
         m_robotContainer = new RobotContainer();
 
         WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
 
-        // Record metadata
-        Logger.recordMetadata("ProjectName", "Wayzata2026Test");
-        Logger.recordMetadata("RobotMACAddress", "10");
-        Logger.recordMetadata("RobotInstance", "Trojans");
-        Logger.recordMetadata("BuildDate", "11/12/25");
+        alertTest.set(true);
 
-        alertTest.set(true); // Show alertTest
-
+        // Custom log entries
         DataLogManager.start();
-        // Set up custom log entries
         DataLog log = DataLogManager.getLog();
-        DataLogManager.log("Testing Wayzata");
         myBooleanLog = new BooleanLogEntry(log, "/my/boolean");
         myBatteryLog = new DoubleLogEntry(log, "/my/BatteryVoltage");
         myStringLog = new StringLogEntry(log, "/my/string");
+        joystickLog = new DoubleLogEntry(log, "/driver/leftStick");
 
         addPeriodic(() -> {
             myBatteryLog.update(RobotController.getBatteryVoltage(), RobotController.getFPGATime());
@@ -105,18 +99,22 @@ public class Robot extends TimedRobot {
 
     @Override
     public void robotPeriodic() {
-        // Runs the Scheduler. This is responsible for polling buttons, adding
-        // newly-scheduled
-        // commands, running already-scheduled commands, removing finished or
-        // interrupted commands,
-        // and running subsystem periodic() methods. This must be called from the
-        // robot's periodic
-        // block in order for anything in the Command-based framework to work.
+        // ── Vision pipeline FIRST — so pose corrections are applied before Swerve
+        // publishes ──
+        // This eliminates the 1-cycle (20ms) lag where Swerve.periodic() would publish
+        // a stale pose because vision hadn't been injected yet this cycle.
         try {
-            CommandScheduler.getInstance().run();
             if (m_robotContainer != null) {
                 m_robotContainer.robotPeriodic();
             }
+        } catch (Exception e) {
+            ElasticDashboard.putString("Robot/visionPeriodic Error", e.toString());
+        }
+
+        // ── Then run the scheduler (which calls subsystem periodics → Swerve
+        // publishes) ──
+        try {
+            CommandScheduler.getInstance().run();
         } catch (Exception e) {
             ElasticDashboard.putString("Robot/robotPeriodic Error", e.toString());
         }
@@ -231,5 +229,6 @@ public class Robot extends TimedRobot {
     @Override
     public void simulationPeriodic() {
     }
+
 
 }
