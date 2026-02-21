@@ -28,11 +28,16 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructArrayPublisher;
+import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -84,6 +89,14 @@ public class Swerve extends SubsystemBase {
     private DoubleLogEntry gyroRollLog;
     private DoubleLogEntry gyroYawRateLog;
 
+    // ── AdvantageScope 3D struct publishers (published to NetworkTables) ──
+    private final StructPublisher<Pose3d> robotPose3dPub;
+    private final StructArrayPublisher<SwerveModuleState> measuredStatesPub;
+    private final StructArrayPublisher<SwerveModuleState> desiredStatesPub;
+
+    // Store desired states for logging
+    private SwerveModuleState[] lastDesiredStates = new SwerveModuleState[4];
+
     // Alert Mod0Alert = new Alert()
 
     /**
@@ -134,6 +147,19 @@ public class Swerve extends SubsystemBase {
         gyroPitchLog = new DoubleLogEntry(log, "/swerve/gyro/pitch");
         gyroRollLog = new DoubleLogEntry(log, "/swerve/gyro/roll");
         gyroYawRateLog = new DoubleLogEntry(log, "/swerve/gyro/yawRate");
+
+        // ── AdvantageScope 3D: publish structs to NetworkTables ──
+        var nt = NetworkTableInstance.getDefault();
+        robotPose3dPub = nt.getStructTopic("SmartDashboard/Swerve/RobotPose3d", Pose3d.struct).publish();
+        measuredStatesPub = nt.getStructArrayTopic("SmartDashboard/Swerve/MeasuredStates", SwerveModuleState.struct)
+                .publish();
+        desiredStatesPub = nt.getStructArrayTopic("SmartDashboard/Swerve/DesiredStates", SwerveModuleState.struct)
+                .publish();
+
+        // Init desired states to zero
+        for (int i = 0; i < 4; i++) {
+            lastDesiredStates[i] = new SwerveModuleState();
+        }
 
         // Configure AutoBuilder
         AutoBuilder.configure(
@@ -334,6 +360,8 @@ public class Swerve extends SubsystemBase {
         for (SwerveModule mod : swerveModules) {
             mod.setDesiredState(desiredStates[mod.moduleNumber]);
         }
+        // Capture for AdvantageScope 3D logging
+        lastDesiredStates = desiredStates;
     }
 
     /**
@@ -495,18 +523,38 @@ public class Swerve extends SubsystemBase {
 
         Pose2d currentPose = getPose();
 
-        // Field2d widget (AdvantageScope reads this for 2D/3D field view)
-        field.setRobotPose(currentPose);
-        SmartDashboard.putData(field);
-        SmartDashboard.putString("Swerve Status", swerveStatus.toString());
-        SmartDashboard.putBoolean("added vision in swerve:", addedVision);
-
-        // Gyro data every cycle
+        // ── AdvantageScope 3D: Publish robot pose as Pose3d ──
+        // AdvantageScope reads Pose3d structs from NT to place the robot on the 3D
+        // field.
+        // Bumper height ~0.35m, gyro pitch/roll included for tilt visualization.
         double yaw = pidgey.getYaw().refresh().getValueAsDouble();
         double pitch = pidgey.getPitch().refresh().getValueAsDouble();
         double roll = pidgey.getRoll().refresh().getValueAsDouble();
         double yawRate = pidgey.getAngularVelocityZWorld().refresh().getValueAsDouble();
 
+        Pose3d robotPose3d = new Pose3d(
+                currentPose.getX(),
+                currentPose.getY(),
+                0.0, // ground level — AdvantageScope adds bumper height from robot model
+                new Rotation3d(
+                        Math.toRadians(roll),
+                        Math.toRadians(pitch),
+                        currentPose.getRotation().getRadians()));
+        robotPose3dPub.set(robotPose3d);
+
+        // ── AdvantageScope 3D: Publish swerve module states ──
+        // AdvantageScope uses SwerveModuleState[] to render individual wheel
+        // directions/speeds.
+        measuredStatesPub.set(getModuleStates());
+        desiredStatesPub.set(lastDesiredStates);
+
+        // Field2d widget (AdvantageScope also reads this for 2D field view)
+        field.setRobotPose(currentPose);
+        SmartDashboard.putData(field);
+        SmartDashboard.putString("Swerve Status", swerveStatus.toString());
+        SmartDashboard.putBoolean("added vision in swerve:", addedVision);
+
+        // Gyro data log + SmartDashboard
         gyroYawLog.append(yaw);
         gyroPitchLog.append(pitch);
         gyroRollLog.append(roll);

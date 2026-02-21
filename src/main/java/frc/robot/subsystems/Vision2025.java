@@ -26,6 +26,9 @@ import edu.wpi.first.util.datalog.DoubleLogEntry;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.util.datalog.DataLog;
 import edu.wpi.first.util.datalog.IntegerLogEntry;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructArrayPublisher;
+import edu.wpi.first.networktables.StructPublisher;
 
 /**
  * Subsystem for vision processing using PhotonVision.
@@ -47,6 +50,11 @@ public class Vision2025 extends SubsystemBase {
     private DoubleLogEntry bestTagZLogger;
     private DoubleLogEntry bestTagYawLogger;
     private DoubleLogEntry bestTagPitchLogger;
+
+    // ── AdvantageScope 3D struct publishers ──
+    private final StructPublisher<Pose3d> visionRobotPose3dPub;
+    private final StructPublisher<Pose3d> cameraPose3dPub;
+    private final StructArrayPublisher<Pose3d> detectedTagPosesPub;
 
     /**
      * Constructs a new Vision instance.
@@ -77,7 +85,7 @@ public class Vision2025 extends SubsystemBase {
         distancelog = new DoubleLogEntry(log, "Vision/Distance");
         tagNumberLogger = new IntegerLogEntry(log, "Vision/TagNumber");
 
-        // Robot pose log entries for visualization (AdvantageScope / AdvantageKit)
+        // Robot pose log entries for visualization (AdvantageScope)
         robotPoseXLogger = new DoubleLogEntry(log, "Vision/RobotPose/X");
         robotPoseYLogger = new DoubleLogEntry(log, "Vision/RobotPose/Y");
         robotPoseRotLogger = new DoubleLogEntry(log, "Vision/RobotPose/RotDeg");
@@ -88,6 +96,12 @@ public class Vision2025 extends SubsystemBase {
         bestTagZLogger = new DoubleLogEntry(log, "Vision/BestTarget/Z");
         bestTagYawLogger = new DoubleLogEntry(log, "Vision/BestTarget/YawDeg");
         bestTagPitchLogger = new DoubleLogEntry(log, "Vision/BestTarget/PitchDeg");
+
+        // ── AdvantageScope 3D struct publishers ──
+        var nt = NetworkTableInstance.getDefault();
+        visionRobotPose3dPub = nt.getStructTopic("SmartDashboard/Vision/RobotPose3d", Pose3d.struct).publish();
+        cameraPose3dPub = nt.getStructTopic("SmartDashboard/Vision/CameraPose3d", Pose3d.struct).publish();
+        detectedTagPosesPub = nt.getStructArrayTopic("SmartDashboard/Vision/DetectedTagPoses", Pose3d.struct).publish();
 
     }
 
@@ -486,15 +500,32 @@ public class Vision2025 extends SubsystemBase {
         Optional<EstimatedRobotPose> estimated = lastEstimatedRobotBose;
         SmartDashboard.putBoolean("vision-estimated:", estimated.isPresent());
 
-        // Field2d widget — this is what AdvantageScope reads for 2D/3D field view
+        // Field2d widget for 2D view
         if (estimated.isPresent()) {
             Pose3d meterPose = estimated.get().estimatedPose;
             field.setRobotPose(meterPose.toPose2d());
             SmartDashboard.putString("Rotation - vision: ", meterPose.getRotation().toString());
+
+            // ── AdvantageScope 3D: Publish vision-estimated robot Pose3d ──
+            visionRobotPose3dPub.set(meterPose);
+
+            // ── AdvantageScope 3D: Publish camera pose in field coordinates ──
+            // Camera pose = robot pose + robotToCamera transform
+            Pose3d cameraPoseField = meterPose.transformBy(Constants.Vision.robotToCamera);
+            cameraPose3dPub.set(cameraPoseField);
         }
         SmartDashboard.putData("Vision - Field", field);
 
-        if (!hasTargets) {
+        // ── AdvantageScope 3D: Publish detected tag poses from the field layout ──
+        if (hasTargets) {
+            Pose3d[] tagPoses = latestResult.targets.stream()
+                    .map(t -> aprilTagFieldLayout.getTagPose(t.getFiducialId()))
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .toArray(Pose3d[]::new);
+            detectedTagPosesPub.set(tagPoses);
+        } else {
+            detectedTagPosesPub.set(new Pose3d[0]);
             return;
         }
 

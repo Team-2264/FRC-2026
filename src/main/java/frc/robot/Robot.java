@@ -19,13 +19,6 @@ import edu.wpi.first.util.datalog.DataLog;
 import edu.wpi.first.util.datalog.DoubleLogEntry;
 import edu.wpi.first.util.datalog.StringLogEntry;
 
-import org.littletonrobotics.junction.LogFileUtil;
-import org.littletonrobotics.junction.LoggedRobot;
-import org.littletonrobotics.junction.Logger;
-import org.littletonrobotics.junction.networktables.NT4Publisher;
-import org.littletonrobotics.junction.wpilog.WPILOGReader;
-import org.littletonrobotics.junction.wpilog.WPILOGWriter;
-
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Alert;
@@ -62,18 +55,6 @@ public class Robot extends TimedRobot {
         // ── Start WPILib data logging (writes .wpilog files to USB / roboRIO) ──
         DataLogManager.start();
         DataLogManager.log("Testing Wayzata");
-
-        // ── AdvantageKit Logger ──
-        // Publishes ALL logged data to NetworkTables so AdvantageScope can
-        // visualise the robot in 3D in real-time (not just from log files).
-        Logger.recordMetadata("ProjectName", "Wayzata2026");
-        Logger.recordMetadata("RobotInstance", "Trojans");
-        Logger.recordMetadata("BuildDate", "02/18/26");
-
-        // Write to .wpilog AND stream over NT4 at the same time
-        Logger.addDataReceiver(new WPILOGWriter()); // log to USB stick / roboRIO
-        Logger.addDataReceiver(new NT4Publisher()); // publish to NetworkTables for live 3D
-        Logger.start(); // must be called before any subsystem init
 
         // ── Instantiate robot container (subsystems, commands, button bindings) ──
         m_robotContainer = new RobotContainer();
