@@ -58,7 +58,16 @@ public class Robot extends TimedRobot {
         DataLogManager.log("Testing Wayzata");
 
         // ── Instantiate robot container (subsystems, commands, button bindings) ──
-        m_robotContainer = new RobotContainer();
+        try {
+            m_robotContainer = new RobotContainer();
+        } catch (Exception e) {
+            // Log to NetworkTables so we can see the exception on the driver station
+            ElasticDashboard.putString("Robot/InitException", e.toString());
+            // Also print stack for roboRIO logs
+            e.printStackTrace();
+            // keep m_robotContainer null so later code can handle absence
+            m_robotContainer = null;
+        }
 
         WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
 
