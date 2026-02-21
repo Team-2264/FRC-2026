@@ -10,6 +10,8 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 
 import edu.wpi.first.util.datalog.DoubleLogEntry;
 import com.ctre.phoenix6.hardware.Pigeon2;
+import com.ctre.phoenix6.BaseStatusSignal;
+import com.ctre.phoenix6.StatusSignal;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.FollowPathCommand;
 import com.pathplanner.lib.path.PathPlannerPath;
@@ -97,6 +99,16 @@ public class Swerve extends SubsystemBase {
     // Store desired states for logging
     private SwerveModuleState[] lastDesiredStates = new SwerveModuleState[4];
 
+    // Cached Pigeon2 status signals (batched refresh is faster & more consistent)
+    private StatusSignal<?> yawSignal;
+    private StatusSignal<?> pitchSignal;
+    private StatusSignal<?> rollSignal;
+    private StatusSignal<?> yawRateSignal;
+
+    // Cycle counter for throttling SmartDashboard (debug text every 5th cycle =
+    // 100ms)
+    private int periodicCounter = 0;
+
     // Alert Mod0Alert = new Alert()
 
     /**
@@ -147,6 +159,13 @@ public class Swerve extends SubsystemBase {
         gyroPitchLog = new DoubleLogEntry(log, "/swerve/gyro/pitch");
         gyroRollLog = new DoubleLogEntry(log, "/swerve/gyro/roll");
         gyroYawRateLog = new DoubleLogEntry(log, "/swerve/gyro/yawRate");
+
+        // Cache Pigeon2 status signals for batched refresh (lower latency, less CAN bus
+        // chatter)
+        yawSignal = pidgey.getYaw();
+        pitchSignal = pidgey.getPitch();
+        rollSignal = pidgey.getRoll();
+        yawRateSignal = pidgey.getAngularVelocityZWorld();
 
         // ── AdvantageScope 3D: publish structs to NetworkTables ──
         var nt = NetworkTableInstance.getDefault();
@@ -518,55 +537,66 @@ public class Swerve extends SubsystemBase {
 
     @Override
     public void periodic() {
-        // Update odometry every cycle
+        // Update odometry every cycle (this is the core 50Hz loop — must stay fast)
         poseEstimator.update(getGyroAngle(), getModulePositions());
 
         Pose2d currentPose = getPose();
 
-        // ── AdvantageScope 3D: Publish robot pose as Pose3d ──
-        // AdvantageScope reads Pose3d structs from NT to place the robot on the 3D
-        // field.
-        // Bumper height ~0.35m, gyro pitch/roll included for tilt visualization.
-        double yaw = pidgey.getYaw().refresh().getValueAsDouble();
-        double pitch = pidgey.getPitch().refresh().getValueAsDouble();
-        double roll = pidgey.getRoll().refresh().getValueAsDouble();
-        double yawRate = pidgey.getAngularVelocityZWorld().refresh().getValueAsDouble();
+        // ── Batch-refresh all Pigeon2 signals in one CAN frame ──
+        // This is faster than 4 separate .refresh() calls and ensures all values
+        // come from the same CAN timestamp (no inter-sample skew = smoother 3D).
+        BaseStatusSignal.refreshAll(yawSignal, pitchSignal, rollSignal, yawRateSignal);
+        double yaw = yawSignal.getValueAsDouble();
+        double pitch = pitchSignal.getValueAsDouble();
+        double roll = rollSignal.getValueAsDouble();
+        double yawRate = yawRateSignal.getValueAsDouble();
 
+        // ── AdvantageScope 3D: Publish robot Pose3d (every cycle = smooth) ──
         Pose3d robotPose3d = new Pose3d(
                 currentPose.getX(),
                 currentPose.getY(),
-                0.0, // ground level — AdvantageScope adds bumper height from robot model
+                0.0,
                 new Rotation3d(
                         Math.toRadians(roll),
                         Math.toRadians(pitch),
                         currentPose.getRotation().getRadians()));
         robotPose3dPub.set(robotPose3d);
 
-        // ── AdvantageScope 3D: Publish swerve module states ──
-        // AdvantageScope uses SwerveModuleState[] to render individual wheel
-        // directions/speeds.
+        // ── AdvantageScope 3D: Publish swerve module states (every cycle) ──
         measuredStatesPub.set(getModuleStates());
         desiredStatesPub.set(lastDesiredStates);
 
-        // Field2d widget (AdvantageScope also reads this for 2D field view)
+        // Field2d for 2D field view (every cycle)
         field.setRobotPose(currentPose);
         SmartDashboard.putData(field);
-        SmartDashboard.putString("Swerve Status", swerveStatus.toString());
-        SmartDashboard.putBoolean("added vision in swerve:", addedVision);
 
-        // Gyro data log + SmartDashboard
+        // ── Flush NT immediately so AdvantageScope gets data ASAP ──
+        // Without this, data sits in the NT buffer up to 100ms before being sent.
+        NetworkTableInstance.getDefault().flush();
+
+        // Gyro data log (every cycle — these go to .wpilog file, cheap)
         gyroYawLog.append(yaw);
         gyroPitchLog.append(pitch);
         gyroRollLog.append(roll);
         gyroYawRateLog.append(yawRate);
 
-        SmartDashboard.putNumber("Gyro Yaw", yaw);
-        SmartDashboard.putNumber("Gyro Pitch", pitch);
-        SmartDashboard.putNumber("Gyro Roll", roll);
-        SmartDashboard.putNumber("Gyro Yaw Rate", yawRate);
+        // ── Throttle SmartDashboard debug text to every 5th cycle (~100ms) ──
+        // These string/number puts compete with struct data for NT bandwidth.
+        periodicCounter++;
+        if (periodicCounter >= 5) {
+            periodicCounter = 0;
 
-        for (SwerveModule mod : swerveModules) {
-            SmartDashboard.putNumber("Mod " + mod.moduleNumber, mod.getState().angle.getDegrees());
+            SmartDashboard.putString("Swerve Status", swerveStatus.toString());
+            SmartDashboard.putBoolean("added vision in swerve:", addedVision);
+
+            SmartDashboard.putNumber("Gyro Yaw", yaw);
+            SmartDashboard.putNumber("Gyro Pitch", pitch);
+            SmartDashboard.putNumber("Gyro Roll", roll);
+            SmartDashboard.putNumber("Gyro Yaw Rate", yawRate);
+
+            for (SwerveModule mod : swerveModules) {
+                SmartDashboard.putNumber("Mod " + mod.moduleNumber, mod.getState().angle.getDegrees());
+            }
         }
     }
 }
