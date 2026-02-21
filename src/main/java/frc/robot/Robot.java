@@ -13,6 +13,10 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import frc.robot.ElasticDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.net.WebServer;
 import edu.wpi.first.util.datalog.BooleanLogEntry;
@@ -61,9 +65,26 @@ public class Robot extends TimedRobot {
         try {
             m_robotContainer = new RobotContainer();
         } catch (Exception e) {
-            // Log to NetworkTables so we can see the exception on the driver station
-            ElasticDashboard.putString("Robot/InitException", e.toString());
-            // Also print stack for roboRIO logs
+            // Build a full stack-trace string
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            String stack = sw.toString();
+
+            // Publish to NetworkTables for quick visibility (may be null if NT not ready)
+            try {
+                ElasticDashboard.putString("Robot/InitException", stack);
+            } catch (Exception ignored) {
+            }
+
+            // Also write to a file on the roboRIO so you can fetch it over SSH
+            try {
+                Files.writeString(Path.of("/home/lvuser/init-exception.txt"), stack);
+            } catch (Exception writeErr) {
+                // If writing fails, at least print both exceptions to console
+                System.err.println("Failed to write init exception: " + writeErr.toString());
+            }
+
+            // Print to stdout/stderr so it appears in roboRIO logs
             e.printStackTrace();
             // keep m_robotContainer null so later code can handle absence
             m_robotContainer = null;

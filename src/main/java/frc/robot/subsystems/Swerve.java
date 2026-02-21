@@ -125,6 +125,17 @@ public class Swerve extends SubsystemBase {
         pidgey.getConfigurator().apply(new Pigeon2Configuration());
         zeroGyro();
 
+    // Cache Pigeon2 status signals for batched refresh (lower latency, less CAN
+    // chatter)
+    yawSignal = pidgey.getYaw();
+    pitchSignal = pidgey.getPitch();
+    rollSignal = pidgey.getRoll();
+    yawRateSignal = pidgey.getAngularVelocityZWorld();
+
+    // Increase Pigeon2 update rate to 100Hz for smoother pose data
+    BaseStatusSignal.setUpdateFrequencyForAll(100, yawSignal, pitchSignal, rollSignal, yawRateSignal);
+    pidgey.optimizeBusUtilization(); // suppress unused signals to save CAN bandwidth
+
         // Init Modules
         swerveModules = new SwerveModule[] {
                 new SwerveModule(0,
@@ -192,18 +203,7 @@ public class Swerve extends SubsystemBase {
         gyroRollLog = new DoubleLogEntry(log, "/swerve/gyro/roll");
         gyroYawRateLog = new DoubleLogEntry(log, "/swerve/gyro/yawRate");
 
-        // Cache Pigeon2 status signals for batched refresh (lower latency, less CAN bus
-        // chatter)
-        yawSignal = pidgey.getYaw();
-        pitchSignal = pidgey.getPitch();
-        rollSignal = pidgey.getRoll();
-        yawRateSignal = pidgey.getAngularVelocityZWorld();
-
-        // Increase Pigeon2 update rate to 100Hz for smoother pose data
-        // Default is 50Hz (every 20ms) — at 100Hz we get fresh data every 10ms,
-        // so every robot cycle has fresh gyro with minimal stale-data lag.
-        BaseStatusSignal.setUpdateFrequencyForAll(100, yawSignal, pitchSignal, rollSignal, yawRateSignal);
-        pidgey.optimizeBusUtilization(); // suppress unused signals to save CAN bandwidth
+        
 
         // ── AdvantageScope 3D: publish structs to NetworkTables ──
         var nt = NetworkTableInstance.getDefault();
