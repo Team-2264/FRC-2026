@@ -190,4 +190,24 @@ public class DriveToTag extends Command {
     ElasticDashboard.putBoolean("DriveToTag/Active", false);
     ElasticDashboard.putString("DriveToTag/Status", interrupted ? "INTERRUPTED" : "COMPLETE");
     }
+
+    // ---- Small helpers ----
+    /**
+     * Clamp value to [min, max].
+     */
+    private static double clamp(double v, double min, double max) {
+        return Math.max(min, Math.min(max, v));
+    }
+
+    /**
+     * Simple slew-rate limiter: move previous value toward target by at most
+     * maxDelta (absolute) and return the new value.
+     */
+    private static double slewLimit(double target, double prev, double maxDelta) {
+        double delta = target - prev;
+        if (Math.abs(delta) > maxDelta) {
+            delta = Math.signum(delta) * maxDelta;
+        }
+        return prev + delta;
+    }
 }

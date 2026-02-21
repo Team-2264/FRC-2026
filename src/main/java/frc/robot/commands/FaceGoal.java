@@ -100,7 +100,7 @@ public class FaceGoal extends Command {
             // Face a specific field position
             goalX = customGoalX;
             goalY = customGoalY;
-            SmartDashboard.putString("FaceGoal/Alliance", "CUSTOM TARGET");
+            ElasticDashboard.putString("FaceGoal/Alliance", "CUSTOM TARGET");
         } else {
             // Pick the correct reef based on alliance
             Optional<DriverStation.Alliance> alliance = DriverStation.getAlliance();
