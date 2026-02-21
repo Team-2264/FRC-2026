@@ -31,22 +31,19 @@ public class FaceTag extends Command {
         }
         
         Translation2d tagtranslation = switch(vision.targetIds[tagId]){ //vision.targetIds[vision.getClosestTarget()]
-            // 2026: tags 6, 7 are now coral station tags (in TagLocation)
-            case 6 -> Constants.TagLocation.tag6.getWpiBlue().getTranslation().toTranslation2d();
-            case 7 -> Constants.TagLocation.tag7.getWpiBlue().getTranslation().toTranslation2d();
-            // Reef tags remain in ReefTagLocation
+            case 6 -> Constants.ReefTagLocation.tag6.getWpiBlue().getTranslation().toTranslation2d();
+            case 7 -> Constants.ReefTagLocation.tag7.getWpiBlue().getTranslation().toTranslation2d();
             case 8 -> Constants.ReefTagLocation.tag8.getWpiBlue().getTranslation().toTranslation2d();
             case 9 -> Constants.ReefTagLocation.tag9.getWpiBlue().getTranslation().toTranslation2d();
             case 10 -> Constants.ReefTagLocation.tag10.getWpiBlue().getTranslation().toTranslation2d();
             case 11 -> Constants.ReefTagLocation.tag11.getWpiBlue().getTranslation().toTranslation2d();
 
-            // 2026: tags 17, 22 are now coral station tags (in TagLocation)
-            case 17 -> Constants.TagLocation.tag17.getWpiBlue().getTranslation().toTranslation2d();
+            case 17 -> Constants.ReefTagLocation.tag17.getWpiBlue().getTranslation().toTranslation2d();
             case 18 -> Constants.ReefTagLocation.tag18.getWpiBlue().getTranslation().toTranslation2d();
             case 19 -> Constants.ReefTagLocation.tag19.getWpiBlue().getTranslation().toTranslation2d();
             case 20 -> Constants.ReefTagLocation.tag20.getWpiBlue().getTranslation().toTranslation2d();
             case 21 -> Constants.ReefTagLocation.tag21.getWpiBlue().getTranslation().toTranslation2d();
-            case 22 -> Constants.TagLocation.tag22.getWpiBlue().getTranslation().toTranslation2d();
+            case 22 -> Constants.ReefTagLocation.tag22.getWpiBlue().getTranslation().toTranslation2d();
 
 
             default -> null;

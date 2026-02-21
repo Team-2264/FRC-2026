@@ -5,6 +5,7 @@
 package frc.robot;
 
 import frc.robot.commands.AlignToShoot;
+import frc.robot.commands.DriveAndFaceGoal;
 import frc.robot.commands.DriveToTag;
 import frc.robot.commands.FaceGoal;
 import frc.robot.commands.ShootBall;
@@ -73,9 +74,8 @@ public class RobotContainer {
         // Cross (X) - currently unused
         // (AlignToShoot moved to left D-pad)
 
-        // Square - Press once to drive toward the nearest visible tag (auto-stops at
-        // 0.5m)
-        DriveToTag driveToTagCommand = new DriveToTag(swerve, vision);
+        // Square - Press once to drive within 3.0m of tag 10 and center it in camera
+        DriveToTag driveToTagCommand = new DriveToTag(swerve, vision, 3.0, 10);
         controller.square().onTrue(driveToTagCommand);
 
         // Circle - Press to CANCEL DriveToTag
@@ -88,10 +88,10 @@ public class RobotContainer {
         // D-pad DOWN - Face Goal: rotate to face the reef center from any position
         controller.pov(180).onTrue(new FaceGoal(swerve));
 
-        // D-pad LEFT - AlignToShoot: strafe from coral station to reef center, then align
+        // D-pad LEFT - DriveAndFaceGoal: face goal, drive to tag, align + re-center
         //              Press to start, press again to cancel (toggleOnTrue)
-        AlignToShoot alignToShootCommand = new AlignToShoot(swerve, vision);
-        controller.pov(270).toggleOnTrue(alignToShootCommand);
+        DriveAndFaceGoal driveAndFaceCommand = new DriveAndFaceGoal(swerve, vision);
+        controller.pov(270).toggleOnTrue(driveAndFaceCommand);
     }
 
     public Command getAutonomousCommand() {
