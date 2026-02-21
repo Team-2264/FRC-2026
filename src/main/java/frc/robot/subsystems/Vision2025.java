@@ -579,7 +579,6 @@ public class Vision2025 extends SubsystemBase {
             return;
         }
 
-    ElasticDashboard.putBoolean("Vision - Has Targets", latestResult.hasTargets());
         boolean hasTargets = latestResult.hasTargets();
 
         // Track detected tag IDs
@@ -587,31 +586,12 @@ public class Vision2025 extends SubsystemBase {
         for (int i = 0; i < latestResult.targets.size(); i++) {
             targetIds[i] = latestResult.targets.get(i).getFiducialId();
         }
-    ElasticDashboard.putString("Vision - Tracked Targets", Arrays.toString(targetIds));
-        // SmartDashboard.putNumber("Vision - Closest Target",
-        // targetIds[getClosestTarget()]);
 
-        if (targetIds.length != 0 && latestResult.hasTargets()) {
-            try {
-                Transform3d targetTrans = latestResult.targets.get(0).getBestCameraToTarget();
-                ElasticDashboard.putString("PhotonTarget", targetTrans.toString());
-            } catch (Exception e) {
-                ElasticDashboard.putString("Vision/TargetAccessError", e.toString());
-            }
-        }
-
-        // Estimated pose (non-blocking) — use estimator.update which does local
-        // estimation
-        Optional<EstimatedRobotPose> estimated = Optional.empty();
-        try {
-            if (latestResult != null && latestResult.hasTargets()) {
-                estimated = estimator.update(latestResult);
-            }
-        } catch (Exception e) {
-            ElasticDashboard.putString("Vision/EstimatorError", e.toString());
-        }
-
-    ElasticDashboard.putBoolean("vision-estimated:", estimated.isPresent());
+        // Use the cached estimated pose from getEstimatedPose() which was already
+        // called in RobotContainer.robotPeriodic(). Do NOT call estimator.update()
+        // again — a second update produces a slightly different pose and causes
+        // the 3D model to flicker between two estimates.
+        Optional<EstimatedRobotPose> estimated = lastEstimatedRobotBose;
 
         if (estimated.isPresent()) {
             Pose3d meterPose = estimated.get().estimatedPose;
@@ -624,7 +604,6 @@ public class Vision2025 extends SubsystemBase {
             Pose3d cameraPoseField = meterPose.transformBy(Constants.Vision.robotToCamera);
             cameraPose3dPub.set(cameraPoseField);
         }
-    ElasticDashboard.putData("Vision - Field", field);
 
         // Detected tag poses (AdvantageScope renders these as highlighted tags)
         if (hasTargets) {
@@ -669,6 +648,7 @@ public class Vision2025 extends SubsystemBase {
         if (periodicCounter >= 5) {
             periodicCounter = 0;
 
+            ElasticDashboard.putData("Vision - Field", field);
             ElasticDashboard.putBoolean("Vision - Has Targets", hasTargets);
             ElasticDashboard.putString("Vision - Tracked Targets", Arrays.toString(targetIds));
             ElasticDashboard.putBoolean("vision-estimated:", estimated.isPresent());

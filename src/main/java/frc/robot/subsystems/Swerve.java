@@ -125,35 +125,25 @@ public class Swerve extends SubsystemBase {
         pidgey.getConfigurator().apply(new Pigeon2Configuration());
         zeroGyro();
 
-    // Cache Pigeon2 status signals for batched refresh (lower latency, less CAN
-    // chatter)
-    yawSignal = pidgey.getYaw();
-    pitchSignal = pidgey.getPitch();
-    rollSignal = pidgey.getRoll();
-    yawRateSignal = pidgey.getAngularVelocityZWorld();
+        // Cache Pigeon2 status signals for batched refresh (lower latency, less CAN
+        // chatter)
+        yawSignal = pidgey.getYaw();
+        pitchSignal = pidgey.getPitch();
+        rollSignal = pidgey.getRoll();
+        yawRateSignal = pidgey.getAngularVelocityZWorld();
 
-    // Increase Pigeon2 update rate to 100Hz for smoother pose data
-    BaseStatusSignal.setUpdateFrequencyForAll(100, yawSignal, pitchSignal, rollSignal, yawRateSignal);
-    pidgey.optimizeBusUtilization(); // suppress unused signals to save CAN bandwidth
+        // Increase Pigeon2 update rate to 100Hz for smoother pose data
+        BaseStatusSignal.setUpdateFrequencyForAll(100, yawSignal, pitchSignal, rollSignal, yawRateSignal);
+        pidgey.optimizeBusUtilization(); // suppress unused signals to save CAN bandwidth
 
-        // Init Modules
+        // Init Modules (4 modules — one per corner)
         swerveModules = new SwerveModule[] {
                 new SwerveModule(0,
                         Constants.Swerve.Mod0.driveMotorID,
                         Constants.Swerve.Mod0.angleMotorID,
                         Constants.Swerve.Mod0.angleEncoderID,
                         Constants.Swerve.Mod0.angleOffset),
-                new SwerveModule(0,
-                        Constants.Swerve.Mod0.driveMotorID,
-                        Constants.Swerve.Mod0.angleMotorID,
-                        Constants.Swerve.Mod0.angleEncoderID,
-                        Constants.Swerve.Mod0.angleOffset),
 
-                new SwerveModule(1,
-                        Constants.Swerve.Mod1.driveMotorID,
-                        Constants.Swerve.Mod1.angleMotorID,
-                        Constants.Swerve.Mod1.angleEncoderID,
-                        Constants.Swerve.Mod1.angleOffset),
                 new SwerveModule(1,
                         Constants.Swerve.Mod1.driveMotorID,
                         Constants.Swerve.Mod1.angleMotorID,
@@ -165,23 +155,12 @@ public class Swerve extends SubsystemBase {
                         Constants.Swerve.Mod2.angleMotorID,
                         Constants.Swerve.Mod2.angleEncoderID,
                         Constants.Swerve.Mod2.angleOffset),
-                new SwerveModule(2,
-                        Constants.Swerve.Mod2.driveMotorID,
-                        Constants.Swerve.Mod2.angleMotorID,
-                        Constants.Swerve.Mod2.angleEncoderID,
-                        Constants.Swerve.Mod2.angleOffset),
 
                 new SwerveModule(3,
                         Constants.Swerve.Mod3.driveMotorID,
                         Constants.Swerve.Mod3.angleMotorID,
                         Constants.Swerve.Mod3.angleEncoderID,
                         Constants.Swerve.Mod3.angleOffset),
-                new SwerveModule(3,
-                        Constants.Swerve.Mod3.driveMotorID,
-                        Constants.Swerve.Mod3.angleMotorID,
-                        Constants.Swerve.Mod3.angleEncoderID,
-                        Constants.Swerve.Mod3.angleOffset),
-
         };
 
         DataLogManager.start();
@@ -202,8 +181,6 @@ public class Swerve extends SubsystemBase {
         gyroPitchLog = new DoubleLogEntry(log, "/swerve/gyro/pitch");
         gyroRollLog = new DoubleLogEntry(log, "/swerve/gyro/roll");
         gyroYawRateLog = new DoubleLogEntry(log, "/swerve/gyro/yawRate");
-
-        
 
         // ── AdvantageScope 3D: publish structs to NetworkTables ──
         var nt = NetworkTableInstance.getDefault();
@@ -260,13 +237,10 @@ public class Swerve extends SubsystemBase {
 
         });
 
-
     }
-
 
     public void lockOnto(Translation2d translation2d) {
         rotationLockController.reset();
-
 
         lockedOnto = Optional.of(translation2d);
 
@@ -275,14 +249,12 @@ public class Swerve extends SubsystemBase {
     public void unlock() {
         lockedOnto = Optional.empty();
 
-
     }
 
     public boolean locked() {
         return lockedOnto.isPresent();
 
     }
-
 
     /**
      * Drives the swerve drive based on field-relative {@link ChassisSpeeds}.
@@ -619,7 +591,6 @@ public class Swerve extends SubsystemBase {
 
         // Field2d for 2D field view (every cycle)
         field.setRobotPose(currentPose);
-    ElasticDashboard.putData("Swerve/Field", field);
 
         // ── Flush NT immediately so AdvantageScope gets data ASAP ──
         // Without this, data sits in the NT buffer up to 100ms before being sent.
@@ -631,12 +602,14 @@ public class Swerve extends SubsystemBase {
         gyroRollLog.append(roll);
         gyroYawRateLog.append(yawRate);
 
-        // ── Throttle SmartDashboard debug text to every 5th cycle (~100ms) ──
+        // ── Throttle SmartDashboard/ElasticDashboard debug text to every 5th cycle
+        // (~100ms) ──
         // These string/number puts compete with struct data for NT bandwidth.
         periodicCounter++;
         if (periodicCounter >= 5) {
             periodicCounter = 0;
 
+            ElasticDashboard.putData("Swerve/Field", field);
             ElasticDashboard.putString("Swerve Status", swerveStatus.toString());
             ElasticDashboard.putBoolean("added vision in swerve:", addedVision);
 
@@ -645,11 +618,9 @@ public class Swerve extends SubsystemBase {
             ElasticDashboard.putNumber("Gyro Roll", roll);
             ElasticDashboard.putNumber("Gyro Yaw Rate", yawRate);
 
-        }
-
-        for (SwerveModule mod : swerveModules) {
-            ElasticDashboard.putNumber("Mod " + mod.moduleNumber, mod.getState().angle.getDegrees());
-
+            for (SwerveModule mod : swerveModules) {
+                ElasticDashboard.putNumber("Mod " + mod.moduleNumber, mod.getState().angle.getDegrees());
+            }
         }
     }
 }
