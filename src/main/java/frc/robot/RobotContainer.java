@@ -5,6 +5,7 @@
 package frc.robot;
 
 import frc.robot.commands.AlignToShoot;
+import frc.robot.commands.ArcDrive;
 import frc.robot.commands.DriveAndFaceGoal;
 import frc.robot.commands.DriveToTag;
 import frc.robot.commands.FaceGoal;
@@ -100,6 +101,12 @@ public class RobotContainer {
         //              Press to start, press again to cancel (toggleOnTrue)
         DriveAndFaceGoal driveAndFaceCommand = new DriveAndFaceGoal(swerve, vision);
         controller.pov(270).toggleOnTrue(driveAndFaceCommand);
+
+        // ======== Triggers ========
+
+        // L2 (Left Trigger) - Arc Drive: while held, orbit tag 10 at current radius
+        //                     Left stick X moves along the arc. Robot always faces tag.
+        controller.L2().whileTrue(new ArcDrive(swerve, vision, controller));
     }
 
     public Command getAutonomousCommand() {

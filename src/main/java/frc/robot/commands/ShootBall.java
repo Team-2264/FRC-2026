@@ -9,7 +9,10 @@ import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.Vision2025;
 
 /**
- * ShootBall command - adjusts shooter speed based on distance to AprilTag.
+ * ShootBall command - adjusts shooter speed based on distance to AprilTag 10.
+ * If tag 10 is not visible, the motor does not run at all.
+ * Further from tag → faster motor (up to 75%).
+ * At 1m and below → proportionally lower (down to ~10%).
  * Bind to triangle button - hold to shoot.
  */
 public class ShootBall extends Command {
@@ -35,8 +38,8 @@ public class ShootBall extends Command {
 
     @Override
     public void execute() {
-        // Get distance to tag and adjust speed accordingly
-        Optional<Transform3d> targetTransform = vision.getTargetTransform();
+        // Get distance to tag 10 specifically
+        Optional<Transform3d> targetTransform = vision.getTransformToTag(10);
         
         if (targetTransform.isPresent()) {
             // Get distance (X component is forward distance to tag)
@@ -45,9 +48,10 @@ public class ShootBall extends Command {
             ElasticDashboard.putNumber("ShootBall/Distance", distance);
             ElasticDashboard.putBoolean("ShootBall/TagVisible", true);
         } else {
-            // No tag visible - use default speed
-            shooter.shoot();
+            // No tag 10 visible - stop motor entirely
+            shooter.stop();
             ElasticDashboard.putBoolean("ShootBall/TagVisible", false);
+            ElasticDashboard.putNumber("ShootBall/Distance", -1);
         }
     }
 

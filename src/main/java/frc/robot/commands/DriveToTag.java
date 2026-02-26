@@ -130,8 +130,9 @@ public class DriveToTag extends Command {
         double range = Math.hypot(tagX, tagY);
 
         // ---- Rotation: centre the tag in camera ----
+        // bearingRad > 0 means tag is LEFT of center → rotate LEFT (positive) to center
         double angleRad = Math.atan2(tagY, tagX);
-        double rotCmd   = clamp(-angleRad * KP_ROT, -MAX_ROT, MAX_ROT);
+        double rotCmd   = clamp(angleRad * KP_ROT, -MAX_ROT, MAX_ROT);
 
         // ---- Forward: maintain distance within band [MIN_RADIUS .. maxRadius] ----
         double fwdCmd = 0;

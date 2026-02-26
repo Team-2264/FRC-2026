@@ -17,10 +17,10 @@ public class Shooter extends SubsystemBase {
     private double currentSpeed = 0;
     
     // Distance-based speed constants
-    private static final double MIN_DISTANCE = 0.5;   // meters - closest shot
-    private static final double MAX_DISTANCE = 4.0;   // meters - farthest shot
-    private static final double MIN_SPEED = 0.3;      // speed at closest distance
-    private static final double MAX_SPEED = 0.8;      // speed at farthest distance
+    private static final double MIN_DISTANCE = 0.0;   // meters - closest shot
+    private static final double MAX_DISTANCE = 5.0;   // meters - farthest shot
+    private static final double MIN_SPEED = 0.10;     // 10% speed at closest distance
+    private static final double MAX_SPEED = 0.75;     // 75% speed at farthest distance
     private static final double DEFAULT_SPEED = 0.5;  // fallback if no tag visible
 
     /**
