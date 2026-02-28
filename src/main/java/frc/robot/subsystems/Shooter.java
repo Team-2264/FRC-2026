@@ -26,7 +26,7 @@ public class Shooter extends SubsystemBase {
     private static final double DEFAULT_SPEED = 0.5; // fallback if no tag visible
 
     // Feeder motor configuration (placeholder ID — set real CAN ID when known)
-    private static final int FEEDER_MOTOR_ID = -1;
+    private static final int FEEDER_MOTOR_ID = 22;
     private static final double FEEDER_SPEED = 0.5; // duty cycle for feeding
 
     /**
