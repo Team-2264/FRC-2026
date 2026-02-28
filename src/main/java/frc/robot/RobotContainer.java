@@ -61,8 +61,8 @@ public class RobotContainer {
 
         configureBindings();
 
-    autoChooser = AutoBuilder.buildAutoChooser();
-    ElasticDashboard.putData("Auto Mode", autoChooser);
+        autoChooser = AutoBuilder.buildAutoChooser();
+        ElasticDashboard.putData("Auto Mode", autoChooser);
     }
 
     /**
@@ -77,8 +77,8 @@ public class RobotContainer {
 
         // ======== Face Buttons ========
 
-        // Triangle - HOLD to shoot (speed adjusts based on distance to tag)
-        controller.triangle().whileTrue(new ShootBall(shooter, vision));
+        // Triangle - HOLD to shoot (vision-independent now)
+        controller.triangle().whileTrue(new ShootBall(shooter));
 
         // Cross (X) - currently unused
         // (AlignToShoot moved to left D-pad)
@@ -98,14 +98,14 @@ public class RobotContainer {
         controller.pov(180).onTrue(new FaceGoal(swerve));
 
         // D-pad LEFT - DriveAndFaceGoal: face goal, drive to tag, align + re-center
-        //              Press to start, press again to cancel (toggleOnTrue)
+        // Press to start, press again to cancel (toggleOnTrue)
         DriveAndFaceGoal driveAndFaceCommand = new DriveAndFaceGoal(swerve, vision);
         controller.pov(270).toggleOnTrue(driveAndFaceCommand);
 
         // ======== Triggers ========
 
         // L2 (Left Trigger) - Arc Drive: while held, orbit tag 10 at current radius
-        //                     Left stick X moves along the arc. Robot always faces tag.
+        // Left stick X moves along the arc. Robot always faces tag.
         controller.L2().whileTrue(new ArcDrive(swerve, vision, controller));
     }
 
@@ -118,8 +118,8 @@ public class RobotContainer {
      */
     public void robotPeriodic() {
         vision.get();
-    Optional<EstimatedRobotPose> visionPose = vision.getEstimatedPose();
-    ElasticDashboard.putBoolean("vision pose", visionPose.isPresent());
+        Optional<EstimatedRobotPose> visionPose = vision.getEstimatedPose();
+        ElasticDashboard.putBoolean("vision pose", visionPose.isPresent());
 
         if (visionPose.isPresent()) {
             swerve.addVisionMeasurement(visionPose.get());
@@ -128,7 +128,7 @@ public class RobotContainer {
         // Debug: show whether a transient LED override is active
         long now = System.currentTimeMillis();
         long remainingMs = Math.max(0, ledOverrideUntil - now);
-    ElasticDashboard.putNumber("LEDs/OverrideRemainingMs", remainingMs);
+        ElasticDashboard.putNumber("LEDs/OverrideRemainingMs", remainingMs);
 
         // If a transient LED override is active, honor it first — but allow
         // Tag 10 progressive green to bypass the override so the driver sees
@@ -172,8 +172,10 @@ public class RobotContainer {
                     int half = lit / 2;
                     int start = center - half;
                     int end = start + lit - 1;
-                    if (start < 0) start = 0;
-                    if (end >= numLeds) end = numLeds - 1;
+                    if (start < 0)
+                        start = 0;
+                    if (end >= numLeds)
+                        end = numLeds - 1;
                     leds.setRGBRange(0, 255, 0, start, end);
                 }
             } catch (Exception e) {
