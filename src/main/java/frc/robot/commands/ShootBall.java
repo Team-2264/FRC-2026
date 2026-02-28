@@ -75,16 +75,14 @@ public class ShootBall extends Command {
                     Math.max(0, FEED_DELAY_SEC - feedDelayTimer.get()));
         } else {
             // No tag 10 visible — still shoot at default speed so driver can fire
-            if (!hasTarget) {
-                feedDelayTimer.reset();
-                feedDelayTimer.start();
-            }
             hasTarget = false;
 
             shooter.shoot();
             ElasticDashboard.putBoolean("ShootBall/TagVisible", false);
             ElasticDashboard.putNumber("ShootBall/Distance", -1);
 
+            // Keep the same delay timer running; do NOT reset each loop or the feeder will
+            // never start
             if (feedDelayTimer.hasElapsed(FEED_DELAY_SEC)) {
                 shooter.startFeeder();
             } else {
