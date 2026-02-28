@@ -74,13 +74,24 @@ public class ShootBall extends Command {
             ElasticDashboard.putNumber("ShootBall/FeedDelayRemaining",
                     Math.max(0, FEED_DELAY_SEC - feedDelayTimer.get()));
         } else {
-            // No tag 10 visible - stop motor entirely
-            shooter.stop();
+            // No tag 10 visible — still shoot at default speed so driver can fire
+            if (!hasTarget) {
+                feedDelayTimer.reset();
+                feedDelayTimer.start();
+            }
+            hasTarget = false;
+
+            shooter.shoot();
             ElasticDashboard.putBoolean("ShootBall/TagVisible", false);
             ElasticDashboard.putNumber("ShootBall/Distance", -1);
-            feedDelayTimer.stop();
-            feedDelayTimer.reset();
-            hasTarget = false;
+
+            if (feedDelayTimer.hasElapsed(FEED_DELAY_SEC)) {
+                shooter.startFeeder();
+            } else {
+                shooter.stopFeeder();
+            }
+            ElasticDashboard.putNumber("ShootBall/FeedDelayRemaining",
+                    Math.max(0, FEED_DELAY_SEC - feedDelayTimer.get()));
         }
     }
 
