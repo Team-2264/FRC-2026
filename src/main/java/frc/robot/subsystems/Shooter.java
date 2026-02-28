@@ -27,7 +27,7 @@ public class Shooter extends SubsystemBase {
 
     // Feeder motor configuration (placeholder ID — set real CAN ID when known)
     private static final int FEEDER_MOTOR_ID = 22;
-    private static final double FEEDER_SPEED = 0.5; // duty cycle for feeding
+    private static final double FEEDER_SPEED = 0.25; // duty cycle for feeding
 
     /**
      * Creates a new Shooter subsystem using CAN ID 21.
