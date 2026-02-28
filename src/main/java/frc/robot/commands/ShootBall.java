@@ -1,6 +1,5 @@
 package frc.robot.commands;
 
-import edu.wpi.first.wpilibj.Timer;
 import frc.robot.ElasticDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.Shooter;
@@ -16,11 +15,8 @@ public class ShootBall extends Command {
 
     private final Shooter shooter;
 
-    // Delay before starting feeder so flywheel can spin up
-    private static final double FEED_DELAY_SEC = 0.5;
     private static final double SHOOTER_FREE_RPS = 95.0; // Approx free speed of a NEO in rev/s
     private static final double SHOOTER_SPEED_THRESHOLD = 0.95; // 95% of target speed
-    private final Timer feedDelayTimer = new Timer();
 
     /**
      * Creates a ShootBall command with distance-based speed.
@@ -34,29 +30,24 @@ public class ShootBall extends Command {
 
     @Override
     public void initialize() {
-        feedDelayTimer.reset();
-        feedDelayTimer.start();
         ElasticDashboard.putBoolean("ShootBall/Active", true);
     }
 
     @Override
     public void execute() {
-        // Vision-independent: run shooter immediately, feeder after delay
+        // Vision-independent: run shooter immediately; feed only when up to speed
         shooter.shoot();
 
         double targetDuty = shooter.getCurrentSpeedDutyCycle();
         double targetRps = Math.abs(targetDuty) * SHOOTER_FREE_RPS;
         boolean upToSpeed = Math.abs(shooter.getVelocity()) >= SHOOTER_SPEED_THRESHOLD * targetRps;
-        boolean delayElapsed = feedDelayTimer.hasElapsed(FEED_DELAY_SEC);
 
-        if (upToSpeed || delayElapsed) {
+        if (upToSpeed) {
             shooter.startFeeder();
         } else {
             shooter.stopFeeder();
         }
 
-        ElasticDashboard.putNumber("ShootBall/FeedDelayRemaining",
-                Math.max(0, FEED_DELAY_SEC - feedDelayTimer.get()));
         ElasticDashboard.putBoolean("ShootBall/ShooterUpToSpeed", upToSpeed);
         ElasticDashboard.putNumber("ShootBall/TargetRps", targetRps);
         ElasticDashboard.putBoolean("ShootBall/TagVisible", false);
@@ -72,8 +63,6 @@ public class ShootBall extends Command {
     @Override
     public void end(boolean interrupted) {
         shooter.stop();
-        feedDelayTimer.stop();
-        feedDelayTimer.reset();
         ElasticDashboard.putBoolean("ShootBall/Active", false);
     }
 }
