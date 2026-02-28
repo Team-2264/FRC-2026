@@ -18,6 +18,8 @@ public class ShootBall extends Command {
 
     // Delay before starting feeder so flywheel can spin up
     private static final double FEED_DELAY_SEC = 0.5;
+    private static final double SHOOTER_FREE_RPS = 95.0; // Approx free speed of a NEO in rev/s
+    private static final double SHOOTER_SPEED_THRESHOLD = 0.95; // 95% of target speed
     private final Timer feedDelayTimer = new Timer();
 
     /**
@@ -42,7 +44,12 @@ public class ShootBall extends Command {
         // Vision-independent: run shooter immediately, feeder after delay
         shooter.shoot();
 
-        if (feedDelayTimer.hasElapsed(FEED_DELAY_SEC)) {
+        double targetDuty = shooter.getCurrentSpeedDutyCycle();
+        double targetRps = Math.abs(targetDuty) * SHOOTER_FREE_RPS;
+        boolean upToSpeed = Math.abs(shooter.getVelocity()) >= SHOOTER_SPEED_THRESHOLD * targetRps;
+        boolean delayElapsed = feedDelayTimer.hasElapsed(FEED_DELAY_SEC);
+
+        if (upToSpeed || delayElapsed) {
             shooter.startFeeder();
         } else {
             shooter.stopFeeder();
@@ -50,6 +57,8 @@ public class ShootBall extends Command {
 
         ElasticDashboard.putNumber("ShootBall/FeedDelayRemaining",
                 Math.max(0, FEED_DELAY_SEC - feedDelayTimer.get()));
+        ElasticDashboard.putBoolean("ShootBall/ShooterUpToSpeed", upToSpeed);
+        ElasticDashboard.putNumber("ShootBall/TargetRps", targetRps);
         ElasticDashboard.putBoolean("ShootBall/TagVisible", false);
         ElasticDashboard.putNumber("ShootBall/Distance", -1);
     }

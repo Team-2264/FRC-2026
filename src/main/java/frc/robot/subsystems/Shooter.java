@@ -63,6 +63,7 @@ public class Shooter extends SubsystemBase {
         ElasticDashboard.putNumber("Shooter/Speed", currentSpeed);
         ElasticDashboard.putNumber("Shooter/FeederSpeed", currentFeederSpeed);
         ElasticDashboard.putNumber("Shooter/FeederCurrent", feederMotor.getOutputCurrent());
+        double shooterVelocity = motor.getVelocity();
     }
 
     /**
@@ -145,6 +146,14 @@ public class Shooter extends SubsystemBase {
      */
     public boolean isShooting() {
         return isShooting;
+    }
+
+    /**
+     * Get the current commanded shooter duty cycle (last set in
+     * {@link #shoot(double)}).
+     */
+    public double getCurrentSpeedDutyCycle() {
+        return currentSpeed;
     }
 
     /**
