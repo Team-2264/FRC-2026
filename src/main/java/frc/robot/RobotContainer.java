@@ -18,6 +18,8 @@ import frc.robot.subsystems.Leds;
 import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.Swerve;
 import frc.robot.subsystems.Vision2025;
+import frc.robot.subsystems.ManualMotors;
+import frc.robot.commands.RotateAndSpinWhileHeld;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandPS4Controller;
@@ -41,6 +43,8 @@ public class RobotContainer {
             Constants.LedStrip.scaleFactor);
     public final Vision2025 vision = new Vision2025();
     public final Shooter shooter = new Shooter();
+    // Manual motors: rotator (CAN 23) and spinner (CAN 24) — updated CAN IDs
+    public final ManualMotors manualMotors = new ManualMotors(23, 24);
 
     // Controllers
     private final CommandPS4Controller controller = new CommandPS4Controller(Constants.Operator.controllerPort);
@@ -86,6 +90,9 @@ public class RobotContainer {
         // Square - Press once to drive within 3.0m of tag 10 and center it in camera
         DriveToTag driveToTagCommand = new DriveToTag(swerve, vision, 3.0, 10);
         controller.square().onTrue(driveToTagCommand);
+
+    // Cross (X) - while held: rotate CAN-1 +30° and spin CAN-2 at 0.3.
+    controller.cross().whileTrue(new RotateAndSpinWhileHeld(manualMotors, 0.3, 30.0));
 
         // Circle - Press to CANCEL DriveToTag
         controller.circle().onTrue(new InstantCommand(() -> {
