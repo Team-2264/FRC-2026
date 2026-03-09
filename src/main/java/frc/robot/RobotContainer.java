@@ -9,6 +9,7 @@ import frc.robot.commands.ToggleTurbo;
 import frc.robot.commands.locks.LockSwerve;
 import frc.robot.commands.locks.UnlockSwerve;
 import frc.robot.subsystems.Leds;
+import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.Swerve;
 import frc.robot.subsystems.Vision2025;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -35,6 +36,8 @@ public class RobotContainer {
     public final Swerve swerve = new Swerve();
     public final Leds leds = new Leds(Constants.LedStrip.pwmPort, Constants.LedStrip.numLeds, Constants.LedStrip.scaleFactor);
     public final Vision2025 vision = new Vision2025();
+
+    private final Shooter shooter = new Shooter();
 
     // Controllers
     private final CommandPS4Controller controller = new CommandPS4Controller(Constants.Operator.controllerPort);
@@ -72,6 +75,9 @@ public class RobotContainer {
 
         controller.share().onTrue(new ToggleTurbo(swerve));
         controller.share().onFalse(new ToggleTurbo(swerve)); 
+
+        controller.triangle().onTrue(new InstantCommand(() -> shooter.startShooting()));
+        controller.cross().onFalse(new InstantCommand(() -> shooter.stopShooting()));
     }
 
      /**
