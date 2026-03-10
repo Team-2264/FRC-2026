@@ -4,6 +4,11 @@
 
 package frc.robot;
 
+import frc.robot.commands.ArcDrive;
+import frc.robot.commands.DriveAndFaceGoal;
+import frc.robot.commands.DriveToTag;
+import frc.robot.commands.FaceGoal;
+import frc.robot.commands.ShootBall;
 import frc.robot.commands.TeleopSwerve;
 import frc.robot.commands.ToggleTurbo;
 import frc.robot.commands.locks.LockSwerve;
@@ -12,57 +17,54 @@ import frc.robot.subsystems.Leds;
 import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.Swerve;
 import frc.robot.subsystems.Vision2025;
+import frc.robot.subsystems.ManualMotors;
+import frc.robot.commands.RotateAndSpinWhileHeld;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandPS4Controller;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import java.util.Optional;
 import org.photonvision.EstimatedRobotPose;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 
-
 /**
- * This class is where the bulk of the robot should be declared. Since
- * Command-based is a "declarative" paradigm, very little robot logic should
- * actually be handled in the {@link Robot} periodic methods (other than the
- * scheduler calls). Instead, the structure of the robot (including subsystems,
- * commands, and trigger mappings) should be declared here.
+ * This class is where the bulk of the robot should be declared.
  */
 public class RobotContainer {
     // Subsystems
     public final Swerve swerve = new Swerve();
-    public final Leds leds = new Leds(Constants.LedStrip.pwmPort, Constants.LedStrip.numLeds, Constants.LedStrip.scaleFactor);
+    public final Leds leds = new Leds(Constants.LedStrip.pwmPort, Constants.LedStrip.numLeds,
+            Constants.LedStrip.scaleFactor);
     public final Vision2025 vision = new Vision2025();
-
-    private final Shooter shooter = new Shooter();
+    public final Shooter shooter = new Shooter();
+    // Manual motors: intake rotator canID 25, and roller intake canID 22
+    private static final int ROTATOR_MOTOR_ID = 25;
+    private static final int ROLLER_MOTOR_ID = 22;
+    public final ManualMotors manualMotors = new ManualMotors(ROTATOR_MOTOR_ID, ROLLER_MOTOR_ID);
 
     // Controllers
     private final CommandPS4Controller controller = new CommandPS4Controller(Constants.Operator.controllerPort);
     //private final CommandPS4Controller controller2 = new CommandPS4Controller(Constants.Operator.controller2Port);
 
+    // transient LED override (millis since epoch)
+    private long ledOverrideUntil = 0;
+    private int ledOverrideR = 0;
+    private int ledOverrideG = 0;
+    private int ledOverrideB = 0;
+
     // Autonomous
     private final SendableChooser<Command> autoChooser;
 
-    /**
-     * The container for the robot. Contains subsystems, OI devices, and commands.
-     */
     public RobotContainer() {
-        // Register named commands for autonomous - pathplanner
-
         NamedCommands.registerCommand("lockSwerve", new LockSwerve(swerve));
         NamedCommands.registerCommand("unlockSwerve", new UnlockSwerve(swerve));
 
-
-        // Configure the button bindings
         configureBindings();
 
-        // Set up autonomous
-        autoChooser = AutoBuilder.buildAutoChooser(); // Default auto will be `Commands.none()`
-        SmartDashboard.putData("Auto Mode", autoChooser);
-        
+        autoChooser = AutoBuilder.buildAutoChooser();
+        ElasticDashboard.putData("Auto Mode", autoChooser);
     }
 
     /**
@@ -71,23 +73,49 @@ public class RobotContainer {
     private void configureBindings() {
         // ======== Swerve ========
         swerve.setDefaultCommand(new TeleopSwerve(swerve, controller));
-        controller.options().onTrue( new InstantCommand(() -> swerve.zeroGyro()));
-
+        controller.options().onTrue(new InstantCommand(() -> swerve.zeroGyro()));
         controller.share().onTrue(new ToggleTurbo(swerve));
-        controller.share().onFalse(new ToggleTurbo(swerve)); 
+        controller.share().onFalse(new ToggleTurbo(swerve));
 
-        controller.triangle().onTrue(new InstantCommand(() -> shooter.startShooting()));
-        controller.cross().onFalse(new InstantCommand(() -> shooter.stopShooting()));
+        // ======== Face Buttons ========
+
+        // Triangle - HOLD to shoot (vision-independent now)
+        controller.triangle().whileTrue(new ShootBall(shooter));
+
+        // Cross (X) - currently unused
+        // (AlignToShoot moved to left D-pad)
+
+        // Square - Press once to drive within 3.0m of tag 10 and center it in camera
+        DriveToTag driveToTagCommand = new DriveToTag(swerve, vision, 3.0, 10);
+        controller.square().onTrue(driveToTagCommand);
+
+    // Cross (X) - while held: rotate CAN-1 +30° and spin CAN-2 at 0.3.
+    controller.cross().whileTrue(new RotateAndSpinWhileHeld(manualMotors, 0.3, 30.0));
+
+        // Circle - Press to CANCEL DriveToTag
+        controller.circle().onTrue(new InstantCommand(() -> {
+            edu.wpi.first.wpilibj2.command.CommandScheduler.getInstance().cancel(driveToTagCommand);
+        }));
+
+        // ======== D-Pad ========
+
+        // D-pad DOWN - Face Goal: rotate to face the reef center from any position
+        controller.pov(180).onTrue(new FaceGoal(swerve));
+
+        // D-pad LEFT - DriveAndFaceGoal: face goal, drive to tag, align + re-center
+        // Press to start, press again to cancel (toggleOnTrue)
+        DriveAndFaceGoal driveAndFaceCommand = new DriveAndFaceGoal(swerve, vision);
+        controller.pov(270).toggleOnTrue(driveAndFaceCommand);
+
+        // ======== Triggers ========
+
+        // L2 (Left Trigger) - Arc Drive: while held, orbit tag 10 at current radius
+        // Left stick X moves along the arc. Robot always faces tag.
+        controller.L2().whileTrue(new ArcDrive(swerve, vision, controller));
     }
 
-     /**
-     * Returns the command to run in autonomous mode.
-     *
-     * @return the command to run in autonomous
-     */
     public Command getAutonomousCommand() {
         return autoChooser.getSelected();
-
     }
 
     /**
@@ -95,38 +123,104 @@ public class RobotContainer {
      */
     public void robotPeriodic() {
         vision.get();
-        Optional<EstimatedRobotPose> visionPose = vision.getEstimatedPose(); 
-        SmartDashboard.putBoolean("vision pose", visionPose.isPresent());
-        
-        // add vision pose to 
-        if(visionPose.isPresent()) {
+        Optional<EstimatedRobotPose> visionPose = vision.getEstimatedPose();
+        ElasticDashboard.putBoolean("vision pose", visionPose.isPresent());
+
+        if (visionPose.isPresent()) {
             swerve.addVisionMeasurement(visionPose.get());
         }
 
-        // LED based on visible tag ID
-        // Tag 12 = red (top 4 LEDs only), Tag 9 or 10 = green, else = purple
-        Optional<Integer> tagId = vision.getBestTargetId();
-        if (tagId.isPresent()) {
-            int id = tagId.get();
-            if (id == 12) {
-                leds.setRGBRange(255, 0, 0, 0, 3); // red on top 4 LEDs only
-            } else if (id == 9 || id == 10) {
-                leds.setRGB(0, 255, 0); // green all LEDs
-            } else {
-                leds.setRGB(128, 0, 128); // purple for any other tag
+        // Debug: show whether a transient LED override is active
+        long now = System.currentTimeMillis();
+        long remainingMs = Math.max(0, ledOverrideUntil - now);
+        ElasticDashboard.putNumber("LEDs/OverrideRemainingMs", remainingMs);
+
+        // If a transient LED override is active, honor it first — but allow
+        // Tag 10 progressive green to bypass the override so the driver sees
+        // detection/centering feedback even during short confirmations.
+        Optional<edu.wpi.first.math.geometry.Transform3d> tag10Tf = vision.getTransformToTag(10);
+        boolean bypassOverrideForTag10 = tag10Tf.isPresent();
+        if (System.currentTimeMillis() < ledOverrideUntil && !bypassOverrideForTag10) {
+            leds.setRGB(ledOverrideR, ledOverrideG, ledOverrideB);
+            return;
+        }
+
+        // Prefer Tag 10 progressive green if Tag 10 is visible at all (even if
+        // Photon reports another 'best' target). This prevents tag 9 from
+        // overriding tag 10 centering feedback.
+        if (tag10Tf.isPresent()) {
+            try {
+                var tf = tag10Tf.get();
+                // Debug both rotation-based yaw and translation-based bearing.
+                double yawDegRot = Math.toDegrees(tf.getRotation().getZ());
+                double tx = tf.getTranslation().getX();
+                double ty = tf.getTranslation().getY();
+                double yawDegXY = Math.toDegrees(Math.atan2(ty, tx));
+                double yawDeg = Math.abs(yawDegXY); // prefer translation-based bearing
+                ElasticDashboard.putNumber("LEDs/Tag10YawDeg_Rot", Math.abs(yawDegRot));
+                ElasticDashboard.putNumber("LEDs/Tag10YawDeg_XY", yawDegXY);
+                ElasticDashboard.putNumber("LEDs/Tag10DistMeters", tx);
+                ElasticDashboard.putNumber("LEDs/Tag10YawDeg", yawDeg);
+
+                final double MAX_YAW_DEG = 15.0; // adjust as needed
+                double frac = 1.0 - Math.min(yawDeg / MAX_YAW_DEG, 1.0);
+                int numLeds = Constants.LedStrip.numLeds;
+                int lit = (int) Math.round(frac * numLeds);
+                ElasticDashboard.putNumber("LEDs/Tag10Lit", lit);
+                if (lit <= 0) {
+                    int center = numLeds / 2;
+                    leds.setRGBRange(0, 255, 0, center, center);
+                } else if (lit >= numLeds) {
+                    leds.setRGB(0, 255, 0);
+                } else {
+                    int center = numLeds / 2;
+                    int half = lit / 2;
+                    int start = center - half;
+                    int end = start + lit - 1;
+                    if (start < 0)
+                        start = 0;
+                    if (end >= numLeds)
+                        end = numLeds - 1;
+                    leds.setRGBRange(0, 255, 0, start, end);
+                }
+            } catch (Exception e) {
+                ElasticDashboard.putString("LEDs/Error", e.toString());
+                leds.setRGB(0, 255, 0);
             }
         } else {
-            leds.setRGB(128, 0, 128); // purple when no tag visible
+            // Fallback: use best-target logic (red for 12, purple otherwise)
+            Optional<Integer> tagId = vision.getBestTargetId();
+            if (tagId.isPresent()) {
+                int id = tagId.get();
+                ElasticDashboard.putNumber("LEDs/BestTagId", id);
+                if (id == 12) {
+                    leds.setRGBRange(255, 0, 0, 0, 3); // red on top 4 LEDs only
+                } else {
+                    leds.setRGB(128, 0, 128); // purple for any other tag
+                }
+            } else {
+                leds.setRGB(128, 0, 128); // purple when no tag visible
+            }
         }
+
+        // hub alignment is triggered by the DriveToTag10 binding (on completion)
     }
 
     public Leds getLeds() {
         return leds;
     }
 
-    public CommandPS4Controller getDriverController()
-    {
+    public CommandPS4Controller getDriverController() {
         return controller;
     }
 
+    /**
+     * Request a transient LED override color for a duration in seconds.
+     */
+    // private void setLedOverride(int r, int g, int b, double durationSeconds) {
+    //     ledOverrideR = r;
+    //     ledOverrideG = g;
+    //     ledOverrideB = b;
+    //     ledOverrideUntil = System.currentTimeMillis() + (long) (durationSeconds * 1000.0);
+    // }
 }

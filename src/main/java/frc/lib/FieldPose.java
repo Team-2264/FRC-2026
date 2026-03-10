@@ -7,12 +7,12 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 
 public class FieldPose {
-  private static final Translation2d FIELD_SIZE = new Translation2d(Units.inchesToMeters(323.25), Units.inchesToMeters(651.25));
+  // 2026 field dimensions: 16.541m x 8.069m (length x width)
+  private static final Translation2d FIELD_SIZE = new Translation2d(8.069, 16.541);
 
   // Converts between WpiLib Blue and Red field spaces
   private static final Transform3d WPILIB_COLOR_TRANSFORM = new Transform3d(new Translation3d(FIELD_SIZE.getX(), FIELD_SIZE.getY(), 0), new Rotation3d(Math.PI, 0, 0));
