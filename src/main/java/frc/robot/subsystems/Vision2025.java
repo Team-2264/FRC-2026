@@ -6,32 +6,25 @@ import java.util.Optional;
 import org.photonvision.EstimatedRobotPose;
 import org.photonvision.PhotonCamera;
 import org.photonvision.PhotonPoseEstimator;
-// removed unused imports
 import org.photonvision.targeting.PhotonPipelineResult;
-
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.geometry.Transform3d;
-// removed unused import
-// removed unused import
-import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj.smartdashboard.Field2d;
-import frc.robot.ElasticDashboard;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.Constants;
-import edu.wpi.first.util.datalog.DoubleLogEntry;
-import edu.wpi.first.wpilibj.DataLogManager;
-import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.util.datalog.DataLog;
-import edu.wpi.first.util.datalog.IntegerLogEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.util.datalog.DataLog;
+import edu.wpi.first.util.datalog.DoubleLogEntry;
+import edu.wpi.first.util.datalog.IntegerLogEntry;
+import edu.wpi.first.wpilibj.DataLogManager;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
+import frc.robot.ElasticDashboard;
 
 /**
  * Subsystem for vision processing using PhotonVision.
@@ -43,6 +36,7 @@ public class Vision2025 extends SubsystemBase {
     private PhotonPipelineResult latestResult;
     private AprilTagFieldLayout aprilTagFieldLayout;
     private Field2d field;
+
     private DoubleLogEntry distancelog;
     private IntegerLogEntry tagNumberLogger;
     private DoubleLogEntry robotPoseXLogger;
@@ -129,258 +123,6 @@ public class Vision2025 extends SubsystemBase {
     }
 
     /**
-     * This returns the Pose2d of the setpoint the robot is desired to drive to
-     * based on the closest april tag detected.
-     * Used for auto aligning to the right reef.
-     *
-     * See https://www.desmos.com/calculator/sib8enmabx
-     * 
-     * @param tagID of the april tag detected
-     * @return Pose2d the robot is desired to drive to
-     *         public Pose2d rightReefPose(int tagID) {
-     *         var _tagPose = tagPose(tagID);
-     * 
-     *         // Guard against empty Optional
-     *         if (_tagPose.isEmpty()) {
-     *         SmartDashboard.putString("Vision/Error", "rightReefPose: tagID " +
-     *         tagID + " not found");
-     *         return null;
-     *         }
-     * 
-     *         switch (tagID) {
-     *         // Red Alliance
-     *         case 1:
-     *         // return new Pose2d(Units.inchesToMeters(657.37),
-     *         Units.inchesToMeters(25.8),
-     *         // Rotation2d.fromDegrees(126));
-     *         return new Pose2d(_tagPose.get().getX() - 1.0, _tagPose.get().getY()
-     *         - 1.0,
-     *         new Rotation2d(_tagPose.get().getRotation().getRadians()));
-     *         case 2:
-     *         return new Pose2d(Units.inchesToMeters(657.37),
-     *         Units.inchesToMeters(291.20),
-     *         Rotation2d.fromDegrees(234));
-     *         case 6:
-     *         return new Pose2d(Units.inchesToMeters(536.49),
-     *         Units.inchesToMeters(119.7777),
-     *         Rotation2d.fromDegrees(240));
-     *         case 7:
-     *         return new Pose2d(Units.inchesToMeters(558.87),
-     *         Units.inchesToMeters(158.5),
-     *         Rotation2d.fromDegrees(180));
-     *         case 8:
-     *         return new Pose2d(Units.inchesToMeters(536.49),
-     *         Units.inchesToMeters(197.2223),
-     *         Rotation2d.fromDegrees(180));
-     *         case 9:
-     *         return new Pose2d(Units.inchesToMeters(491.77),
-     *         Units.inchesToMeters(197.2223),
-     *         Rotation2d.fromDegrees(60));
-     *         case 10:
-     *         return new Pose2d(Units.inchesToMeters(469.39),
-     *         Units.inchesToMeters(158.5), Rotation2d.fromDegrees(0));
-     *         case 11:
-     *         return new Pose2d(Units.inchesToMeters(491.7777),
-     *         Units.inchesToMeters(119.777),
-     *         Rotation2d.fromDegrees(300));
-     * 
-     *         // Blue Alliance
-     *         // case 12:
-     *         // return new Pose2d(Units.inchesToMeters(0),
-     *         Units.inchesToMeters(0),
-     *         // Rotation2d.fromDegrees(54));
-     *         case 13:
-     *         return new Pose2d(Units.inchesToMeters(0), Units.inchesToMeters(0),
-     *         Rotation2d.fromDegrees(306));
-     *         case 17:
-     *         return new Pose2d(Units.inchesToMeters(154.39),
-     *         Units.inchesToMeters(119.7777),
-     *         Rotation2d.fromDegrees(240));
-     *         case 18:
-     *         return new Pose2d(Units.inchesToMeters(144),
-     *         Units.inchesToMeters(158.5), Rotation2d.fromDegrees(180));
-     *         case 19:
-     *         return new Pose2d(Units.inchesToMeters(144),
-     *         Units.inchesToMeters(158.5), Rotation2d.fromDegrees(180));
-     *         case 20:
-     *         return new Pose2d(Units.inchesToMeters(193.10),
-     *         Units.inchesToMeters(186.83),
-     *         Rotation2d.fromDegrees(60));
-     *         case 21:
-     *         return new Pose2d(Units.inchesToMeters(221.49),
-     *         Units.inchesToMeters(158.5), Rotation2d.fromDegrees(0));
-     *         case 22:
-     *         return new Pose2d(Units.inchesToMeters(193.10),
-     *         Units.inchesToMeters(130.17),
-     *         Rotation2d.fromDegrees(300));
-     * 
-     *         case 12:
-     *         return new Pose2d(Units.inchesToMeters(50), Units.inchesToMeters(50),
-     *         Rotation2d.fromDegrees(54));
-     *         default:
-     *         return null;
-     *         }
-     *         }
-     * 
-     *         /**
-     *         Returns the Pose2d of a tag based on tagID
-     * 
-     * @param tagID
-     * @return Pose2d of a specific april tag
-     */
-    public Optional<Pose2d> tagPose(int tagID) {
-        try {
-            Pose2d tagPose = switch (tagID) {
-                case 1 -> new Pose2d(
-                        Units.inchesToMeters(Constants.TagLocation.tag1.get().getX()),
-                        Units.inchesToMeters(Constants.TagLocation.tag1.get().getY()),
-                        Constants.TagLocation.tag1.get().getRotation().toRotation2d());
-                case 2 -> new Pose2d(
-                        Units.inchesToMeters(Constants.TagLocation.tag2.get().getX()),
-                        Units.inchesToMeters(Constants.TagLocation.tag2.get().getY()),
-                        Constants.TagLocation.tag2.get().getRotation().toRotation2d());
-                case 3 -> new Pose2d(
-                        Units.inchesToMeters(Constants.TagLocation.tag3.get().getX()),
-                        Units.inchesToMeters(Constants.TagLocation.tag3.get().getY()),
-                        Constants.TagLocation.tag3.get().getRotation().toRotation2d());
-                case 4 -> new Pose2d(
-                        Units.inchesToMeters(Constants.TagLocation.tag4.get().getX()),
-                        Units.inchesToMeters(Constants.TagLocation.tag4.get().getY()),
-                        Constants.TagLocation.tag4.get().getRotation().toRotation2d());
-                case 5 -> new Pose2d(
-                        Units.inchesToMeters(Constants.TagLocation.tag5.get().getX()),
-                        Units.inchesToMeters(Constants.TagLocation.tag5.get().getY()),
-                        Constants.TagLocation.tag5.get().getRotation().toRotation2d());
-                case 6 -> new Pose2d(
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag6.get().getX()),
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag6.get().getY()),
-                        Constants.ReefTagLocation.tag6.get().getRotation().toRotation2d());
-                case 7 -> new Pose2d(
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag7.get().getX()),
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag7.get().getY()),
-                        Constants.ReefTagLocation.tag7.get().getRotation().toRotation2d());
-                case 8 -> new Pose2d(
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag8.get().getX()),
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag8.get().getY()),
-                        Constants.ReefTagLocation.tag8.get().getRotation().toRotation2d());
-                case 9 -> new Pose2d(
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag9.get().getX()),
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag9.get().getY()),
-                        Constants.ReefTagLocation.tag9.get().getRotation().toRotation2d());
-                case 10 -> new Pose2d(
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag10.get().getX()),
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag10.get().getY()),
-                        Constants.ReefTagLocation.tag10.get().getRotation().toRotation2d());
-                case 11 -> new Pose2d(
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag11.get().getX()),
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag11.get().getY()),
-                        Constants.ReefTagLocation.tag11.get().getRotation().toRotation2d());
-                case 12 -> new Pose2d(
-                        Units.inchesToMeters(Constants.TagLocation.tag12.get().getX()),
-                        Units.inchesToMeters(Constants.TagLocation.tag12.get().getY()),
-                        Constants.TagLocation.tag12.get().getRotation().toRotation2d());
-                case 13 -> new Pose2d(
-                        Units.inchesToMeters(Constants.TagLocation.tag13.get().getX()),
-                        Units.inchesToMeters(Constants.TagLocation.tag13.get().getY()),
-                        Constants.TagLocation.tag13.get().getRotation().toRotation2d());
-                case 14 -> new Pose2d(
-                        Units.inchesToMeters(Constants.TagLocation.tag14.get().getX()),
-                        Units.inchesToMeters(Constants.TagLocation.tag14.get().getY()),
-                        Constants.TagLocation.tag14.get().getRotation().toRotation2d());
-                case 15 -> new Pose2d(
-                        Units.inchesToMeters(Constants.TagLocation.tag15.get().getX()),
-                        Units.inchesToMeters(Constants.TagLocation.tag15.get().getY()),
-                        Constants.TagLocation.tag15.get().getRotation().toRotation2d());
-                case 16 -> new Pose2d(
-                        Units.inchesToMeters(Constants.TagLocation.tag16.get().getX()),
-                        Units.inchesToMeters(Constants.TagLocation.tag16.get().getY()),
-                        Constants.TagLocation.tag16.get().getRotation().toRotation2d());
-
-                case 17 -> new Pose2d(
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag17.get().getX()),
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag17.get().getY()),
-                        Constants.ReefTagLocation.tag17.get().getRotation().toRotation2d());
-                case 18 -> new Pose2d(
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag18.get().getX()),
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag18.get().getY()),
-                        Constants.ReefTagLocation.tag18.get().getRotation().toRotation2d());
-                case 19 -> new Pose2d(
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag19.get().getX()),
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag19.get().getY()),
-                        Constants.ReefTagLocation.tag19.get().getRotation().toRotation2d());
-                case 20 -> new Pose2d(
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag20.get().getX()),
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag20.get().getY()),
-                        Constants.ReefTagLocation.tag20.get().getRotation().toRotation2d());
-                case 21 -> new Pose2d(
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag21.get().getX()),
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag21.get().getY()),
-                        Constants.ReefTagLocation.tag21.get().getRotation().toRotation2d());
-                case 22 -> new Pose2d(
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag22.get().getX()),
-                        Units.inchesToMeters(Constants.ReefTagLocation.tag22.get().getY()),
-                        Constants.ReefTagLocation.tag22.get().getRotation().toRotation2d());
-
-                default -> null;
-            };
-
-            if (tagPose != null) {
-                return Optional.of(tagPose);
-            } else {
-                return Optional.empty();
-            }
-        } catch (Exception e) {
-            ElasticDashboard.putString("Vision/TagPoseError", "tagID " + tagID + ": " + e.toString());
-            return Optional.empty();
-        }
-
-    }
-
-    // /**
-    // *
-    // * @return array index of the closest tag
-    // */
-    // public int getClosestTarget(){
-    // var estimatedPose = getEstimatedPose2d();
-    // if (estimatedPose.isEmpty()){
-    // return -1;
-    // }
-
-    // if (targetIds.length == 0){
-    // return -1;
-    // }
-
-    // int closest = 0;
-    // double closestDistance = PhotonUtils.getDistanceToPose(estimatedPose.get(),
-    // tagPose(targetIds[0]).get());
-
-    // for (int i=1; i<targetIds.length; i++){
-    // double compare = PhotonUtils.getDistanceToPose(estimatedPose.get(),
-    // tagPose(targetIds[i]).get());
-    // if (compare<closestDistance){
-    // closestDistance = compare;
-    // closest = i;
-    // }
-    // }
-
-    // return closest;
-    // }
-
-    // public int getClosestID() {
-    // if (null == targetIds) {
-    // return -1;
-    // }
-
-    // int closestTartet = getClosestTarget();
-    // if ((targetIds.length > 0) && (closestTartet >= 0)) {
-    // return targetIds[closestTartet];
-    // }
-    // else {
-    // return -1;
-    // }
-    // }
-
-    /**
      * Estimate Pose2d of the robot.
      * 
      * @return estimated Pose2d
@@ -398,42 +140,6 @@ public class Vision2025 extends SubsystemBase {
             return Optional.empty();
         }
     }
-
-    // /**
-    // * Gets the Pose2d of the closest AprilTag, if it exists.
-    // * @return Pose2d of closest april tag
-    // */
-    // public Pose2d getPoseOfClosestReef() {
-    // int closest = getClosestID();
-
-    // if (closest != -1){
-    // switch (closest) {
-    // case 17:
-    // return new Pose2d(Units.inchesToMeters(160.39), Units.inchesToMeters(130.17),
-    // Rotation2d.fromDegrees(240));
-    // case 18:
-    // return new Pose2d(Units.inchesToMeters(144), Units.inchesToMeters(158.5),
-    // Rotation2d.fromDegrees(180));
-    // case 19:
-    // return new Pose2d(Units.inchesToMeters(160.39), Units.inchesToMeters(186.83),
-    // Rotation2d.fromDegrees(120));
-    // case 20:
-    // return new Pose2d(Units.inchesToMeters(193.10), Units.inchesToMeters(186.83),
-    // Rotation2d.fromDegrees(60));
-    // case 21:
-    // return new Pose2d(Units.inchesToMeters(209.49), Units.inchesToMeters(158.5),
-    // Rotation2d.fromDegrees(0));
-    // case 22:
-    // return new Pose2d(Units.inchesToMeters(193.10), Units.inchesToMeters(130.17),
-    // Rotation2d.fromDegrees(300));
-    // default:
-    // return null;
-    // }
-    // }
-    // else {
-    // return null;
-    // }
-    // }
 
     /**
      * Estimate the pose of the robot.
@@ -453,7 +159,6 @@ public class Vision2025 extends SubsystemBase {
                 return Optional.of(robot_pose.get());
             }
         } catch (Exception e) {
-            ElasticDashboard.putString("Vision/GetEstimatedPoseError", e.toString());
         }
 
         return lastEstimatedRobotBose;
@@ -680,6 +385,7 @@ public class Vision2025 extends SubsystemBase {
                 }
             }
         }
+        
     }
 
 }

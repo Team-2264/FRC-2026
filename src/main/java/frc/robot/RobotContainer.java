@@ -4,7 +4,6 @@
 
 package frc.robot;
 
-import frc.robot.commands.AlignToShoot;
 import frc.robot.commands.ArcDrive;
 import frc.robot.commands.DriveAndFaceGoal;
 import frc.robot.commands.DriveToTag;
@@ -24,11 +23,8 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandPS4Controller;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import frc.robot.ElasticDashboard;
 
 import java.util.Optional;
-import edu.wpi.first.wpilibj.GenericHID;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
 import org.photonvision.EstimatedRobotPose;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
@@ -44,11 +40,11 @@ public class RobotContainer {
     public final Vision2025 vision = new Vision2025();
     public final Shooter shooter = new Shooter();
     // Manual motors: rotator (CAN 23) and spinner (CAN 24) — updated CAN IDs
-    public final ManualMotors manualMotors = new ManualMotors(23, 24);
+    public final ManualMotors manualMotors = new ManualMotors(22, 25);
 
     // Controllers
     private final CommandPS4Controller controller = new CommandPS4Controller(Constants.Operator.controllerPort);
-    private final CommandPS4Controller controller2 = new CommandPS4Controller(Constants.Operator.controller2Port);
+    //private final CommandPS4Controller controller2 = new CommandPS4Controller(Constants.Operator.controller2Port);
 
     // transient LED override (millis since epoch)
     private long ledOverrideUntil = 0;
@@ -212,13 +208,17 @@ public class RobotContainer {
         return leds;
     }
 
+    public CommandPS4Controller getDriverController() {
+        return controller;
+    }
+
     /**
      * Request a transient LED override color for a duration in seconds.
      */
-    private void setLedOverride(int r, int g, int b, double durationSeconds) {
-        ledOverrideR = r;
-        ledOverrideG = g;
-        ledOverrideB = b;
-        ledOverrideUntil = System.currentTimeMillis() + (long) (durationSeconds * 1000.0);
-    }
+    // private void setLedOverride(int r, int g, int b, double durationSeconds) {
+    //     ledOverrideR = r;
+    //     ledOverrideG = g;
+    //     ledOverrideB = b;
+    //     ledOverrideUntil = System.currentTimeMillis() + (long) (durationSeconds * 1000.0);
+    // }
 }

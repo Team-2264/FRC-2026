@@ -6,6 +6,7 @@ import frc.lib.Math2264;
 import frc.robot.Constants;
 
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 
 import edu.wpi.first.util.datalog.DoubleLogEntry;
@@ -69,8 +70,8 @@ public class Swerve extends SubsystemBase {
             Constants.Swerve.translationKd);
     private PIDController yPID = new PIDController(Constants.Swerve.translationKp, Constants.Swerve.translationKi,
             Constants.Swerve.translationKd);
-    private PIDController rotationController = new PIDController(Constants.Swerve.rotationKp,
-            Constants.Swerve.rotationKi, Constants.Swerve.rotationKd);
+    // private PIDController rotationController = new PIDController(Constants.Swerve.rotationKp,
+    //         Constants.Swerve.rotationKi, Constants.Swerve.rotationKd);
 
     private PIDController rotationLockController = new PIDController(Constants.Swerve.rotationLockKP,
             Constants.Swerve.rotationLockKI, Constants.Swerve.rotationLockKD);
@@ -82,6 +83,9 @@ public class Swerve extends SubsystemBase {
     private Optional<Translation2d> lockedOnto = Optional.empty();
 
     private final SwerveDrivePoseEstimator poseEstimator;
+
+    private final SwerveDriveKinematics kinematics;
+
     DoubleLogEntry Module0SpeedLog;
     DoubleLogEntry Module0AngleLog;
     DoubleLogEntry Module1SpeedLog;
@@ -121,7 +125,7 @@ public class Swerve extends SubsystemBase {
      */
     public Swerve() {
         // Init pigeon
-        pidgey = new Pigeon2(Constants.Swerve.pigeonID);
+        pidgey = new Pigeon2(Constants.Swerve.pigeonID_2025);
         pidgey.getConfigurator().apply(new Pigeon2Configuration());
         zeroGyro();
 
@@ -139,29 +143,31 @@ public class Swerve extends SubsystemBase {
         // Init Modules (4 modules — one per corner)
         swerveModules = new SwerveModule[] {
                 new SwerveModule(0,
-                        Constants.Swerve.Mod0.driveMotorID,
-                        Constants.Swerve.Mod0.angleMotorID,
-                        Constants.Swerve.Mod0.angleEncoderID,
-                        Constants.Swerve.Mod0.angleOffset),
+                        Constants.Swerve.Mod0_2025.driveMotorID,
+                        Constants.Swerve.Mod0_2025.angleMotorID,
+                        Constants.Swerve.Mod0_2025.angleEncoderID,
+                        Constants.Swerve.Mod0_2025.angleOffset),
 
                 new SwerveModule(1,
-                        Constants.Swerve.Mod1.driveMotorID,
-                        Constants.Swerve.Mod1.angleMotorID,
-                        Constants.Swerve.Mod1.angleEncoderID,
-                        Constants.Swerve.Mod1.angleOffset),
+                        Constants.Swerve.Mod1_2025.driveMotorID,
+                        Constants.Swerve.Mod1_2025.angleMotorID,
+                        Constants.Swerve.Mod1_2025.angleEncoderID,
+                        Constants.Swerve.Mod1_2025.angleOffset),
 
                 new SwerveModule(2,
-                        Constants.Swerve.Mod2.driveMotorID,
-                        Constants.Swerve.Mod2.angleMotorID,
-                        Constants.Swerve.Mod2.angleEncoderID,
-                        Constants.Swerve.Mod2.angleOffset),
+                        Constants.Swerve.Mod2_2025.driveMotorID,
+                        Constants.Swerve.Mod2_2025.angleMotorID,
+                        Constants.Swerve.Mod2_2025.angleEncoderID,
+                        Constants.Swerve.Mod2_2025.angleOffset),
 
                 new SwerveModule(3,
-                        Constants.Swerve.Mod3.driveMotorID,
-                        Constants.Swerve.Mod3.angleMotorID,
-                        Constants.Swerve.Mod3.angleEncoderID,
-                        Constants.Swerve.Mod3.angleOffset),
+                        Constants.Swerve.Mod3_2025.driveMotorID,
+                        Constants.Swerve.Mod3_2025.angleMotorID,
+                        Constants.Swerve.Mod3_2025.angleEncoderID,
+                        Constants.Swerve.Mod3_2025.angleOffset),
         };
+
+        kinematics = Constants.Swerve.swerveKinematics_2026;
 
         DataLogManager.start();
         DataLog log = DataLogManager.getLog();
@@ -174,7 +180,7 @@ public class Swerve extends SubsystemBase {
         Module3SpeedLog = new DoubleLogEntry(log, "/my/SpeedModule3");
         Module3AngleLog = new DoubleLogEntry(log, "/my/AngleModule3");
 
-        poseEstimator = new SwerveDrivePoseEstimator(Constants.Swerve.swerveKinematics, getGyroAngle(),
+        poseEstimator = new SwerveDrivePoseEstimator(kinematics, getGyroAngle(),
                 getModulePositions(), Constants.Swerve.initialPose);
 
         gyroYawLog = new DoubleLogEntry(log, "/swerve/gyro/yaw");
@@ -201,8 +207,8 @@ public class Swerve extends SubsystemBase {
                 this::setPose,
                 this::getChassisSpeeds,
                 (speeds, feedforwards) -> drive(speeds),
-                Constants.Swerve.pathFollowerConfig, // controller
-                Constants.Swerve.config, // add robot configuration here
+                Constants.Swerve.pathplannerFollowerConfig, // controller
+                Constants.Swerve.pathplannerRobotConfig, // add robot configuration here
                 () -> {
                     // Boolean supplier that controls when the path will be mirrored for the red
                     // alliance
@@ -260,7 +266,7 @@ public class Swerve extends SubsystemBase {
      * Drives the swerve drive based on field-relative {@link ChassisSpeeds}.
      */
     public void drive(ChassisSpeeds chassisSpeeds) {
-        SwerveModuleState[] swerveModuleStates = Constants.Swerve.swerveKinematics.toSwerveModuleStates(chassisSpeeds);
+        SwerveModuleState[] swerveModuleStates = kinematics.toSwerveModuleStates(chassisSpeeds);
 
         setModuleStates(swerveModuleStates);
     }
@@ -424,7 +430,7 @@ public class Swerve extends SubsystemBase {
      * Gets the field-relative {@link ChassisSpeeds} for the robot.
      */
     public ChassisSpeeds getChassisSpeeds() {
-        return Constants.Swerve.swerveKinematics.toChassisSpeeds(getModuleStates());
+        return kinematics.toChassisSpeeds(getModuleStates());
     }
 
     /**
@@ -495,13 +501,11 @@ public class Swerve extends SubsystemBase {
                 path,
                 this::getPose, // Robot pose supplier
                 this::getChassisSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
-                (speeds, feedforwards) -> drive(speeds), // Method that will drive the robot given ROBOT RELATIVE
-                                                         // ChassisSpeeds
-                Constants.Swerve.pathFollowerConfig, // PathFollowerConfig
-                Constants.Swerve.config,
+                (speeds, feedforwards) -> drive(speeds), // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds
+                Constants.Swerve.pathplannerFollowerConfig, // PathFollowerConfig
+                Constants.Swerve.pathplannerRobotConfig,
                 () -> {
-                    // Boolean supplier that controls when the path will be mirrored for the red
-                    // alliance
+                    // Boolean supplier that controls when the path will be mirrored for the red alliance
                     // This will flip the path being followed to the red side of the field.
                     // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
                     var alliance = DriverStation.getAlliance();

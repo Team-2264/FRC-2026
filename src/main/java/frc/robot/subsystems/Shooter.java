@@ -34,7 +34,7 @@ public class Shooter extends SubsystemBase {
      */
     public Shooter() {
         // Configure the shooter motor using same style as ElevatorConfig
-        NeoConfiguration config = new NeoConfiguration(21)
+        NeoConfiguration config = new NeoConfiguration(30)
                 .withBrakeMode(false) // Coast mode for flywheel
                 .withMotorInvert(false)
                 .withSmartCurrentLimit(40)
@@ -45,7 +45,7 @@ public class Shooter extends SubsystemBase {
         motor = new Neo(config);
 
         // Feeder motor: coast disabled so it stops quickly when button released
-        NeoConfiguration feederConfig = new NeoConfiguration(FEEDER_MOTOR_ID)
+        NeoConfiguration feederConfig = new NeoConfiguration(32)
                 .withBrakeMode(true)
                 .withMotorInvert(false)
                 .withSmartCurrentLimit(30)
