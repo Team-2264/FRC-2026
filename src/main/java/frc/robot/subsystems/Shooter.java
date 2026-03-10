@@ -26,7 +26,8 @@ public class Shooter extends SubsystemBase {
     private static final double DEFAULT_SPEED = 0.5; // fallback if no tag visible
 
     // Feeder motor configuration (placeholder ID — set real CAN ID when known)
-    private static final int FEEDER_MOTOR_ID = 22;
+    private static final int FEEDER_MOTOR_ID = 32;
+    private static final int SHOOTER_MOTOR_ID = 30;
     private static final double FEEDER_SPEED = 0.50; // duty cycle for feeding
 
     /**
@@ -34,7 +35,7 @@ public class Shooter extends SubsystemBase {
      */
     public Shooter() {
         // Configure the shooter motor using same style as ElevatorConfig
-        NeoConfiguration config = new NeoConfiguration(30)
+        NeoConfiguration config = new NeoConfiguration(SHOOTER_MOTOR_ID)
                 .withBrakeMode(false) // Coast mode for flywheel
                 .withMotorInvert(false)
                 .withSmartCurrentLimit(40)
@@ -45,7 +46,7 @@ public class Shooter extends SubsystemBase {
         motor = new Neo(config);
 
         // Feeder motor: coast disabled so it stops quickly when button released
-        NeoConfiguration feederConfig = new NeoConfiguration(32)
+        NeoConfiguration feederConfig = new NeoConfiguration(FEEDER_MOTOR_ID)
                 .withBrakeMode(true)
                 .withMotorInvert(false)
                 .withSmartCurrentLimit(30)

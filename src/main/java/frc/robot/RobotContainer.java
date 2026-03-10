@@ -39,8 +39,10 @@ public class RobotContainer {
             Constants.LedStrip.scaleFactor);
     public final Vision2025 vision = new Vision2025();
     public final Shooter shooter = new Shooter();
-    // Manual motors: rotator (CAN 23) and spinner (CAN 24) — updated CAN IDs
-    public final ManualMotors manualMotors = new ManualMotors(22, 25);
+    // Manual motors: intake rotator canID 25, and roller intake canID 22
+    private static final int ROTATOR_MOTOR_ID = 25;
+    private static final int ROLLER_MOTOR_ID = 22;
+    public final ManualMotors manualMotors = new ManualMotors(ROTATOR_MOTOR_ID, ROLLER_MOTOR_ID);
 
     // Controllers
     private final CommandPS4Controller controller = new CommandPS4Controller(Constants.Operator.controllerPort);
