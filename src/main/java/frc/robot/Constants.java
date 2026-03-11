@@ -3,6 +3,7 @@
 // the WPILib BSD license file in the root directory of this project.
 
 package frc.robot;
+
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import com.pathplanner.lib.config.RobotConfig;
@@ -24,8 +25,9 @@ import frc.lib.motors.TalonFxConfiguration;
 
 /**
  * The Constants class provides a convenient place for teams to hold robot-wide
- * numerical or boolean constants. This class should not be used for any other purpose.
- * All constants should be declared globally (i.e. public static). 
+ * numerical or boolean constants. This class should not be used for any other
+ * purpose.
+ * All constants should be declared globally (i.e. public static).
  * Do not put anything functional in this class.
  * <p>
  * It is advised to statically import this class (or one of its inner classes)
@@ -36,14 +38,26 @@ public final class Constants {
      * Operator class holds constants related to operator input.
      */
 
-
     public static class Operator {
         public static final int controllerPort = 0;
         public static final int controller2Port = 1;
         public static final double stickDeadband = 0.1;
 
     }
-    
+
+    /**
+     * AprilTag groupings for tunnel and hub. Update these IDs to match the 2026
+     * field once finalized. Both alliances' tags should be listed so the robot can
+     * pick the nearest in each set.
+     */
+    public static final class TagSets {
+        // Tunnel tags (both alliances): red 7,6 and blue 17,28
+        public static final int[] tunnelTags = { 7, 6, 17, 28 };
+        // Hub/reef surround tags: red (8,5,9,10,4,3,11,2), blue
+        // (18,27,19,20,26,25,21,24)
+        public static final int[] hubTags = { 8, 5, 9, 10, 4, 3, 11, 2, 18, 27, 19, 20, 26, 25, 21, 24 };
+    }
+
     /**
      * Vision class holds constants related to the vision system.
      */
@@ -52,16 +66,15 @@ public final class Constants {
 
         public static final Matrix<N3, N1> visionStandardDevs = VecBuilder.fill(0.5, 0.5, Units.degreesToRadians(17));
         public static double singleTargetMultiplier = 0;
-        
+
         // Robot to Camera Transform
         public static final Transform3d robotToCamera = new Transform3d(
-            new Translation3d(
-                Units.inchesToMeters(11.75), 
-                Units.inchesToMeters(0), 
-                Units.inchesToMeters(7.25)
-            ),
-            new Rotation3d(0, 0, 0)
-            
+                new Translation3d(
+                        Units.inchesToMeters(11.75),
+                        Units.inchesToMeters(0),
+                        Units.inchesToMeters(7.25)),
+                new Rotation3d(0, 0, 0)
+
         );
 
     }
@@ -84,20 +97,18 @@ public final class Constants {
         public static final boolean invertGyro = false; // Always ensure Gyro is CCW+ CW-
 
         public static final Pose2d initialPose = new Pose2d(
-            Units.inchesToMeters(39.3701 * 2), // x
-            Units.inchesToMeters(218.42), // y
-            new Rotation2d()
-        );
+                Units.inchesToMeters(39.3701 * 2), // x
+                Units.inchesToMeters(218.42), // y
+                new Rotation2d());
 
         public static final double translationKp = 2.0;
         public static final double translationKd = 0.0;
         public static final double translationKi = 0.0;
 
-        public static final double rotationKp = 0.001;//0.22019;
+        public static final double rotationKp = 0.001;// 0.22019;
         public static final double rotationKd = 0.0;
         public static final double rotationKi = 0.0;
 
-     
         // Drivetrain Constants
         public static final double trackWidth_2025 = Units.inchesToMeters(27);
         public static final double wheelBase_2025 = Units.inchesToMeters(32.5);
@@ -113,47 +124,45 @@ public final class Constants {
         public static final double angleGearRatio = (12.8 / 1.0); // 12.8:1
 
         public static final SwerveDriveKinematics swerveKinematics_2025 = new SwerveDriveKinematics(
-            new Translation2d(wheelBase_2025 / 2.0, trackWidth_2025 / 2.0),
-            new Translation2d(wheelBase_2025 / 2.0, -trackWidth_2025 / 2.0),
-            new Translation2d(-wheelBase_2025 / 2.0, -trackWidth_2025 / 2.0),
-            new Translation2d(-wheelBase_2025 / 2.0, trackWidth_2025 / 2.0)
-        );
+                new Translation2d(wheelBase_2025 / 2.0, trackWidth_2025 / 2.0),
+                new Translation2d(wheelBase_2025 / 2.0, -trackWidth_2025 / 2.0),
+                new Translation2d(-wheelBase_2025 / 2.0, -trackWidth_2025 / 2.0),
+                new Translation2d(-wheelBase_2025 / 2.0, trackWidth_2025 / 2.0));
         public static final SwerveDriveKinematics swerveKinematics_2026 = new SwerveDriveKinematics(
-            new Translation2d(wheelBase_2026 / 2.0, trackWidth_2026 / 2.0),
-            new Translation2d(wheelBase_2026 / 2.0, -trackWidth_2026 / 2.0),
-            new Translation2d(-wheelBase_2026 / 2.0, -trackWidth_2026 / 2.0),
-            new Translation2d(-wheelBase_2026 / 2.0, trackWidth_2026 / 2.0)
-        );
-
+                new Translation2d(wheelBase_2026 / 2.0, trackWidth_2026 / 2.0),
+                new Translation2d(wheelBase_2026 / 2.0, -trackWidth_2026 / 2.0),
+                new Translation2d(-wheelBase_2026 / 2.0, -trackWidth_2026 / 2.0),
+                new Translation2d(-wheelBase_2026 / 2.0, trackWidth_2026 / 2.0));
 
         public static final frc.lib.motors.TalonFxConfiguration angleMotorConfig = new TalonFxConfiguration()
-            .withContinuousCurrentLimit(25)
-            .withPeakCurrentLimit(40)
-            .withPeakCurrentDuration(0.1)
-            .withPID(
-                1.201173, // kP
-                0.0, // kI
-                0.024023, // kD
-                0.0 // kF
-            )
-            .withoutNeutralModeBrake();
+                .withContinuousCurrentLimit(25)
+                .withPeakCurrentLimit(40)
+                .withPeakCurrentDuration(0.1)
+                .withPID(
+                        1.201173, // kP
+                        0.0, // kI
+                        0.024023, // kD
+                        0.0 // kF
+                )
+                .withoutNeutralModeBrake();
 
         public static final frc.lib.motors.TalonFxConfiguration driveMotorConfig = new TalonFxConfiguration()
-            .withContinuousCurrentLimit(35)
-            .withPeakCurrentLimit(60)
-            .withPeakCurrentDuration(0.1)
-            .withPID(
-                0.20019, // kP
-                0.0, // kI
-                0.0, // kD
-                0.0 // kF
-            )
-            .withNeutralModeBrake()
-            .withOpenLoopRamp(0.5)
-            .withClosedLoopRamp(0.5);
+                .withContinuousCurrentLimit(35)
+                .withPeakCurrentLimit(60)
+                .withPeakCurrentDuration(0.1)
+                .withPID(
+                        0.20019, // kP
+                        0.0, // kI
+                        0.0, // kD
+                        0.0 // kF
+                )
+                .withNeutralModeBrake()
+                .withOpenLoopRamp(0.5)
+                .withClosedLoopRamp(0.5);
 
         // Drive Motor Characterization Values
-        public static final double driveKS = (0.667 / 12); // divide by 12 to convert from volts to percent output for CTRE
+        public static final double driveKS = (0.667 / 12); // divide by 12 to convert from volts to percent output for
+                                                           // CTRE
         public static final double driveKV = (2.44 / 12);
         public static final double driveKA = (0.27 / 12);
 
@@ -161,9 +170,10 @@ public final class Constants {
         // TODO: Remove training wheels...
         public static final double maxSpeed = 1.0; // meters per second
         public static final double maxAngularVelocity = Math.PI / 2; // radians per second (rad/s)
-        //public static final double maxSpeed = 3.0; // meters per second
-        //public static final double maxAngularVelocity = Math.PI; // radians per second (rad/s)
-        
+        // public static final double maxSpeed = 3.0; // meters per second
+        // public static final double maxAngularVelocity = Math.PI; // radians per
+        // second (rad/s)
+
         // Turbo mode values
         public static final double turboMaxSpeed = 4.5;
         public static final double turboMaxAngularVelocity = 0.9 * Math.PI;
@@ -177,12 +187,13 @@ public final class Constants {
 
             public static final double angleOffset = -0.4384765625 * 360 + 3;
         }
+
         public static final class FrontLeft_2026 {
             public static final int driveMotorID = 10;
             public static final int angleMotorID = 6;
             public static final int angleEncoderID = 2;
 
-            public static final double angleOffset =  91.58 - 180; //88.15428;
+            public static final double angleOffset = 91.58 - 180; // 88.15428;
         }
 
         // Front Right Module - Module 1
@@ -193,12 +204,13 @@ public final class Constants {
 
             public static final double angleOffset = -0.079833984375 * 360 + 42 + 14 + 180; // 0.300781 * 360;
         }
+
         public static final class FrontRight_2026 {
             public static final int driveMotorID = 11;
             public static final int angleMotorID = 7;
             public static final int angleEncoderID = 3;
 
-            public static final double angleOffset = 182.5488 - 180; //108.28116;
+            public static final double angleOffset = 182.5488 - 180; // 108.28116;
         }
 
         // Back Right Module - Module 2
@@ -207,14 +219,15 @@ public final class Constants {
             public static final int angleMotorID = 47;
             public static final int angleEncoderID = 50;
 
-            public static final double angleOffset =  0.156005859375 * 360 + 55 + 13 ; // 0.210693 * 360;
+            public static final double angleOffset = 0.156005859375 * 360 + 55 + 13; // 0.210693 * 360;
         }
+
         public static final class BackRight_2026 {
             public static final int driveMotorID = 12;
             public static final int angleMotorID = 8;
             public static final int angleEncoderID = 4;
 
-            public static final double angleOffset = 78.75 - 180; //75.84948;
+            public static final double angleOffset = 78.75 - 180; // 75.84948;
         }
 
         // Back Left Module - Module 3
@@ -225,27 +238,37 @@ public final class Constants {
 
             public static final double angleOffset = -0.424072265625 * 360 - 55 + 180; // 0.008057 * 360;
         }
+
         public static final class BackLeft_2026 {
             public static final int driveMotorID = 13;
             public static final int angleMotorID = 9;
             public static final int angleEncoderID = 5;
 
-            public static final double angleOffset = 289.6776 - 180; //2.90052;
+            public static final double angleOffset = 289.6776 - 180; // 2.90052;
         }
 
-        // Autonomous 
-        public static final PPHolonomicDriveController pathplannerFollowerConfig = 
-            new PPHolonomicDriveController( // HolonomicPathFollowerConfig, this should likely live in your Constants class
+        // Autonomous
+        public static final PPHolonomicDriveController pathplannerFollowerConfig = new PPHolonomicDriveController( // HolonomicPathFollowerConfig,
+                                                                                                                   // this
+                                                                                                                   // should
+                                                                                                                   // likely
+                                                                                                                   // live
+                                                                                                                   // in
+                                                                                                                   // your
+                                                                                                                   // Constants
+                                                                                                                   // class
                 new PIDConstants(0.220019, 0.0, 0.0), // Translation PID constants
                 new PIDConstants(1.201173, 0.0, 0.024023) // Rotation PID constants
-                //10, // Max module speed, in m/s - previously 4.5
-                //0.395 // Drive base radius in meters. Distance from robot center to furthest module. - previously 0.4
-                // pathplanner removed replanning
-                // new ReplanningConfig() // Default path replanning config. See the API for the options here
-            );
+        // 10, // Max module speed, in m/s - previously 4.5
+        // 0.395 // Drive base radius in meters. Distance from robot center to furthest
+        // module. - previously 0.4
+        // pathplanner removed replanning
+        // new ReplanningConfig() // Default path replanning config. See the API for the
+        // options here
+        );
 
-        public static RobotConfig pathplannerRobotConfig; 
-        static{
+        public static RobotConfig pathplannerRobotConfig;
+        static {
             try {
                 pathplannerRobotConfig = RobotConfig.fromGUISettings();
             } catch (Exception e) {
@@ -253,7 +276,6 @@ public final class Constants {
                 e.printStackTrace();
             }
         }
-        
 
         // Robot rotation locking
         public static final double rotationLockKP = 2.0;
@@ -265,20 +287,20 @@ public final class Constants {
         public static final class Deploy {
             public static final int motorId = 22;
 
-            public static final double motorStallThrsholdAmps =  30.0;
+            public static final double motorStallThrsholdAmps = 30.0;
             public static final double motorOpenLoopMoveVolts = 1.0;
             public static final double gearRatio = 25.0;
 
             public static final NeoConfiguration neoConfig = new NeoConfiguration(motorId)
-                .withKP(0.0)
-                .withKI(0.0)
-                .withKD(0.0)
-                .withBrakeMode(false)
-                .withMotorInvert(true)
-                .withAbsoluteEncoder(true);
+                    .withKP(0.0)
+                    .withKI(0.0)
+                    .withKD(0.0)
+                    .withBrakeMode(false)
+                    .withMotorInvert(true)
+                    .withAbsoluteEncoder(true);
 
             // TODO: Adjust the PID params
-            public final static double feedForwardKs = 0; 
+            public final static double feedForwardKs = 0;
             public final static double feedForwardKg = 0.250;
             public final static double feedForwardKv = 0;
 
@@ -305,13 +327,13 @@ public final class Constants {
 
             public static final double intakeDuty = 0.2;
             public static final double outtakeDuty = 0.2;
-            public static final double stallThrsholdAmps =  15.0;
+            public static final double stallThrsholdAmps = 15.0;
 
             public static final NeoConfiguration neoConfig = new NeoConfiguration(motorId)
-                .withKP(0.0)
-                .withKI(0.0)
-                .withKD(0.0)
-                .withBrakeMode(false);
+                    .withKP(0.0)
+                    .withKI(0.0)
+                    .withKD(0.0)
+                    .withBrakeMode(false);
         }
     }
 
@@ -322,15 +344,14 @@ public final class Constants {
         public static final double outtakeDuty = 0.50;
         public static final double stallThresholdAmps = 7.0; // TODO: will need to be adjusted
 
-        public static final NeoConfiguration neoConfig = 
-            new NeoConfiguration(motorId)
-            .withBrushedMotor(true)
-            .withBrakeMode(false)
-            .withMotorInvert(false)
-            .withSmartCurrentLimit(20)
-            .withKP(0.0)
-            .withKI(0.0)
-            .withKD(0.0);
+        public static final NeoConfiguration neoConfig = new NeoConfiguration(motorId)
+                .withBrushedMotor(true)
+                .withBrakeMode(false)
+                .withMotorInvert(false)
+                .withSmartCurrentLimit(20)
+                .withKP(0.0)
+                .withKI(0.0)
+                .withKD(0.0);
     }
 
     public static final class ShooterConfig {
@@ -354,37 +375,36 @@ public final class Constants {
             public static final int motorId = 30;
 
             public static final NeoConfiguration neoConfig = new NeoConfiguration(motorId)
-                .withBrakeMode(false) // Coast mode for flywheel
-                .withMotorInvert(true)
-                .withSmartCurrentLimit(40)
-                .withKP(0.0)
-                .withKI(0.0)
-                .withKD(0.0);
-
+                    .withBrakeMode(false) // Coast mode for flywheel
+                    .withMotorInvert(true)
+                    .withSmartCurrentLimit(40)
+                    .withKP(0.0)
+                    .withKI(0.0)
+                    .withKD(0.0);
 
             static class DistanceMapEntry {
                 public double distanceMeters;
                 public double flywheelSpeedRPM;
 
-                DistanceMapEntry (double distanceMeters, double flywheelSpeedRPM) {
+                DistanceMapEntry(double distanceMeters, double flywheelSpeedRPM) {
                     this.distanceMeters = distanceMeters;
                     this.flywheelSpeedRPM = flywheelSpeedRPM;
                 }
             }
 
-            // TODO: Using raw duty cycle for now, should use PID based speed control in actual implementation.
+            // TODO: Using raw duty cycle for now, should use PID based speed control in
+            // actual implementation.
             public static final DistanceMapEntry[] distanceLUT = {
-                new DistanceMapEntry(0.0, 0.10),
-                new DistanceMapEntry(1.0, 0.20),
-                new DistanceMapEntry(2.0, 0.30),
-                new DistanceMapEntry(3.0, 0.40),
-                new DistanceMapEntry(4.0, 0.50),
-                new DistanceMapEntry(5.0, 0.75),
+                    new DistanceMapEntry(0.0, 0.10),
+                    new DistanceMapEntry(1.0, 0.20),
+                    new DistanceMapEntry(2.0, 0.30),
+                    new DistanceMapEntry(3.0, 0.40),
+                    new DistanceMapEntry(4.0, 0.50),
+                    new DistanceMapEntry(5.0, 0.75),
             };
 
             public static final double DefaultShooterDutyCycle = 0.5;
         }
-
 
     }
 }

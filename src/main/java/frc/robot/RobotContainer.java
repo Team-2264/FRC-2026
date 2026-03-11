@@ -8,6 +8,7 @@ import frc.robot.commands.ArcDrive;
 import frc.robot.commands.DriveAndFaceGoal;
 import frc.robot.commands.DriveToTag;
 import frc.robot.commands.FaceGoal;
+import frc.robot.commands.FaceBetweenNearestTags;
 import frc.robot.commands.ShootBall;
 import frc.robot.commands.TeleopSwerve;
 import frc.robot.commands.ToggleTurbo;
@@ -46,7 +47,8 @@ public class RobotContainer {
 
     // Controllers
     private final CommandPS4Controller controller = new CommandPS4Controller(Constants.Operator.controllerPort);
-    //private final CommandPS4Controller controller2 = new CommandPS4Controller(Constants.Operator.controller2Port);
+    // private final CommandPS4Controller controller2 = new
+    // CommandPS4Controller(Constants.Operator.controller2Port);
 
     // transient LED override (millis since epoch)
     private long ledOverrideUntil = 0;
@@ -89,8 +91,14 @@ public class RobotContainer {
         DriveToTag driveToTagCommand = new DriveToTag(swerve, vision, 3.0, 10);
         controller.square().onTrue(driveToTagCommand);
 
-    // Cross (X) - while held: rotate CAN-1 +30° and spin CAN-2 at 0.3.
-    controller.cross().whileTrue(new RotateAndSpinWhileHeld(manualMotors, 0.3, 30.0));
+        // Cross (X) - while held: rotate CAN-1 +30° and spin CAN-2 at 0.3.
+        controller.cross().whileTrue(new RotateAndSpinWhileHeld(manualMotors, 0.3, 30.0));
+
+        // D-pad UP - Face midpoint between nearest tunnel & hub tags (IDs in
+        // Constants.TagSets)
+        controller.pov(0).onTrue(new FaceBetweenNearestTags(swerve,
+                Constants.TagSets.tunnelTags,
+                Constants.TagSets.hubTags));
 
         // Circle - Press to CANCEL DriveToTag
         controller.circle().onTrue(new InstantCommand(() -> {
@@ -218,9 +226,10 @@ public class RobotContainer {
      * Request a transient LED override color for a duration in seconds.
      */
     // private void setLedOverride(int r, int g, int b, double durationSeconds) {
-    //     ledOverrideR = r;
-    //     ledOverrideG = g;
-    //     ledOverrideB = b;
-    //     ledOverrideUntil = System.currentTimeMillis() + (long) (durationSeconds * 1000.0);
+    // ledOverrideR = r;
+    // ledOverrideG = g;
+    // ledOverrideB = b;
+    // ledOverrideUntil = System.currentTimeMillis() + (long) (durationSeconds *
+    // 1000.0);
     // }
 }
