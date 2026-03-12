@@ -95,8 +95,8 @@ public class RobotContainer {
         controller.cross().whileTrue(new RotateAndSpinWhileHeld(manualMotors, 0.3, 30.0));
 
         // D-pad UP - Face midpoint between nearest tunnel & hub tags (IDs in
-        // Constants.TagSets)
-        controller.pov(0).onTrue(new FaceBetweenNearestTags(swerve,
+        // Constants.TagSets) while held
+        controller.pov(0).whileTrue(new FaceBetweenNearestTags(swerve,
                 Constants.TagSets.tunnelTags,
                 Constants.TagSets.hubTags));
 
