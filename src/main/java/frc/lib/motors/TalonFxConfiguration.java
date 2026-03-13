@@ -18,6 +18,8 @@ public class TalonFxConfiguration {
     public double openLoopRamp = 0;
     public double closedLoopRamp = 0;
 
+    public boolean motorInvertDirection = false;
+
     /**
      * Creates a Talon motor configuration with a specific CAN ID
      */
@@ -104,6 +106,11 @@ public class TalonFxConfiguration {
      */
     public TalonFxConfiguration withClosedLoopRamp(double closedLoopRamp) {
         this.closedLoopRamp = closedLoopRamp;
+        return this;
+    }
+
+    public TalonFxConfiguration withMotorInvert(boolean invert) {
+        this.motorInvertDirection = invert;
         return this;
     }
 }

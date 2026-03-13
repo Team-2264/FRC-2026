@@ -125,7 +125,7 @@ public class Swerve extends SubsystemBase {
      */
     public Swerve() {
         // Init pigeon
-        pidgey = new Pigeon2(Constants.Swerve.pigeonID_2025);
+        pidgey = new Pigeon2(Constants.Swerve.pigeonID_2026);
         pidgey.getConfigurator().apply(new Pigeon2Configuration());
         zeroGyro();
 
@@ -143,28 +143,28 @@ public class Swerve extends SubsystemBase {
         // Init Modules (4 modules — one per corner)
         swerveModules = new SwerveModule[] {
                 new SwerveModule(0,
-                        Constants.Swerve.Mod0_2025.driveMotorID,
-                        Constants.Swerve.Mod0_2025.angleMotorID,
-                        Constants.Swerve.Mod0_2025.angleEncoderID,
-                        Constants.Swerve.Mod0_2025.angleOffset),
+                        Constants.Swerve.FrontLeft_2026.driveMotorID,
+                        Constants.Swerve.FrontLeft_2026.angleMotorID,
+                        Constants.Swerve.FrontLeft_2026.angleEncoderID,
+                        Constants.Swerve.FrontLeft_2026.angleOffset),
 
                 new SwerveModule(1,
-                        Constants.Swerve.Mod1_2025.driveMotorID,
-                        Constants.Swerve.Mod1_2025.angleMotorID,
-                        Constants.Swerve.Mod1_2025.angleEncoderID,
-                        Constants.Swerve.Mod1_2025.angleOffset),
+                        Constants.Swerve.FrontRight_2026.driveMotorID,
+                        Constants.Swerve.FrontRight_2026.angleMotorID,
+                        Constants.Swerve.FrontRight_2026.angleEncoderID,
+                        Constants.Swerve.FrontRight_2026.angleOffset),
 
                 new SwerveModule(2,
-                        Constants.Swerve.Mod2_2025.driveMotorID,
-                        Constants.Swerve.Mod2_2025.angleMotorID,
-                        Constants.Swerve.Mod2_2025.angleEncoderID,
-                        Constants.Swerve.Mod2_2025.angleOffset),
+                        Constants.Swerve.BackRight_2026.driveMotorID,
+                        Constants.Swerve.BackRight_2026.angleMotorID,
+                        Constants.Swerve.BackRight_2026.angleEncoderID,
+                        Constants.Swerve.BackRight_2026.angleOffset),
 
                 new SwerveModule(3,
-                        Constants.Swerve.Mod3_2025.driveMotorID,
-                        Constants.Swerve.Mod3_2025.angleMotorID,
-                        Constants.Swerve.Mod3_2025.angleEncoderID,
-                        Constants.Swerve.Mod3_2025.angleOffset),
+                        Constants.Swerve.BackLeft_2026.driveMotorID,
+                        Constants.Swerve.BackLeft_2026.angleMotorID,
+                        Constants.Swerve.BackLeft_2026.angleEncoderID,
+                        Constants.Swerve.BackLeft_2026.angleOffset),
         };
 
         kinematics = Constants.Swerve.swerveKinematics_2026;

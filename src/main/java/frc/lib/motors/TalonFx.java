@@ -5,6 +5,7 @@ import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.OpenLoopRampsConfigs;
 import com.ctre.phoenix6.controls.PositionDutyCycle;
 import com.ctre.phoenix6.controls.VelocityDutyCycle;
+import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
 public class TalonFx {
@@ -45,6 +46,13 @@ public class TalonFx {
             raw_config.MotorOutput.NeutralMode = NeutralModeValue.Brake;
         } else {
             raw_config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+        }
+
+        if (c.motorInvertDirection) {
+            raw_config.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+        }
+        else {
+            raw_config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         }
 
         inner.getConfigurator().apply(raw_config);

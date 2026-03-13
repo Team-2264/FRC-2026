@@ -142,6 +142,7 @@ public final class Constants {
             .withContinuousCurrentLimit(35)
             .withPeakCurrentLimit(60)
             .withPeakCurrentDuration(0.1)
+            .withMotorInvert(true)
             .withPID(
                 0.20019, // kP
                 0.0, // kI
