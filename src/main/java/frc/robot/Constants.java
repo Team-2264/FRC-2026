@@ -7,6 +7,7 @@ import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import com.pathplanner.lib.config.RobotConfig;
 
+import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -353,36 +354,33 @@ public final class Constants {
         public static final class Shooter {
             public static final int motorId = 30;
 
+            // kV feed-forward: ~1 / NEO free speed RPS ≈ 1/95 ≈ 0.0105
+            public static final double SHOOTER_KV = 0.0105;
+
+            // Velocity PID + feed-forward for closed-loop RPM control
             public static final NeoConfiguration neoConfig = new NeoConfiguration(motorId)
-                .withBrakeMode(false) // Coast mode for flywheel
+                .withBrakeMode(false)
                 .withMotorInvert(true)
                 .withSmartCurrentLimit(40)
-                .withKP(0.0)
+                .withKP(0.0005)
                 .withKI(0.0)
-                .withKD(0.0);
+                .withKD(0.0)
+                .withKV(SHOOTER_KV)
+                .withOutputRange(-1.0, 1.0);
 
-
-            static class DistanceMapEntry {
-                public double distanceMeters;
-                public double flywheelSpeedRPM;
-
-                DistanceMapEntry (double distanceMeters, double flywheelSpeedRPM) {
-                    this.distanceMeters = distanceMeters;
-                    this.flywheelSpeedRPM = flywheelSpeedRPM;
-                }
+            /** Distance (m) → flywheel RPM interpolation table. TODO: fill with real data. */
+            public static final InterpolatingDoubleTreeMap distanceToRpmMap = new InterpolatingDoubleTreeMap();
+            static {
+                distanceToRpmMap.put(0.0,  2000.0);
+                distanceToRpmMap.put(1.0,  2500.0);
+                distanceToRpmMap.put(2.0,  3200.0);
+                distanceToRpmMap.put(3.0,  4000.0);
+                distanceToRpmMap.put(4.0,  4800.0);
+                distanceToRpmMap.put(5.0,  5400.0);
             }
 
-            // TODO: Using raw duty cycle for now, should use PID based speed control in actual implementation.
-            public static final DistanceMapEntry[] distanceLUT = {
-                new DistanceMapEntry(0.0, 0.10),
-                new DistanceMapEntry(1.0, 0.20),
-                new DistanceMapEntry(2.0, 0.30),
-                new DistanceMapEntry(3.0, 0.40),
-                new DistanceMapEntry(4.0, 0.50),
-                new DistanceMapEntry(5.0, 0.75),
-            };
-
-            public static final double DefaultShooterDutyCycle = 0.5;
+            public static final double DEFAULT_SHOOTER_RPM = 4000.0;
+            public static final double MUZZLE_SPEED_MPS = 10.0;
         }
 
 

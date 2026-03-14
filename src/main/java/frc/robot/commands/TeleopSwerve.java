@@ -61,7 +61,6 @@ public class TeleopSwerve extends Command {
      */
     @Override
     public void execute() {
-        // Always ensure field-relative mode for teleop
         swerve.setFieldRelative(true);
         
         double yAxis = -controller.getLeftY();
@@ -77,10 +76,18 @@ public class TeleopSwerve extends Command {
         rAxis = rCurve(rAxis);
         
         Translation2d translation = new Translation2d(yAxis, xAxis).times(swerve.maximumSpeed());
-        double rotation = rAxis * Constants.Swerve.maxAngularVelocity;
+
+        // If auto-aim is active (e.g. triangle held), override rotation
+        double rotation;
+        if (swerve.isAutoAiming()) {
+            rotation = swerve.computeAutoAimRotation();
+        } else {
+            rotation = rAxis * Constants.Swerve.maxAngularVelocity;
+        }
 
     ElasticDashboard.putNumber("Rot", rotation);
     ElasticDashboard.putString("translation", translation.toString());
+    ElasticDashboard.putBoolean("AutoAimActive", swerve.isAutoAiming());
     
         swerve.drive(translation, rotation);
 

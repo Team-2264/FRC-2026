@@ -79,8 +79,8 @@ public class RobotContainer {
 
         // ======== Face Buttons ========
 
-        // Triangle - HOLD to shoot (vision-independent now)
-        controller.triangle().whileTrue(new ShootBall(shooter));
+        // Triangle - HOLD to shoot (velocity-compensated distance)
+        controller.triangle().whileTrue(new ShootBall(shooter, swerve));
 
         // Cross (X) - currently unused
         // (AlignToShoot moved to left D-pad)

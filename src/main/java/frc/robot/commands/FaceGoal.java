@@ -4,68 +4,51 @@ import java.util.Optional;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
+import frc.robot.Constants;
 import frc.robot.ElasticDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.Swerve;
 
 /**
- * FaceGoal - Rotation-only command that turns the robot to face the reef (goal).
- * 
- * Automatically picks the correct reef based on alliance color.
- * Uses the robot's current field position (from odometry/vision) to calculate
- * the angle to the reef center and rotates to face it. Works from anywhere on the field.
- * 
- * Press once, auto-finishes when facing the goal.
+ * FaceGoal — rotation-only command that turns the robot to face the goal.
+ * Auto-selects reef based on alliance. Includes shoot-while-moving heading compensation.
+ * Press once, auto-finishes when aimed.
  */
 public class FaceGoal extends Command {
 
     private final Swerve swerve;
-    private final double angleOffsetRad; // offset in radians applied to the target angle
+    private final double angleOffsetRad;
 
-    // 2026 reef/cage centers (average of reef tag positions, in meters)
-    // Red reef: tags 2,3,4,5,8,9,10,11
-    private static final double RED_GOAL_X = 12.004;  // meters
+    private static final double RED_GOAL_X = 12.004;
     private static final double RED_GOAL_Y = 4.035;
-
-    // Blue reef: tags 18,19,20,21,24,25,26,27
     private static final double BLUE_GOAL_X = 4.537;
     private static final double BLUE_GOAL_Y = 4.035;
 
-    // Rotation control
     private static final double ROT_KP = 3.0;
-    private static final double MAX_ROT = 2.0;        // rad/s — full speed
+    private static final double MAX_ROT = 2.0;
     private static final double SLOW_KP = 1.2;
-    private static final double SLOW_MAX_ROT = 0.5;   // rad/s — slow speed for fine alignment
-    private static final double SLOW_THRESHOLD = 10.0; // degrees — switch to slow below this
-    private static final double ANGLE_TOLERANCE = 1.0; // degrees
+    private static final double SLOW_MAX_ROT = 0.5;
+    private static final double SLOW_THRESHOLD = 10.0;
+    private static final double ANGLE_TOLERANCE = 1.0;
 
-    // Safety
-    private static final int TIMEOUT_CYCLES = 150; // 3 seconds
+    private static final int TIMEOUT_CYCLES = 150;
     private int cycleCount = 0;
     private boolean isDone = false;
     private double goalX;
     private double goalY;
 
-    // When true, goalX/goalY are set explicitly and not from alliance
     private final boolean useCustomTarget;
     private final double customGoalX;
     private final double customGoalY;
 
-    /**
-     * Constructor with 0° offset (faces directly at goal center).
-     */
+    /** Faces directly at goal center. */
     public FaceGoal(Swerve swerve) {
         this(swerve, 0.0);
     }
 
-    /**
-     * Constructor with custom angle offset.
-     * @param swerve Swerve subsystem
-     * @param angleOffsetDeg Offset in degrees added to the "face goal" angle.
-     *                       Negative = rotated right of goal, 0 = directly at goal,
-     *                       Positive = rotated left of goal.
-     */
+    /** Faces goal with an angular offset (degrees). */
     public FaceGoal(Swerve swerve, double angleOffsetDeg) {
         this.swerve = swerve;
         this.angleOffsetRad = Math.toRadians(angleOffsetDeg);
@@ -75,13 +58,7 @@ public class FaceGoal extends Command {
         addRequirements(swerve);
     }
 
-    /**
-     * Constructor that faces a specific field position instead of the reef center.
-     * @param swerve Swerve subsystem
-     * @param targetX Field X coordinate to face (meters)
-     * @param targetY Field Y coordinate to face (meters)
-     * @param angleOffsetDeg Offset in degrees
-     */
+    /** Faces a specific field position (x, y) with angular offset (degrees). */
     public FaceGoal(Swerve swerve, double targetX, double targetY, double angleOffsetDeg) {
         this.swerve = swerve;
         this.angleOffsetRad = Math.toRadians(angleOffsetDeg);
@@ -134,12 +111,31 @@ public class FaceGoal extends Command {
         double robotY = currentPose.getY();
         double robotHeadingRad = currentPose.getRotation().getRadians();
 
-        // Angle from robot to the goal, plus the user-specified offset
+        // Raw bearing to goal
         double dx = goalX - robotX;
         double dy = goalY - robotY;
-        double targetAngleRad = Math.atan2(dy, dx) + angleOffsetRad;
+        double goalAngle = Math.atan2(dy, dx);
+        double distance = Math.hypot(dx, dy);
 
-        // Error = how far we need to rotate
+        // Shoot-while-moving compensation
+        ChassisSpeeds fieldVel = swerve.getFieldRelativeSpeeds();
+        double vx = fieldVel.vxMetersPerSecond;
+        double vy = fieldVel.vyMetersPerSecond;
+
+        double vPerp = vx * Math.sin(goalAngle) - vy * Math.cos(goalAngle);
+        double vPar  = vx * Math.cos(goalAngle) + vy * Math.sin(goalAngle);
+
+        double muzzleSpeed = Constants.ShooterConfig.Shooter.MUZZLE_SPEED_MPS;
+        double ratio = Math.max(-1.0, Math.min(1.0, -vPerp / muzzleSpeed));
+        double headingOffset = Math.asin(ratio);
+
+        // Compensated target heading
+        double targetAngleRad = goalAngle + headingOffset + angleOffsetRad;
+
+        double flightTime = (muzzleSpeed > 0) ? distance / muzzleSpeed : 0;
+        double effectiveDistance = distance - vPar * flightTime;
+
+        // Rotation error (compensated)
         double errorRad = targetAngleRad - robotHeadingRad;
 
         // Normalize to -PI..PI
@@ -150,7 +146,12 @@ public class FaceGoal extends Command {
 
     ElasticDashboard.putNumber("FaceGoal/ErrorDeg", errorDeg);
     ElasticDashboard.putNumber("FaceGoal/TargetAngleDeg", Math.toDegrees(targetAngleRad));
+    ElasticDashboard.putNumber("FaceGoal/HeadingOffsetDeg", Math.toDegrees(headingOffset));
+    ElasticDashboard.putNumber("FaceGoal/EffectiveDistance", effectiveDistance);
+    ElasticDashboard.putNumber("FaceGoal/vPerp", vPerp);
+    ElasticDashboard.putNumber("FaceGoal/vPar", vPar);
 
+        // Shoot gate: check compensated heading error
         if (Math.abs(errorDeg) < ANGLE_TOLERANCE) {
             isDone = true;
             swerve.drive(new Translation2d(0, 0), 0);

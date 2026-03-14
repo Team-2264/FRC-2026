@@ -1,54 +1,42 @@
 package frc.robot.subsystems;
 
+import frc.robot.Constants;
 import frc.robot.ElasticDashboard;
+import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.lib.motors.Neo;
 import frc.lib.motors.NeoConfiguration;
 
 /**
- * Shooter subsystem for the 2026 FRC game.
- * Uses a single Neo motor (CAN ID 21) for shooting balls.
- * Speed adjusts based on distance to target.
+ * Shooter subsystem — flywheel with closed-loop RPM control + feeder motor.
+ * Distance→RPM is interpolated via {@link InterpolatingDoubleTreeMap}.
  */
 public class Shooter extends SubsystemBase {
 
     private final Neo motor;
     private final Neo feederMotor;
     private boolean isShooting = false;
-    private double currentSpeed = 0;
+
+    private double targetRPM = 0;
     private double currentFeederSpeed = 0;
 
-    // Distance-based speed constants
-    private static final double MIN_DISTANCE = 0.0; // meters - closest shot
-    private static final double MAX_DISTANCE = 5.0; // meters - farthest shot
-    private static final double MIN_SPEED = 0.10; // 10% speed at closest distance
-    private static final double MAX_SPEED = 0.75; // 75% speed at farthest distance
-    private static final double DEFAULT_SPEED = 0.5; // fallback if no tag visible
+    private static final double FEEDER_SPEED = 0.50;
+    private static final double UP_TO_SPEED_THRESHOLD = 0.95;
 
-    // Feeder motor configuration (placeholder ID — set real CAN ID when known)
-    private static final int FEEDER_MOTOR_ID = 32;
-    private static final int SHOOTER_MOTOR_ID = 30;
-    private static final double FEEDER_SPEED = 0.50; // duty cycle for feeding
+    private final InterpolatingDoubleTreeMap distanceToRpmMap =
+            Constants.ShooterConfig.Shooter.distanceToRpmMap;
 
     /**
-     * Creates a new Shooter subsystem using CAN ID 21.
+     * Creates a new Shooter subsystem.
      */
     public Shooter() {
-        // Configure the shooter motor using same style as ElevatorConfig
-        NeoConfiguration config = new NeoConfiguration(SHOOTER_MOTOR_ID)
-                .withBrakeMode(false) // Coast mode for flywheel
-                .withMotorInvert(false)
-                .withSmartCurrentLimit(40)
-                .withKP(0.0)
-                .withKI(0.0)
-                .withKD(0.0);
+        // Shooter motor — config comes from Constants (includes PID + output range)
+        motor = new Neo(Constants.ShooterConfig.Shooter.neoConfig);
 
-        motor = new Neo(config);
-
-        // Feeder motor: coast disabled so it stops quickly when button released
-        NeoConfiguration feederConfig = new NeoConfiguration(FEEDER_MOTOR_ID)
+        // Feeder motor
+        NeoConfiguration feederConfig = new NeoConfiguration(Constants.ShooterConfig.Feeder.motorId)
                 .withBrakeMode(true)
-                .withMotorInvert(false)
+                .withMotorInvert(true)
                 .withSmartCurrentLimit(30)
                 .withKP(0.0)
                 .withKI(0.0)
@@ -59,114 +47,87 @@ public class Shooter extends SubsystemBase {
     @Override
     public void periodic() {
         ElasticDashboard.putBoolean("Shooter/Active", isShooting);
-        ElasticDashboard.putNumber("Shooter/Velocity", motor.getVelocity());
+        ElasticDashboard.putNumber("Shooter/VelocityRPS", motor.getVelocity());
+        ElasticDashboard.putNumber("Shooter/VelocityRPM", getVelocityRPM());
+        ElasticDashboard.putNumber("Shooter/TargetRPM", targetRPM);
         ElasticDashboard.putNumber("Shooter/Current", motor.getOutputCurrent());
-        ElasticDashboard.putNumber("Shooter/Speed", currentSpeed);
         ElasticDashboard.putNumber("Shooter/FeederSpeed", currentFeederSpeed);
         ElasticDashboard.putNumber("Shooter/FeederCurrent", feederMotor.getOutputCurrent());
-        double shooterVelocity = motor.getVelocity();
+        ElasticDashboard.putBoolean("Shooter/UpToSpeed", isUpToSpeed());
     }
 
-    /**
-     * Calculate shooter speed based on distance to target.
-     * Closer = slower, farther = faster.
-     * 
-     * @param distanceMeters Distance to target in meters
-     * @return Duty cycle speed (0.0 to 1.0)
-     */
-    public double calculateSpeedForDistance(double distanceMeters) {
-        // Clamp distance to valid range
-        double clampedDistance = Math.max(MIN_DISTANCE, Math.min(MAX_DISTANCE, distanceMeters));
+    // ── RPM-based shooting ──
 
-        // Linear interpolation between MIN_SPEED and MAX_SPEED based on distance
-        double ratio = (clampedDistance - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE);
-        double speed = MIN_SPEED + ratio * (MAX_SPEED - MIN_SPEED);
-
-        ElasticDashboard.putNumber("Shooter/TargetDistance", distanceMeters);
-        ElasticDashboard.putNumber("Shooter/CalculatedSpeed", speed);
-
-        return speed;
-    }
-
-    /**
-     * Start the shooter motor at default speed.
-     */
-    public void shoot() {
-        shoot(DEFAULT_SPEED);
-    }
-
-    /**
-     * Start the shooter motor at a specific speed.
-     * 
-     * @param speed Duty cycle from -1.0 to 1.0
-     */
-    public void shoot(double speed) {
-        isShooting = true;
-        currentSpeed = speed;
-        motor.rotateAtSpeed(speed);
-    }
-
-    /**
-     * Shoot based on distance to target.
-     * 
-     * @param distanceMeters Distance to target in meters
-     */
+    /** Look up RPM for distance and spin flywheel. */
     public void shootForDistance(double distanceMeters) {
-        double speed = calculateSpeedForDistance(distanceMeters);
-        shoot(speed);
+        double rpm = distanceToRpmMap.get(distanceMeters);
+        shootAtRPM(rpm);
     }
 
     /**
-     * Start the feeder motor at the configured speed.
+     * Command the flywheel to the given RPM via closed-loop velocity control.
      */
+    public void shootAtRPM(double rpm) {
+        isShooting = true;
+        targetRPM = rpm;
+        double targetRPS = rpm / 60.0;
+        motor.rotateAtVelocity(targetRPS);
+    }
+
+    /** Start flywheel at default RPM. */
+    public void shoot() {
+        shootAtRPM(Constants.ShooterConfig.Shooter.DEFAULT_SHOOTER_RPM);
+    }
+
+    // ── Feeder ──
+
     public void startFeeder() {
         currentFeederSpeed = FEEDER_SPEED;
         feederMotor.rotateAtSpeed(FEEDER_SPEED);
     }
 
-    /**
-     * Stop the feeder motor.
-     */
+    /** Stop the feeder motor. */
     public void stopFeeder() {
         currentFeederSpeed = 0;
         feederMotor.stop();
     }
 
-    /**
-     * Stop the shooter motor.
-     */
+    // ── Stop ──
+
     public void stop() {
         isShooting = false;
-        currentSpeed = 0;
+        targetRPM = 0;
         motor.stop();
         stopFeeder();
     }
 
-    /**
-     * Check if the shooter is currently running.
-     */
+    // ── Queries ──
+
     public boolean isShooting() {
         return isShooting;
     }
 
-    /**
-     * Get the current commanded shooter duty cycle (last set in
-     * {@link #shoot(double)}).
-     */
-    public double getCurrentSpeedDutyCycle() {
-        return currentSpeed;
+    public double getTargetRPM() {
+        return targetRPM;
     }
 
-    /**
-     * Get the current velocity of the shooter motor.
-     */
+    /** Current flywheel velocity in RPS. */
     public double getVelocity() {
         return motor.getVelocity();
     }
 
-    /**
-     * Get the current feeder motor velocity.
-     */
+    /** Current flywheel velocity in RPM. */
+    public double getVelocityRPM() {
+        return motor.getVelocity() * 60.0;
+    }
+
+    /** True when flywheel is within 95% of target RPM. */
+    public boolean isUpToSpeed() {
+        if (targetRPM == 0) return false;
+        return Math.abs(getVelocityRPM()) >= UP_TO_SPEED_THRESHOLD * Math.abs(targetRPM);
+    }
+
+    /** Current feeder motor velocity (RPS). */
     public double getFeederVelocity() {
         return feederMotor.getVelocity();
     }

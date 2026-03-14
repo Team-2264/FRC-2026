@@ -54,7 +54,7 @@ public class Neo {
 
   
     config.closedLoop.feedbackSensor(FeedbackSensor.kPrimaryEncoder).pid(c.kP, c.kI, c.kD);
-    config.closedLoop.feedForward.kV(0.0);
+    config.closedLoop.feedForward.kV(c.kV);
     config.closedLoop.outputRange(c.outputRangeLower, c.outputRangeUpper);
     config.closedLoop.iZone(0);
 
@@ -132,6 +132,18 @@ public class Neo {
   public void rotateTo(double position){
 
     pidNeo.setSetpoint(position, ControlType.kPosition);
+  }
+
+  /**
+   * Commands the motor to spin at a target velocity using the on-board
+   * PIDF controller.  The setpoint unit must match the encoder velocity
+   * conversion factor configured in the constructor.  With the current
+   * factor of 1/60 the native unit is <b>rotations per second (RPS)</b>.
+   *
+   * @param rps Target velocity in rotations per second.
+   */
+  public void rotateAtVelocity(double rps) {
+    pidNeo.setSetpoint(rps, ControlType.kVelocity);
   }
 
   /**

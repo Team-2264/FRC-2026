@@ -262,6 +262,67 @@ public class Swerve extends SubsystemBase {
 
     }
 
+    // ── Auto-aim state (used by ShootBall + TeleopSwerve) ──
+    private Optional<Translation2d> autoAimGoal = Optional.empty();
+
+    /** Enable auto-aim toward a field position. TeleopSwerve will override rotation. */
+    public void setAutoAimGoal(Translation2d goal) {
+        autoAimGoal = Optional.of(goal);
+    }
+
+    /** Disable auto-aim. Rotation returns to stick control. */
+    public void clearAutoAim() {
+        autoAimGoal = Optional.empty();
+    }
+
+    /** Whether auto-aim is currently active. */
+    public boolean isAutoAiming() {
+        return autoAimGoal.isPresent();
+    }
+
+    /**
+     * Compute the compensated rotation speed (rad/s) to aim at the auto-aim goal.
+     * Accounts for robot lateral velocity (shoot-while-moving).
+     * Returns 0 if auto-aim is not active.
+     */
+    public double computeAutoAimRotation() {
+        if (autoAimGoal.isEmpty()) return 0;
+
+        Translation2d goal = autoAimGoal.get();
+        Pose2d pose = getPose();
+        double dx = goal.getX() - pose.getX();
+        double dy = goal.getY() - pose.getY();
+        double goalAngle = Math.atan2(dy, dx);
+
+        // Shoot-while-moving compensation
+        ChassisSpeeds fieldVel = getFieldRelativeSpeeds();
+        double vPerp = fieldVel.vxMetersPerSecond * Math.sin(goalAngle)
+                     - fieldVel.vyMetersPerSecond * Math.cos(goalAngle);
+        double muzzleSpeed = Constants.ShooterConfig.Shooter.MUZZLE_SPEED_MPS;
+        double ratio = Math.max(-1.0, Math.min(1.0, -vPerp / muzzleSpeed));
+        double headingOffset = Math.asin(ratio);
+
+        double targetAngleRad = goalAngle + headingOffset;
+        double errorRad = targetAngleRad - pose.getRotation().getRadians();
+
+        // Normalize to [-PI, PI]
+        while (errorRad > Math.PI)  errorRad -= 2 * Math.PI;
+        while (errorRad < -Math.PI) errorRad += 2 * Math.PI;
+
+        double errorDeg = Math.toDegrees(errorRad);
+
+        // Two-speed P control
+        double kp  = (Math.abs(errorDeg) < 10.0) ? 1.2 : 3.0;
+        double cap = (Math.abs(errorDeg) < 10.0) ? 0.5 : 2.0;
+        double rot = errorRad * kp;
+        rot = Math.max(-cap, Math.min(cap, rot));
+
+        ElasticDashboard.putNumber("AutoAim/ErrorDeg", errorDeg);
+        ElasticDashboard.putNumber("AutoAim/HeadingOffsetDeg", Math.toDegrees(headingOffset));
+
+        return rot;
+    }
+
     /**
      * Drives the swerve drive based on field-relative {@link ChassisSpeeds}.
      */
@@ -431,6 +492,26 @@ public class Swerve extends SubsystemBase {
      */
     public ChassisSpeeds getChassisSpeeds() {
         return kinematics.toChassisSpeeds(getModuleStates());
+    }
+
+    /**
+     * Gets the field-relative velocity of the robot.
+     * Rotates the robot-relative ChassisSpeeds by the gyro heading so that
+     * vxMetersPerSecond is the field-X component and vyMetersPerSecond is the
+     * field-Y component.
+     *
+     * @return A {@link ChassisSpeeds} whose vx/vy are in the field frame.
+     */
+    public ChassisSpeeds getFieldRelativeSpeeds() {
+        ChassisSpeeds robotRelative = getChassisSpeeds();
+        double headingRad = getGyroAngle().getRadians();
+        double cos = Math.cos(headingRad);
+        double sin = Math.sin(headingRad);
+        return new ChassisSpeeds(
+            robotRelative.vxMetersPerSecond * cos - robotRelative.vyMetersPerSecond * sin,
+            robotRelative.vxMetersPerSecond * sin + robotRelative.vyMetersPerSecond * cos,
+            robotRelative.omegaRadiansPerSecond
+        );
     }
 
     /**

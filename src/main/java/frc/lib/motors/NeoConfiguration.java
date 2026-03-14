@@ -12,6 +12,8 @@ public class NeoConfiguration {
     public double outputRangeLower = -0.05;
     public double outputRangeUpper = 0.05;
 
+    public double kV = 0.0;
+
     public boolean motorInvertDirection = false;
     public boolean breakMode = false;
     public boolean brushedMotor = false;
@@ -99,6 +101,14 @@ public class NeoConfiguration {
     public NeoConfiguration withOutputRange(double lower, double upper) {
         this.outputRangeUpper = upper;
         this.outputRangeLower = lower;
+        return this;
+    }
+
+    /**
+     * Sets the velocity feed-forward gain (kV) for closed-loop velocity control.
+     */
+    public NeoConfiguration withKV(double kV) {
+        this.kV = kV;
         return this;
     }
 
