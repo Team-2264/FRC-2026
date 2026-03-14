@@ -367,7 +367,7 @@ public final class Constants {
             public static final edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap
                     speedTable = new edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap();
             static {
-                //  distance (meters)  →  duty cycle
+                //  distance (meters)  →  duty cycles
                 speedTable.put(1.0*0.3048,    -0.42);
                 speedTable.put(2.0*0.3048,   -0.46); 
                 speedTable.put(3.0*0.3048,   -0.48); 
