@@ -25,8 +25,10 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandPS4Controller;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import frc.robot.ElasticDashboard;
+import edu.wpi.first.wpilibj.RobotController;
 
 import java.util.Optional;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import org.photonvision.EstimatedRobotPose;
@@ -55,6 +57,10 @@ public class RobotContainer {
     private int ledOverrideR = 0;
     private int ledOverrideG = 0;
     private int ledOverrideB = 0;
+    private boolean hadVisibleTag = false;
+    private long visionLostBlinkUntilMs = 0;
+    private long visionPosePulseUntilMs = 0;
+    private double lastVisionPoseTimestampSec = -1.0;
 
     // Autonomous
     private final SendableChooser<Command> autoChooser;
@@ -130,28 +136,103 @@ public class RobotContainer {
 
         if (visionPose.isPresent()) {
             swerve.addVisionMeasurement(visionPose.get());
+
+            double ts = visionPose.get().timestampSeconds;
+            if (Math.abs(ts - lastVisionPoseTimestampSec) > 1e-6) {
+                lastVisionPoseTimestampSec = ts;
+                visionPosePulseUntilMs = System.currentTimeMillis() + 120;
+            }
         }
 
         // Debug: show whether a transient LED override is active
         long now = System.currentTimeMillis();
         long remainingMs = Math.max(0, ledOverrideUntil - now);
         ElasticDashboard.putNumber("LEDs/OverrideRemainingMs", remainingMs);
+        ElasticDashboard.putString("LEDs/Priority",
+            "OVERRIDE > BATTERY > ENDGAME > SHOOTER > TURBO > VISION_LOST > VISION_POSE > DISABLED > TAG10 > IDLE");
 
-        // If a transient LED override is active, honor it first — but allow
-        // Tag 10 progressive green to bypass the override so the driver sees
-        // detection/centering feedback even during short confirmations.
         Optional<edu.wpi.first.math.geometry.Transform3d> tag10Tf = vision.getTransformToTag(10);
-        boolean bypassOverrideForTag10 = tag10Tf.isPresent();
-        if (System.currentTimeMillis() < ledOverrideUntil && !bypassOverrideForTag10) {
+        Optional<Integer> bestTagId = vision.getBestTargetId();
+
+        boolean hasAnyVisibleTag = tag10Tf.isPresent() || bestTagId.isPresent();
+        if (hasAnyVisibleTag) {
+            hadVisibleTag = true;
+        } else if (hadVisibleTag) {
+            hadVisibleTag = false;
+            visionLostBlinkUntilMs = now + 600;
+        }
+
+        // Priority 1: explicit override always wins, including when Tag 10 is visible.
+        boolean overrideActive = now < ledOverrideUntil;
+        if (overrideActive) {
+            ElasticDashboard.putString("LEDs/Mode", "OVERRIDE");
             leds.setRGB(ledOverrideR, ledOverrideG, ledOverrideB);
             return;
         }
 
-        // Prefer Tag 10 progressive green if Tag 10 is visible at all (even if
-        // Photon reports another 'best' target). This prevents tag 9 from
-        // overriding tag 10 centering feedback.
+        // Priority 2: low battery warning.
+        double batteryVolts = RobotController.getBatteryVoltage();
+        ElasticDashboard.putNumber("LEDs/BatteryVolts", batteryVolts);
+        if (batteryVolts < 11.8) {
+            ElasticDashboard.putString("LEDs/Mode", "LOW_BATTERY");
+            boolean pulseOn = ((now / 200) % 2) == 0;
+            leds.setRGB(pulseOn ? 255 : 0, 0, 0);
+            return;
+        }
+
+        // Priority 3: endgame warning in teleop (<=30s remaining).
+        double matchTime = DriverStation.getMatchTime();
+        ElasticDashboard.putNumber("LEDs/MatchTimeSec", matchTime);
+        if (DriverStation.isTeleopEnabled() && matchTime > 0.0 && matchTime <= 30.0) {
+            ElasticDashboard.putString("LEDs/Mode", "ENDGAME");
+            boolean flashOn = ((now / 150) % 2) == 0;
+            leds.setRGB(flashOn ? 255 : 0, flashOn ? 180 : 0, 0);
+            return;
+        }
+
+        // Priority 4: shooter active.
+        if (shooter.isShooting()) {
+            ElasticDashboard.putString("LEDs/Mode", "SHOOTER_ACTIVE");
+            leds.setRGB(255, 80, 0);
+            return;
+        }
+
+        // Priority 5: turbo mode active.
+        if (swerve.getTurboStatus()) {
+            ElasticDashboard.putString("LEDs/Mode", "TURBO");
+            leds.setRGB(0, 255, 255);
+            return;
+        }
+
+        // Priority 6: vision-lost warning blink after losing all tags.
+        if (now < visionLostBlinkUntilMs) {
+            ElasticDashboard.putString("LEDs/Mode", "VISION_LOST");
+            boolean blinkOn = ((now / 120) % 2) == 0;
+            leds.setRGB(blinkOn ? 255 : 0, blinkOn ? 120 : 0, 0);
+            return;
+        }
+
+        // Priority 7: pulse when a new vision pose measurement is accepted.
+        if (now < visionPosePulseUntilMs) {
+            ElasticDashboard.putString("LEDs/Mode", "VISION_POSE");
+            leds.setRGB(0, 80, 255);
+            return;
+        }
+
+        // Priority 8: disabled standby pattern.
+        if (DriverStation.isDisabled()) {
+            ElasticDashboard.putString("LEDs/Mode", "DISABLED_BREATHE");
+            double phase = (now % 2000L) / 2000.0;
+            double wave = 0.5 * (1.0 + Math.sin(2.0 * Math.PI * phase));
+            int v = 10 + (int) Math.round(45.0 * wave);
+            leds.setRGB(v, v, v);
+            return;
+        }
+
+        // Priority 9: Tag 10 progressive centering feedback.
         if (tag10Tf.isPresent()) {
             try {
+                ElasticDashboard.putString("LEDs/Mode", "TAG10_PROGRESS");
                 var tf = tag10Tf.get();
                 // Debug both rotation-based yaw and translation-based bearing.
                 double yawDegRot = Math.toDegrees(tf.getRotation().getZ());
@@ -190,19 +271,13 @@ public class RobotContainer {
                 leds.setRGB(0, 255, 0);
             }
         } else {
-            // Fallback: use best-target logic (red for 12, purple otherwise)
-            Optional<Integer> tagId = vision.getBestTargetId();
-            if (tagId.isPresent()) {
-                int id = tagId.get();
+            // Priority 5: no non-Tag10 indicator requested; fall through to idle.
+            if (bestTagId.isPresent()) {
+                int id = bestTagId.get();
                 ElasticDashboard.putNumber("LEDs/BestTagId", id);
-                if (id == 12) {
-                    leds.setRGBRange(255, 0, 0, 0, 3); // red on top 4 LEDs only
-                } else {
-                    leds.setRGB(128, 0, 128); // purple for any other tag
-                }
-            } else {
-                leds.setRGB(128, 0, 128); // purple when no tag visible
             }
+            ElasticDashboard.putString("LEDs/Mode", "IDLE");
+            leds.setRGB(0, 0, 0);
         }
 
         // hub alignment is triggered by the DriveToTag10 binding (on completion)
@@ -220,5 +295,17 @@ public class RobotContainer {
         ledOverrideG = g;
         ledOverrideB = b;
         ledOverrideUntil = System.currentTimeMillis() + (long) (durationSeconds * 1000.0);
+    }
+
+    public void requestLedOverride(int r, int g, int b, double durationSeconds) {
+        setLedOverride(r, g, b, durationSeconds);
+    }
+
+    public void clearLedOverride() {
+        ledOverrideUntil = 0;
+    }
+
+    public boolean isLedOverrideActive() {
+        return System.currentTimeMillis() < ledOverrideUntil;
     }
 }
