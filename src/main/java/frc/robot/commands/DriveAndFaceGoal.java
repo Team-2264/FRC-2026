@@ -88,10 +88,6 @@ public class DriveAndFaceGoal extends Command {
         addRequirements(swerve);
     }
 
-    // ===================================================================
-    //  Lifecycle
-    // ===================================================================
-
     @Override
     public void initialize() {
         prevFwd = 0;

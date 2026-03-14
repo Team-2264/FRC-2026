@@ -1,7 +1,7 @@
 package frc.robot.commands;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.wpilibj2.command.CommandBase;
+import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
 import frc.robot.ElasticDashboard;
 import frc.robot.subsystems.Hopper;
@@ -12,12 +12,8 @@ import java.util.Optional;
 
 /**
  * ShootBall command - adjusts shooter speed based on distance to AprilTag 10.
- * If tag 10 is not visible, the motor does not run at all.
- * Further from tag → faster motor (up to 75%).
- * At 1m and below → proportionally lower (down to ~10%).
- * Bind to triangle button - hold to shoot.
  */
-public class ShootBall extends CommandBase {
+public class ShootBall extends Command {
 
     private final Shooter shooter;
     private final Hopper hopper;
@@ -25,6 +21,7 @@ public class ShootBall extends CommandBase {
 
     private static final double SHOOTER_FREE_RPS = 95.0; // Approx free speed of a NEO in rev/s
     private static final double SHOOTER_SPEED_THRESHOLD = 0.95; // 95% of target speed
+    private static double lastDistanceMeters = -1.0; // Last distance of the robot from tag
 
     /**
      * Creates a ShootBall command with distance-based speed.
@@ -37,7 +34,7 @@ public class ShootBall extends CommandBase {
         this.shooter = shooter;
         this.hopper = hopper;
         this.vision = vision; // Initialize Vision2025
-
+        lastDistanceMeters = -1.0;
         addRequirements(shooter, hopper, vision); // Add all requirements in one call
     }
 
@@ -48,8 +45,17 @@ public class ShootBall extends CommandBase {
 
     @Override
     public void execute() {
-        Optional<Pose2d> tagPose = vision.getTag10TargetPose(0); // Get tag pose
-        double distance = tagPose.isPresent() ? tagPose.get().getTranslation().getNorm() : -1; // Calculate distance
+        Optional<Transform3d> tagTransform = vision.getTransformToTag(10);
+        double distance = lastDistanceMeters;
+        if (tagTransform.isPresent()) {
+            Transform3d t = tagTransform.get();
+            distance =t.getX();
+            lastDistanceMeters = distance;
+        }           
+
+        if(lastDistanceMeters<0){
+            shooter.shoot();
+        }
 
         // Vision-independent: run shooter immediately; feed only when up to speed
         shooter.shootForDistance(distance); // Pass distance to shooter
@@ -67,8 +73,8 @@ public class ShootBall extends CommandBase {
         }
 
         ElasticDashboard.putBoolean("ShootBall/ShooterUpToSpeed", upToSpeed);
-        ElasticDashboard.putNumber("ShootBall/TargetRps", targetRps);
-        ElasticDashboard.putBoolean("ShootBall/TagVisible", tagPose.isPresent());
+        ElasticDashboard.putNumber("ShootBall/TargetRps", targetDuty);
+        ElasticDashboard.putBoolean("ShootBall/TagVisible", tagTransform.isPresent());
         ElasticDashboard.putNumber("ShootBall/Distance", distance);
     }
 

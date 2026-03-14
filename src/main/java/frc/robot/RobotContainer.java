@@ -78,13 +78,17 @@ public class RobotContainer {
         controller.share().onFalse(new ToggleTurbo(swerve));
 
         // Triangle - HOLD to shoot (vision-independent now)
-        controller.triangle().whileTrue(new ShootBall(shooter, hopper));
+        controller.L1().whileTrue(new ShootBall(shooter, hopper, vision));
 
         controller.povUp().onTrue(new InstantCommand(() -> hopper.startConveyor(0.6)));
         controller.povDown().onTrue(new InstantCommand(() -> hopper.stopConveyor()));
 
         controller.R1().onTrue(new InstantCommand(() -> intake.startRoller(0.9)));
         controller.R1().onFalse(new InstantCommand(() -> intake.stopRoller()));
+
+        // D-pad LEFT - DriveAndFaceGoal: face goal, drive to tag, align + re-center
+        DriveAndFaceGoal driveAndFaceCommand = new DriveAndFaceGoal(swerve, vision);
+        controller.pov(270).toggleOnTrue(driveAndFaceCommand);
     }
 
     public Command getAutonomousCommand() {

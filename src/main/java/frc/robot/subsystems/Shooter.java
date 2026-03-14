@@ -70,12 +70,12 @@ public class Shooter extends SubsystemBase {
      * Look up shooter duty cycle for a given distance using the
      * {@link Constants.ShooterConfig.Shooter#speedTable InterpolatingDoubleTreeMap}.
      *
-     * @param distanceInFeet Distance to target in <b>feet</b>.
+     * @param distanceInMeters Distance to target in <b>meters</b>.
      * @return Duty cycle (negative values = correct motor direction).
      */
-    public double calculateSpeedForDistance(double distanceInFeet) {
-        double speed = Constants.ShooterConfig.Shooter.speedTable.get(Units.feetToMeters(distanceInFeet));
-        ElasticDashboard.putNumber("Shooter/TargetDistInches", Units.feetToMeters(distanceInFeet));
+    public double calculateSpeedForDistance(double distanceInMeters) {
+        double speed = Constants.ShooterConfig.Shooter.speedTable.get(distanceInMeters);
+        ElasticDashboard.putNumber("Shooter/TargetDistInches", distanceInMeters);
         ElasticDashboard.putNumber("Shooter/CalculatedSpeed", speed);
 
         return speed;

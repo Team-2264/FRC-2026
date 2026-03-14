@@ -3,6 +3,8 @@
 // the WPILib BSD license file in the root directory of this project.
 
 package frc.robot;
+import static edu.wpi.first.units.Units.Degrees;
+
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import com.pathplanner.lib.config.RobotConfig;
@@ -56,11 +58,11 @@ public final class Constants {
         // Robot to Camera Transform
         public static final Transform3d robotToCamera = new Transform3d(
             new Translation3d(
-                Units.inchesToMeters(11.75), 
-                Units.inchesToMeters(0), 
-                Units.inchesToMeters(7.25)
+                Units.inchesToMeters(-9.0), 
+                Units.inchesToMeters(8.5), 
+                Units.inchesToMeters(19.0)
             ),
-            new Rotation3d(0, 0, 0)
+            new Rotation3d(Units.degreesToRadians(0), Units.degreesToRadians(26.0), Units.degreesToRadians(0))
             
         );
 
@@ -365,18 +367,18 @@ public final class Constants {
             public static final edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap
                     speedTable = new edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap();
             static {
-                //  distance (inches)  →  duty cycle
-                speedTable.put(1,    -0.45);
-                speedTable.put(2,   -0.47); 
-                speedTable.put(3,   -0.50); 
-                speedTable.put(4,   -0.51);
-                speedTable.put(5,   -0.52);
-                speedTable.put(6,   -0.53);
-                speedTable.put(7,   -0.55);
-                speedTable.put(8,  -0.60);
-                speedTable.put(9,  -0.65);
-                speedTable.put(10,  -0.70);
-                speedTable.put(11,  -0.70);
+                //  distance (meters)  →  duty cycle
+                speedTable.put(1.0*0.3048,    -0.44);
+                speedTable.put(2.0*0.3048,   -0.46); 
+                speedTable.put(3.0*0.3048,   -0.48); 
+                speedTable.put(4.0*0.3048,   -0.51);
+                speedTable.put(5.0*0.3048,   -0.52);
+                speedTable.put(6.0*0.3048,   -0.53);
+                speedTable.put(7.0*0.3048,   -0.55);
+                speedTable.put(8.0*0.3048,  -0.60);
+                speedTable.put(9.0*0.3048,  -0.65);
+                speedTable.put(10.0*0.3048,  -0.70);
+                speedTable.put(11.0*0.3048,  -0.70);
 
             }
 
