@@ -3,7 +3,6 @@
 // the WPILib BSD license file in the root directory of this project.
 
 package frc.robot;
-import static edu.wpi.first.units.Units.Degrees;
 
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
@@ -270,7 +269,7 @@ public final class Constants {
 
             public static final double motorStallThrsholdAmps =  30.0;
             public static final double motorOpenLoopMoveVolts = 1.0;
-            public static final double gearRatio = 25.0;
+            public static final double gearRatio = 1.0;
 
             public static final NeoConfiguration neoConfig = new NeoConfiguration(motorId)
                 .withKP(0.0)
@@ -278,29 +277,31 @@ public final class Constants {
                 .withKD(0.0)
                 .withBrakeMode(false)
                 .withMotorInvert(true)
-                .withAbsoluteEncoder(true);
+                .withAbsoluteEncoder(false);
 
             // TODO: Adjust the PID params
             public final static double feedForwardKs = 0; 
-            public final static double feedForwardKg = 0.250;
+            public final static double feedForwardKg = 0;
             public final static double feedForwardKv = 0;
+            public final static double feedForwardKa = 0;
 
-            public final static double pidKp = 0.15;
+            public final static double pidKp = 1.0;
             public final static double pidKi = 0.00;
             public final static double pidKd = 0;
 
-            public final static double maxDegreesPerSecond = 100.0;
-            public final static double accelDegreesPerSecondPerSecond = 7200.0;
-
-            public final static double motorMaxDegreesPerSecond = maxDegreesPerSecond * gearRatio;
-            public final static double motorAccelDegreesPerSecondPerSecond = accelDegreesPerSecondPerSecond * gearRatio;
-
-            public static final double encoderOffsetZeroToOne = -0.07;
-            public static final double encoderOffsetDegrees = 23.0;
+            public final static double maxRevsPerSecond = 24.0;
+            public final static double accelRevsPerSecondPerSecond = 240.0;
 
             public static final double maxVoltage = 6.0;
-            public static final double minAngle = -85.0;
-            public static final double maxAngle = 65.0;
+            public static final double minAngle = -0.1;
+            public static final double maxAngle = 7.0;
+
+            public static final double homingVoltage = 1.0;
+            public static final double homingCurrentThresholdAmps = 12.0;
+            public static final double homePositionRevs = 0;
+
+            public static final double retractedPosition = 0.5;
+            public static final double extendedPosition = 6.0;
         }
 
         public static final class Roller {

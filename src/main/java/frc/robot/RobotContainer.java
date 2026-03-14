@@ -83,12 +83,19 @@ public class RobotContainer {
         controller.povUp().onTrue(new InstantCommand(() -> hopper.startConveyor(0.6)));
         controller.povDown().onTrue(new InstantCommand(() -> hopper.stopConveyor()));
 
-        controller.R1().onTrue(new InstantCommand(() -> intake.startRoller(0.9)));
-        controller.R1().onFalse(new InstantCommand(() -> intake.stopRoller()));
+        controller.R1().onTrue(new InstantCommand(() -> intake.startRoller(0.9))
+            .alongWith(new InstantCommand(() -> intake.deployIntake())));
+        controller.R1().onFalse(new InstantCommand(() -> intake.stopRoller())
+            .alongWith(new InstantCommand(() -> intake.retractIntake())));
 
         // D-pad LEFT - DriveAndFaceGoal: face goal, drive to tag, align + re-center
         DriveAndFaceGoal driveAndFaceCommand = new DriveAndFaceGoal(swerve, vision);
         controller.pov(270).toggleOnTrue(driveAndFaceCommand);
+
+        controller.square().onTrue(new InstantCommand(() -> intake.deployManualMove(Constants.IntakeConfig.Deploy.motorOpenLoopMoveVolts)));
+        controller.square().onFalse(new InstantCommand(() -> intake.deployManualMove(0)));
+        controller.circle().onTrue(new InstantCommand(() -> intake.deployManualMove(-Constants.IntakeConfig.Deploy.motorOpenLoopMoveVolts)));
+        controller.circle().onFalse(new InstantCommand(() -> intake.deployManualMove(0)));
     }
 
     public Command getAutonomousCommand() {
