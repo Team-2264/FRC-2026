@@ -13,6 +13,8 @@ import frc.robot.commands.TeleopSwerve;
 import frc.robot.commands.ToggleTurbo;
 import frc.robot.commands.locks.LockSwerve;
 import frc.robot.commands.locks.UnlockSwerve;
+import frc.robot.subsystems.Hopper;
+import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Leds;
 import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.Swerve;
@@ -39,10 +41,8 @@ public class RobotContainer {
             Constants.LedStrip.scaleFactor);
     public final Vision2025 vision = new Vision2025();
     public final Shooter shooter = new Shooter();
-    // Manual motors: intake rotator canID 25, and roller intake canID 22
-    private static final int ROTATOR_MOTOR_ID = 25;
-    private static final int ROLLER_MOTOR_ID = 22;
-    public final ManualMotors manualMotors = new ManualMotors(ROTATOR_MOTOR_ID, ROLLER_MOTOR_ID);
+    public final Intake intake = new Intake();
+    private final Hopper hopper = new Hopper();
 
     // Controllers
     private final CommandPS4Controller controller = new CommandPS4Controller(Constants.Operator.controllerPort);
@@ -77,41 +77,14 @@ public class RobotContainer {
         controller.share().onTrue(new ToggleTurbo(swerve));
         controller.share().onFalse(new ToggleTurbo(swerve));
 
-        // ======== Face Buttons ========
-
         // Triangle - HOLD to shoot (vision-independent now)
-        controller.triangle().whileTrue(new ShootBall(shooter));
+        controller.triangle().whileTrue(new ShootBall(shooter, hopper));
 
-        // Cross (X) - currently unused
-        // (AlignToShoot moved to left D-pad)
+        controller.povUp().onTrue(new InstantCommand(() -> hopper.startConveyor(0.6)));
+        controller.povDown().onTrue(new InstantCommand(() -> hopper.stopConveyor()));
 
-        // Square - Press once to drive within 3.0m of tag 10 and center it in camera
-        DriveToTag driveToTagCommand = new DriveToTag(swerve, vision, 3.0, 10);
-        controller.square().onTrue(driveToTagCommand);
-
-    // Cross (X) - while held: rotate CAN-1 +30° and spin CAN-2 at 0.3.
-    controller.cross().whileTrue(new RotateAndSpinWhileHeld(manualMotors, 0.3, 30.0));
-
-        // Circle - Press to CANCEL DriveToTag
-        controller.circle().onTrue(new InstantCommand(() -> {
-            edu.wpi.first.wpilibj2.command.CommandScheduler.getInstance().cancel(driveToTagCommand);
-        }));
-
-        // ======== D-Pad ========
-
-        // D-pad DOWN - Face Goal: rotate to face the reef center from any position
-        controller.pov(180).onTrue(new FaceGoal(swerve));
-
-        // D-pad LEFT - DriveAndFaceGoal: face goal, drive to tag, align + re-center
-        // Press to start, press again to cancel (toggleOnTrue)
-        DriveAndFaceGoal driveAndFaceCommand = new DriveAndFaceGoal(swerve, vision);
-        controller.pov(270).toggleOnTrue(driveAndFaceCommand);
-
-        // ======== Triggers ========
-
-        // L2 (Left Trigger) - Arc Drive: while held, orbit tag 10 at current radius
-        // Left stick X moves along the arc. Robot always faces tag.
-        controller.L2().whileTrue(new ArcDrive(swerve, vision, controller));
+        controller.R1().onTrue(new InstantCommand(() -> intake.startRoller(0.9)));
+        controller.R1().onFalse(new InstantCommand(() -> intake.stopRoller()));
     }
 
     public Command getAutonomousCommand() {

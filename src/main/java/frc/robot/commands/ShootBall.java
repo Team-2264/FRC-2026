@@ -1,7 +1,9 @@
 package frc.robot.commands;
 
+import frc.robot.Constants;
 import frc.robot.ElasticDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.subsystems.Hopper;
 import frc.robot.subsystems.Shooter;
 
 /**
@@ -14,6 +16,7 @@ import frc.robot.subsystems.Shooter;
 public class ShootBall extends Command {
 
     private final Shooter shooter;
+    private final Hopper hopper;
 
     private static final double SHOOTER_FREE_RPS = 95.0; // Approx free speed of a NEO in rev/s
     private static final double SHOOTER_SPEED_THRESHOLD = 0.95; // 95% of target speed
@@ -22,10 +25,14 @@ public class ShootBall extends Command {
      * Creates a ShootBall command with distance-based speed.
      * 
      * @param shooter The shooter subsystem
+     * @param hopper The hopper subsystem
      */
-    public ShootBall(Shooter shooter) {
+    public ShootBall(Shooter shooter, Hopper hopper) {
         this.shooter = shooter;
+        this.hopper = hopper;
+
         addRequirements(shooter);
+        addRequirements(hopper);
     }
 
     @Override
@@ -43,8 +50,10 @@ public class ShootBall extends Command {
         boolean upToSpeed = Math.abs(shooter.getVelocity()) >= SHOOTER_SPEED_THRESHOLD * targetRps;
 
         if (upToSpeed) {
+            hopper.startConveyor(Constants.HopperConveyorConfig.intakeDuty);
             shooter.startFeeder();
         } else {
+            hopper.stopConveyor();
             shooter.stopFeeder();
         }
 
@@ -63,6 +72,7 @@ public class ShootBall extends Command {
     @Override
     public void end(boolean interrupted) {
         shooter.stop();
+        hopper.stopConveyor();
         ElasticDashboard.putBoolean("ShootBall/Active", false);
     }
 }

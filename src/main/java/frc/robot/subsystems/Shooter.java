@@ -21,14 +21,14 @@ public class Shooter extends SubsystemBase {
     // Distance-based speed constants
     private static final double MIN_DISTANCE = 0.0; // meters - closest shot
     private static final double MAX_DISTANCE = 5.0; // meters - farthest shot
-    private static final double MIN_SPEED = 0.10; // 10% speed at closest distance
-    private static final double MAX_SPEED = 0.75; // 75% speed at farthest distance
-    private static final double DEFAULT_SPEED = 0.5; // fallback if no tag visible
+    private static final double MIN_SPEED = -0.10; // 10% speed at closest distance
+    private static final double MAX_SPEED = -0.75; // 75% speed at farthest distance
+    private static final double DEFAULT_SPEED = -0.6; // fallback if no tag visible
 
     // Feeder motor configuration (placeholder ID — set real CAN ID when known)
     private static final int FEEDER_MOTOR_ID = 32;
     private static final int SHOOTER_MOTOR_ID = 30;
-    private static final double FEEDER_SPEED = 0.50; // duty cycle for feeding
+    private static final double FEEDER_SPEED = -0.50; // duty cycle for feeding
 
     /**
      * Creates a new Shooter subsystem using CAN ID 21.

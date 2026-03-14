@@ -319,8 +319,8 @@ public final class Constants {
     public static final class HopperConveyorConfig {
         public static final int motorId = 20;
 
-        public static final double intakeDuty = -0.50;
-        public static final double outtakeDuty = 0.50;
+        public static final double intakeDuty = 0.6;
+        public static final double outtakeDuty = -0.6;
         public static final double stallThresholdAmps = 7.0; // TODO: will need to be adjusted
 
         public static final NeoConfiguration neoConfig = 
