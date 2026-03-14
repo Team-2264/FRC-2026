@@ -362,28 +362,25 @@ public final class Constants {
                 .withKI(0.0)
                 .withKD(0.0);
 
+            public static final edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap
+                    speedTable = new edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap();
+            static {
+                //  distance (inches)  →  duty cycle
+                speedTable.put(1,    -0.45);
+                speedTable.put(2,   -0.47); 
+                speedTable.put(3,   -0.50); 
+                speedTable.put(4,   -0.51);
+                speedTable.put(5,   -0.52);
+                speedTable.put(6,   -0.53);
+                speedTable.put(7,   -0.55);
+                speedTable.put(8,  -0.60);
+                speedTable.put(9,  -0.65);
+                speedTable.put(10,  -0.70);
+                speedTable.put(11,  -0.70);
 
-            static class DistanceMapEntry {
-                public double distanceMeters;
-                public double flywheelSpeedRPM;
-
-                DistanceMapEntry (double distanceMeters, double flywheelSpeedRPM) {
-                    this.distanceMeters = distanceMeters;
-                    this.flywheelSpeedRPM = flywheelSpeedRPM;
-                }
             }
 
-            // TODO: Using raw duty cycle for now, should use PID based speed control in actual implementation.
-            public static final DistanceMapEntry[] distanceLUT = {
-                new DistanceMapEntry(0.0, 0.10),
-                new DistanceMapEntry(1.0, 0.20),
-                new DistanceMapEntry(2.0, 0.30),
-                new DistanceMapEntry(3.0, 0.40),
-                new DistanceMapEntry(4.0, 0.50),
-                new DistanceMapEntry(5.0, 0.75),
-            };
-
-            public static final double DefaultShooterDutyCycle = 0.5;
+            public static final double DefaultShooterDutyCycle = -0.6;
         }
 
 

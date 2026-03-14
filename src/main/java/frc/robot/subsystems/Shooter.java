@@ -1,9 +1,11 @@
 package frc.robot.subsystems;
 
+import frc.robot.Constants;
 import frc.robot.ElasticDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.lib.motors.Neo;
 import frc.lib.motors.NeoConfiguration;
+import edu.wpi.first.math.util.Units;
 
 /**
  * Shooter subsystem for the 2026 FRC game.
@@ -18,12 +20,9 @@ public class Shooter extends SubsystemBase {
     private double currentSpeed = 0;
     private double currentFeederSpeed = 0;
 
-    // Distance-based speed constants
-    private static final double MIN_DISTANCE = 0.0; // meters - closest shot
-    private static final double MAX_DISTANCE = 5.0; // meters - farthest shot
-    private static final double MIN_SPEED = -0.10; // 10% speed at closest distance
-    private static final double MAX_SPEED = -0.75; // 75% speed at farthest distance
-    private static final double DEFAULT_SPEED = -0.6; // fallback if no tag visible
+    // Distance-based speed now uses InterpolatingDoubleTreeMap in Constants.
+    // See Constants.ShooterConfig.Shooter.speedTable for the table entries.
+    private static final double DEFAULT_SPEED = Constants.ShooterConfig.Shooter.DefaultShooterDutyCycle;
 
     // Feeder motor configuration (placeholder ID — set real CAN ID when known)
     private static final int FEEDER_MOTOR_ID = 32;
@@ -68,21 +67,15 @@ public class Shooter extends SubsystemBase {
     }
 
     /**
-     * Calculate shooter speed based on distance to target.
-     * Closer = slower, farther = faster.
-     * 
-     * @param distanceMeters Distance to target in meters
-     * @return Duty cycle speed (0.0 to 1.0)
+     * Look up shooter duty cycle for a given distance using the
+     * {@link Constants.ShooterConfig.Shooter#speedTable InterpolatingDoubleTreeMap}.
+     *
+     * @param distanceInFeet Distance to target in <b>feet</b>.
+     * @return Duty cycle (negative values = correct motor direction).
      */
-    public double calculateSpeedForDistance(double distanceMeters) {
-        // Clamp distance to valid range
-        double clampedDistance = Math.max(MIN_DISTANCE, Math.min(MAX_DISTANCE, distanceMeters));
-
-        // Linear interpolation between MIN_SPEED and MAX_SPEED based on distance
-        double ratio = (clampedDistance - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE);
-        double speed = MIN_SPEED + ratio * (MAX_SPEED - MIN_SPEED);
-
-        ElasticDashboard.putNumber("Shooter/TargetDistance", distanceMeters);
+    public double calculateSpeedForDistance(double distanceInFeet) {
+        double speed = Constants.ShooterConfig.Shooter.speedTable.get(Units.feetToMeters(distanceInFeet));
+        ElasticDashboard.putNumber("Shooter/TargetDistInches", Units.feetToMeters(distanceInFeet));
         ElasticDashboard.putNumber("Shooter/CalculatedSpeed", speed);
 
         return speed;
@@ -108,11 +101,12 @@ public class Shooter extends SubsystemBase {
 
     /**
      * Shoot based on distance to target.
-     * 
-     * @param distanceMeters Distance to target in meters
+     * Looks up duty cycle from the interpolation table.
+     *
+     * @param distanceInches Distance to target in <b>inches</b>.
      */
-    public void shootForDistance(double distanceMeters) {
-        double speed = calculateSpeedForDistance(distanceMeters);
+    public void shootForDistance(double distanceInches) {
+        double speed = calculateSpeedForDistance(distanceInches);
         shoot(speed);
     }
 
