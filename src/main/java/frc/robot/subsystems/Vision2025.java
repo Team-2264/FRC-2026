@@ -388,4 +388,7 @@ public class Vision2025 extends SubsystemBase {
         
     }
 
+    public Optional<Pose3d> getTagPose(int tagId) {
+        return aprilTagFieldLayout.getTagPose(tagId);
+    }
 }

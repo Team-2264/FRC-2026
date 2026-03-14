@@ -3,8 +3,10 @@ package frc.robot.commands;
 import java.util.Optional;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.ElasticDashboard;
 import frc.robot.subsystems.Swerve;
@@ -12,24 +14,6 @@ import frc.robot.subsystems.Vision2025;
 
 /**
  * DriveAndFaceGoal — single-command approach bound to D-pad LEFT.
- *
- * <h3>Behaviour:</h3>
- * <ol>
- *   <li><b>Rotate to find tag 10</b> — uses odometry to guess direction, then
- *       searches with a slow spin until tag 10 appears in the camera.</li>
- *   <li><b>Center tag 10 in the camera</b> — pure rotation (P-control on the
- *       camera-frame bearing angle).  No strafe, so there is no jitter.</li>
- *   <li><b>If &gt; 3 m away:</b> drive forward toward the tag while keeping it
- *       centered, until the robot reaches 3 m.</li>
- *   <li><b>If 1–3 m away:</b> remain at the current distance; only rotate to
- *       keep the tag centred.</li>
- *   <li><b>If &lt; 1 m:</b> back up gently to 1 m while keeping tag centred.</li>
- * </ol>
- *
- * Finishes when the tag is centred and the range is inside the 1–3 m band for
- * several consecutive cycles, or on timeout.
- *
- * Press once to start; press again (toggle binding) to cancel.
  */
 public class DriveAndFaceGoal extends Command {
 
@@ -44,7 +28,7 @@ public class DriveAndFaceGoal extends Command {
     private static final double TAG10_Y = 4.026;
 
     // ---- Distance band ----
-    private static final double MAX_RADIUS = 3.0;   // outer edge — drive in if farther
+    private static final double MAX_RADIUS = 4.0;   // outer edge — drive in if farther
     private static final double MIN_RADIUS = 1.0;   // inner edge — back up if closer
 
     // ---- Speed caps ----
@@ -178,15 +162,54 @@ public class DriveAndFaceGoal extends Command {
             return;
         }
 
-        Transform3d t = opt.get();
-        double tagX = t.getX();   // forward (positive = tag in front)
-        double tagY = t.getY();   // lateral (positive = tag is left of camera center)
-        double range = Math.hypot(tagX, tagY);
+        // Because of camera offset and PnP instability, camera-relative angles can over-compensate. 
+        // We use the fused Odometry (which accurately tracks our global position using the tags) 
+        // to aim the physical center of the robot directly at the hub's coordinates.
+        Pose2d robotPose = swerve.getPose();
+        
+        double tagFieldX = TAG10_X;
+        double tagFieldY = TAG10_Y;
+        
+        // Approximate hub location (if tag isn't yet retrieved from layout)
+        double hubFieldX = tagFieldX - Units.inchesToMeters(23.5); 
+        double hubFieldY = tagFieldY;
+        
+        // Refine with the exact field layout position for Tag 10
+        Optional<Pose3d> exactTagPose = vision.getTagPose(TARGET_TAG_ID);
+        if (exactTagPose.isPresent()) {
+            Pose3d tagPose = exactTagPose.get();
+            tagFieldX = tagPose.getX();
+            tagFieldY = tagPose.getY();
+            
+            // The center of the hub is 23.5 inches behind the tag in the tag's local coordinate system.
+            // A tag's X axis points outwards (into the field). We want to go backwards (into the hub).
+            // So we translate -23.5 inches along the tag's local X axis.
+            Pose3d hubPose = tagPose.transformBy(
+                new Transform3d(
+                    new edu.wpi.first.math.geometry.Translation3d(Units.inchesToMeters(-23.5), 0, 0), 
+                    new edu.wpi.first.math.geometry.Rotation3d()
+                )
+            );
+            
+            hubFieldX = hubPose.getX();
+            hubFieldY = hubPose.getY();
+        }
 
-        // ---- Rotation: centre the tag in the camera ----
-        // bearingRad > 0 means tag is to the LEFT of center
-        // We want to rotate LEFT (positive) to center it → rotCmd = +bearing * KP
-        double bearingRad = Math.atan2(tagY, tagX);
+        // Maintain distance band using the TAG face distance, so we don't crash into the hub
+        double tagDx = tagFieldX - robotPose.getX();
+        double tagDy = tagFieldY - robotPose.getY();
+        double range = Math.hypot(tagDx, tagDy);
+
+        // Absolute field angle we need to point our center towards (aim at the HUB, not the tag)
+        double hubDx = hubFieldX - robotPose.getX();
+        double hubDy = hubFieldY - robotPose.getY();
+        double targetAngleRad = Math.atan2(hubDy, hubDx);
+
+        // Relative error between our current heading and the target heading
+        // Positive means we need to rotate LEFT.
+        double bearingRad = wrapAngle(targetAngleRad - robotPose.getRotation().getRadians());
+        
+        // P-control using the bearing error
         double rotCmd = clamp(bearingRad * KP_ROT, -MAX_ROT, MAX_ROT);
 
         // ---- Forward: enforce distance band [MIN_RADIUS .. MAX_RADIUS] ----
@@ -214,8 +237,8 @@ public class DriveAndFaceGoal extends Command {
 
         // ---- Telemetry ----
         ElasticDashboard.putNumber("DriveFace/range", range);
-        ElasticDashboard.putNumber("DriveFace/tagX", tagX);
-        ElasticDashboard.putNumber("DriveFace/tagY", tagY);
+        ElasticDashboard.putNumber("DriveFace/hubDx", hubDx);
+        ElasticDashboard.putNumber("DriveFace/hubDy", hubDy);
         ElasticDashboard.putNumber("DriveFace/bearingDeg", Math.toDegrees(bearingRad));
         ElasticDashboard.putNumber("DriveFace/fwdCmd", fwdCmd);
         ElasticDashboard.putNumber("DriveFace/rotCmd", rotCmd);

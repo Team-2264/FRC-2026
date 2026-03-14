@@ -127,16 +127,34 @@ public class RobotContainer {
         // overriding tag 10 centering feedback.
         if (tag10Tf.isPresent()) {
             try {
-                var tf = tag10Tf.get();
-                // Debug both rotation-based yaw and translation-based bearing.
-                double yawDegRot = Math.toDegrees(tf.getRotation().getZ());
-                double tx = tf.getTranslation().getX();
-                double ty = tf.getTranslation().getY();
-                double yawDegXY = Math.toDegrees(Math.atan2(ty, tx));
-                double yawDeg = Math.abs(yawDegXY); // prefer translation-based bearing
-                ElasticDashboard.putNumber("LEDs/Tag10YawDeg_Rot", Math.abs(yawDegRot));
-                ElasticDashboard.putNumber("LEDs/Tag10YawDeg_XY", yawDegXY);
-                ElasticDashboard.putNumber("LEDs/Tag10DistMeters", tx);
+                edu.wpi.first.math.geometry.Pose2d robotPose = swerve.getPose();
+                double hubFieldX = 12.227 - edu.wpi.first.math.util.Units.inchesToMeters(23.5);
+                double hubFieldY = 4.026;
+                
+                Optional<edu.wpi.first.math.geometry.Pose3d> exactTagPose = vision.getTagPose(10);
+                if (exactTagPose.isPresent()) {
+                    edu.wpi.first.math.geometry.Pose3d tagPose = exactTagPose.get();
+                    edu.wpi.first.math.geometry.Pose3d hubPose = tagPose.transformBy(
+                        new edu.wpi.first.math.geometry.Transform3d(
+                            new edu.wpi.first.math.geometry.Translation3d(edu.wpi.first.math.util.Units.inchesToMeters(-23.5), 0, 0), 
+                            new edu.wpi.first.math.geometry.Rotation3d()
+                        )
+                    );
+                    hubFieldX = hubPose.getX();
+                    hubFieldY = hubPose.getY();
+                }
+
+                double hubDx = hubFieldX - robotPose.getX();
+                double hubDy = hubFieldY - robotPose.getY();
+                double targetAngleRad = Math.atan2(hubDy, hubDx);
+                
+                // Wrap the bearing to [-pi, pi]
+                double bearingRad = targetAngleRad - robotPose.getRotation().getRadians();
+                while (bearingRad > Math.PI) bearingRad -= 2 * Math.PI;
+                while (bearingRad < -Math.PI) bearingRad += 2 * Math.PI;
+                
+                double yawDeg = Math.abs(Math.toDegrees(bearingRad));
+
                 ElasticDashboard.putNumber("LEDs/Tag10YawDeg", yawDeg);
 
                 final double MAX_YAW_DEG = 15.0; // adjust as needed

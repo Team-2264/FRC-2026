@@ -49,7 +49,7 @@ public class ShootBall extends Command {
         double distance = lastDistanceMeters;
         if (tagTransform.isPresent()) {
             Transform3d t = tagTransform.get();
-            distance =t.getX();
+            distance =Math.hypot(t.getX(), t.getY());
             lastDistanceMeters = distance;
         }           
 

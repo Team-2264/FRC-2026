@@ -59,11 +59,10 @@ public final class Constants {
         public static final Transform3d robotToCamera = new Transform3d(
             new Translation3d(
                 Units.inchesToMeters(-9.0), 
-                Units.inchesToMeters(8.5), 
+                Units.inchesToMeters(8.5), // 8.5 inches to the left
                 Units.inchesToMeters(19.0)
             ),
-            new Rotation3d(Units.degreesToRadians(0), Units.degreesToRadians(26.0), Units.degreesToRadians(0))
-            
+            new Rotation3d(Units.degreesToRadians(0), Units.degreesToRadians(0), Units.degreesToRadians(0))
         );
 
     }
@@ -368,17 +367,21 @@ public final class Constants {
                     speedTable = new edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap();
             static {
                 //  distance (meters)  →  duty cycles
-                speedTable.put(1.0*0.3048,    -0.42);
-                speedTable.put(2.0*0.3048,   -0.46); 
-                speedTable.put(3.0*0.3048,   -0.48); 
-                speedTable.put(4.0*0.3048,   -0.51);
-                speedTable.put(5.0*0.3048,   -0.52);
-                speedTable.put(6.0*0.3048,   -0.53);
-                speedTable.put(7.0*0.3048,   -0.55);
-                speedTable.put(8.0*0.3048,  -0.60);
-                speedTable.put(9.0*0.3048,  -0.65);
-                speedTable.put(10.0*0.3048,  -0.70);
-                speedTable.put(11.0*0.3048,  -0.70);
+                speedTable.put(2.0*0.3048,    -0.41);
+                speedTable.put(3.0*0.3048,   -0.44); 
+                speedTable.put(4.0*0.3048,   -0.47); 
+                speedTable.put(5.0*0.3048,   -0.50);
+                speedTable.put(6.0*0.3048,   -0.51);
+                speedTable.put(7.0*0.3048,   -0.52);
+                speedTable.put(8.0*0.3048,   -0.53);
+                speedTable.put(9.0*0.3048,  -0.57);
+                speedTable.put(10.0*0.3048,  -0.61);
+                speedTable.put(11.0*0.3048,  -0.65);
+                speedTable.put(12.0*0.3048,  -0.67);
+                speedTable.put(13.0*0.3048,  -0.70);
+                speedTable.put(14.0*0.3048,  -0.72);
+                speedTable.put(15.0*0.3048,  -0.75);
+
 
             }
 
