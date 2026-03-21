@@ -8,9 +8,10 @@ public class NeoConfiguration {
     public double kP = 0.5;
     public double kI = 0.001;
     public double kD = 0;
+    public double kFF = 0;
 
-    public double outputRangeLower = -0.05;
-    public double outputRangeUpper = 0.05;
+    public double outputRangeLower = -1.0;
+    public double outputRangeUpper = 1.0;
 
     public boolean motorInvertDirection = false;
     public boolean breakMode = false;
@@ -90,6 +91,14 @@ public class NeoConfiguration {
      */
     public NeoConfiguration withKD(double kD) {
         this.kD = kD;
+        return this;
+    }
+
+    /**
+     * Sets the feedforward kV/kFF value.
+     */
+    public NeoConfiguration withKFF(double kFF) {
+        this.kFF = kFF;
         return this;
     }
 

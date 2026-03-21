@@ -349,8 +349,8 @@ public final class Constants {
                     .withKI(0.0)
                     .withKD(0.0);
 
-            public static final double forwardDutyCycle = 0.2;
-            public static final double reverseDutyCycle = -0.15;
+            public static final double forwardRPM = 1120.0;
+            public static final double reverseRPM = -840.0;
         }
 
         public static final class Shooter {
@@ -360,6 +360,8 @@ public final class Constants {
                 .withBrakeMode(false) // Coast mode for flywheel
                 .withMotorInvert(true)
                 .withSmartCurrentLimit(40)
+                .withKFF(0.00214)
+                .withOutputRange(-5000, 5000)
                 .withKP(0.0)
                 .withKI(0.0)
                 .withKD(0.0);
@@ -368,25 +370,22 @@ public final class Constants {
                     speedTable = new edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap();
             static {
                 //  distance (meters)  →  duty cycles
-                speedTable.put(2.0*0.3048,    -0.41);
-                speedTable.put(3.0*0.3048,   -0.44); 
-                speedTable.put(4.0*0.3048,   -0.47); 
-                speedTable.put(5.0*0.3048,   -0.50);
-                speedTable.put(6.0*0.3048,   -0.51);
-                speedTable.put(7.0*0.3048,   -0.52);
-                speedTable.put(8.0*0.3048,   -0.53);
-                speedTable.put(9.0*0.3048,  -0.57);
-                speedTable.put(10.0*0.3048,  -0.61);
-                speedTable.put(11.0*0.3048,  -0.65);
-                speedTable.put(12.0*0.3048,  -0.67);
-                speedTable.put(13.0*0.3048,  -0.70);
-                speedTable.put(14.0*0.3048,  -0.72);
-                speedTable.put(15.0*0.3048,  -0.75);
+                speedTable.put(1.0*0.3048,    2554.2);
+                speedTable.put(2.0*0.3048,    2667.0);
+                speedTable.put(3.0*0.3048,   2838.0); 
+                speedTable.put(4.0*0.3048,   2894.0); 
+                speedTable.put(5.0*0.3048,   2951.0);
+                speedTable.put(6.0*0.3048,   3008.0);
+                speedTable.put(7.0*0.3048,   3121.0);
+                speedTable.put(8.0*0.3048,   3405.0);
+                speedTable.put(9.0*0.3048,    3689.0);
+                speedTable.put(10.0*0.3048,   3973.0);
+                speedTable.put(11.0*0.3048,   3973.0);
 
 
             }
 
-            public static final double DefaultShooterDutyCycle = -0.6;
+            public static final double DefaultShooterRPM = -3360.0;
         }
 
 

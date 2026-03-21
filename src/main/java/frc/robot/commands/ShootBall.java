@@ -19,7 +19,6 @@ public class ShootBall extends Command {
     private final Hopper hopper;
     private final Vision2025 vision; // Add Vision2025 instance
 
-    private static final double SHOOTER_FREE_RPS = 95.0; // Approx free speed of a NEO in rev/s
     private static final double SHOOTER_SPEED_THRESHOLD = 0.95; // 95% of target speed
     private static double lastDistanceMeters = -1.0; // Last distance of the robot from tag
 
@@ -60,9 +59,9 @@ public class ShootBall extends Command {
         // Vision-independent: run shooter immediately; feed only when up to speed
         shooter.shootForDistance(distance); // Pass distance to shooter
 
-        double targetDuty = shooter.getCurrentSpeedDutyCycle();
-        double targetRps = Math.abs(targetDuty) * SHOOTER_FREE_RPS;
-        boolean upToSpeed = Math.abs(shooter.getVelocity()) >= SHOOTER_SPEED_THRESHOLD * targetRps;
+        double targetRpm = shooter.getCurrentRPM();
+        double targetRps = Math.abs(targetRpm) / 60.0;
+        boolean upToSpeed = Math.abs(shooter.getVelocity()*60) >= SHOOTER_SPEED_THRESHOLD * targetRpm;
 
         if (upToSpeed) {
             hopper.startConveyor(Constants.HopperConveyorConfig.intakeDuty);
@@ -73,9 +72,10 @@ public class ShootBall extends Command {
         }
 
         ElasticDashboard.putBoolean("ShootBall/ShooterUpToSpeed", upToSpeed);
-        ElasticDashboard.putNumber("ShootBall/TargetRps", targetDuty);
+        ElasticDashboard.putNumber("ShootBall/TargetRps", targetRps);
         ElasticDashboard.putBoolean("ShootBall/TagVisible", tagTransform.isPresent());
         ElasticDashboard.putNumber("ShootBall/Distance", distance);
+        ElasticDashboard.putNumber("ShootBall/ThresholdRPM", SHOOTER_SPEED_THRESHOLD * targetRpm);
     }
 
     @Override

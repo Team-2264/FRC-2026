@@ -5,7 +5,6 @@ import frc.robot.ElasticDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.lib.motors.Neo;
 import frc.lib.motors.NeoConfiguration;
-import edu.wpi.first.math.util.Units;
 
 /**
  * Shooter subsystem for the 2026 FRC game.
@@ -17,17 +16,17 @@ public class Shooter extends SubsystemBase {
     private final Neo motor;
     private final Neo feederMotor;
     private boolean isShooting = false;
-    private double currentSpeed = 0;
-    private double currentFeederSpeed = 0;
+    private double currentRPM = 0;
+    private double currentFeederDutyCycle = 0;
 
     // Distance-based speed now uses InterpolatingDoubleTreeMap in Constants.
     // See Constants.ShooterConfig.Shooter.speedTable for the table entries.
-    private static final double DEFAULT_SPEED = Constants.ShooterConfig.Shooter.DefaultShooterDutyCycle;
+    private static final double DEFAULT_RPM = Constants.ShooterConfig.Shooter.DefaultShooterRPM;
 
     // Feeder motor configuration (placeholder ID — set real CAN ID when known)
     private static final int FEEDER_MOTOR_ID = 32;
     private static final int SHOOTER_MOTOR_ID = 30;
-    private static final double FEEDER_SPEED = -0.50; // duty cycle for feeding
+    private static final double FEEDER_DUTY_CYCLE = -1; // RPM for feeding
 
     /**
      * Creates a new Shooter subsystem using CAN ID 21.
@@ -36,9 +35,11 @@ public class Shooter extends SubsystemBase {
         // Configure the shooter motor using same style as ElevatorConfig
         NeoConfiguration config = new NeoConfiguration(SHOOTER_MOTOR_ID)
                 .withBrakeMode(false) // Coast mode for flywheel
-                .withMotorInvert(false)
+                .withMotorInvert(true)
                 .withSmartCurrentLimit(40)
-                .withKP(0.0)
+                .withKFF(0.002114)
+                .withOutputRange(-5000,5000)
+                .withKP(0.00025)
                 .withKI(0.0)
                 .withKD(0.0);
 
@@ -60,69 +61,68 @@ public class Shooter extends SubsystemBase {
         ElasticDashboard.putBoolean("Shooter/Active", isShooting);
         ElasticDashboard.putNumber("Shooter/Velocity", motor.getVelocity());
         ElasticDashboard.putNumber("Shooter/Current", motor.getOutputCurrent());
-        ElasticDashboard.putNumber("Shooter/Speed", currentSpeed);
-        ElasticDashboard.putNumber("Shooter/FeederSpeed", currentFeederSpeed);
+        ElasticDashboard.putNumber("Shooter/TargetRPM", currentRPM);
+        ElasticDashboard.putNumber("Shooter/FeederTargetRPM", currentFeederDutyCycle);
         ElasticDashboard.putNumber("Shooter/FeederCurrent", feederMotor.getOutputCurrent());
-        double shooterVelocity = motor.getVelocity();
     }
 
     /**
-     * Look up shooter duty cycle for a given distance using the
-     * {@link Constants.ShooterConfig.Shooter#speedTable InterpolatingDoubleTreeMap}.
+     * Look up shooter RPM for a given distance using the
+     * {@link Constants.ShooterConfig.Shooter #speedTable InterpolatingDoubleTreeMap}.
      *
      * @param distanceInMeters Distance to target in <b>meters</b>.
-     * @return Duty cycle (negative values = correct motor direction).
+     * @return Target RPM (negative values = correct motor direction).
      */
-    public double calculateSpeedForDistance(double distanceInMeters) {
-        double speed = Constants.ShooterConfig.Shooter.speedTable.get(distanceInMeters);
+    public double calculateRPMForDistance(double distanceInMeters) {
+        double rpm = Constants.ShooterConfig.Shooter.speedTable.get(distanceInMeters);
         ElasticDashboard.putNumber("Shooter/TargetDistInches", distanceInMeters);
-        ElasticDashboard.putNumber("Shooter/CalculatedSpeed", speed);
+        ElasticDashboard.putNumber("Shooter/CalculatedRPM", rpm);
 
-        return speed;
+        return rpm;
     }
 
     /**
-     * Start the shooter motor at default speed.
+     * Start the shooter motor at default RPM.
      */
     public void shoot() {
-        shoot(DEFAULT_SPEED);
+        shoot(DEFAULT_RPM);
     }
 
     /**
-     * Start the shooter motor at a specific speed.
+     * Start the shooter motor at a specific RPM.
      * 
-     * @param speed Duty cycle from -1.0 to 1.0
+     * @param rpm Target velocity in RPM
      */
-    public void shoot(double speed) {
+    public void shoot(double rpm) {
         isShooting = true;
-        currentSpeed = speed;
-        motor.rotateAtSpeed(speed);
+        currentRPM = rpm;
+        motor.setVelocityRPM(rpm);
     }
 
     /**
      * Shoot based on distance to target.
-     * Looks up duty cycle from the interpolation table.
+     * Looks up RPM from the interpolation table.
      *
      * @param distanceInches Distance to target in <b>inches</b>.
      */
     public void shootForDistance(double distanceInches) {
-        double speed = calculateSpeedForDistance(distanceInches);
-        shoot(speed);
+        double rpm = calculateRPMForDistance(distanceInches) * 0.87;
+        shoot(rpm);
     }
 
     /**
-     * Start the feeder motor at the configured speed.
+     * Start the feeder motor at the configured RPM.
      */
     public void startFeeder() {
-        currentFeederSpeed = FEEDER_SPEED;
-        feederMotor.rotateAtSpeed(FEEDER_SPEED);
+        currentFeederDutyCycle = FEEDER_DUTY_CYCLE;
+        feederMotor.rotateAtSpeed(FEEDER_DUTY_CYCLE);
     }
 
     /**
      * Stop the feeder motor.
      */
     public void stopFeeder() {
-        currentFeederSpeed = 0;
+        currentFeederDutyCycle = 0;
         feederMotor.stop();
     }
 
@@ -131,7 +131,7 @@ public class Shooter extends SubsystemBase {
      */
     public void stop() {
         isShooting = false;
-        currentSpeed = 0;
+        currentRPM = 0;
         motor.stop();
         stopFeeder();
     }
@@ -144,11 +144,11 @@ public class Shooter extends SubsystemBase {
     }
 
     /**
-     * Get the current commanded shooter duty cycle (last set in
+     * Get the current commanded shooter RPM (last set in
      * {@link #shoot(double)}).
      */
-    public double getCurrentSpeedDutyCycle() {
-        return currentSpeed;
+    public double getCurrentRPM() {
+        return currentRPM;
     }
 
     /**

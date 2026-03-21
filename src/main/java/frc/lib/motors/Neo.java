@@ -54,7 +54,7 @@ public class Neo {
 
   
     config.closedLoop.feedbackSensor(FeedbackSensor.kPrimaryEncoder).pid(c.kP, c.kI, c.kD);
-    config.closedLoop.feedForward.kV(0.0);
+    config.closedLoop.feedForward.kV(c.kFF);
     config.closedLoop.outputRange(c.outputRangeLower, c.outputRangeUpper);
     config.closedLoop.iZone(0);
 
@@ -63,8 +63,7 @@ public class Neo {
       config.absoluteEncoder.inverted(c.InvertAbsoluteEncoder);
     }
 
-    config.encoder.velocityConversionFactor(1.0/60.0);  // TODO: Verify that this is correct, NEO motors are 48 CPR. NMP 2/5/2024
-
+    //config.encoder.velocityConversionFactor(1.0/60.0);
     if(c.followMotor.isPresent()) {
         config.follow(c.followMotor.getAsInt(), c.followInvert);
     }
@@ -123,6 +122,14 @@ public class Neo {
    */
   public void setVoltage(double volts) {
      motor.setVoltage(volts);
+  }
+
+  /**
+   * Sets the target velocity for closed-loop control in RPM.
+   * @param rpm The target RPM.
+   */
+  public void setVelocityRPM(double rpm) {
+    pidNeo.setSetpoint(rpm, ControlType.kVelocity);
   }
 
   /**
