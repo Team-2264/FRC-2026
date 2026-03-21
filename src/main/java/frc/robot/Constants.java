@@ -321,7 +321,7 @@ public final class Constants {
     public static final class HopperConveyorConfig {
         public static final int motorId = 20;
 
-        public static final double intakeDuty = 0.6;
+        public static final double intakeDuty = 1.0;
         public static final double outtakeDuty = -0.6;
         public static final double stallThresholdAmps = 7.0; // TODO: will need to be adjusted
 
@@ -370,17 +370,20 @@ public final class Constants {
                     speedTable = new edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap();
             static {
                 //  distance (meters)  →  duty cycles
-                speedTable.put(1.0*0.3048,    2554.2);
-                speedTable.put(2.0*0.3048,    2667.0);
-                speedTable.put(3.0*0.3048,   2838.0); 
-                speedTable.put(4.0*0.3048,   2894.0); 
-                speedTable.put(5.0*0.3048,   2951.0);
-                speedTable.put(6.0*0.3048,   3008.0);
-                speedTable.put(7.0*0.3048,   3121.0);
-                speedTable.put(8.0*0.3048,   3405.0);
-                speedTable.put(9.0*0.3048,    3689.0);
-                speedTable.put(10.0*0.3048,   3973.0);
-                speedTable.put(11.0*0.3048,   3973.0);
+                speedTable.put(1.0*0.3048,    2471.2);
+                speedTable.put(2.0*0.3048,    2617.0);
+                speedTable.put(3.0*0.3048,   2688.0); 
+                speedTable.put(4.0*0.3048,   2804.0); 
+                speedTable.put(5.0*0.3048,   2851.0);
+                speedTable.put(6.0*0.3048,   2908.0);
+                speedTable.put(7.0*0.3048,   3021.0);
+                speedTable.put(8.0*0.3048,   3275.0);
+                speedTable.put(9.0*0.3048,    3359.0);
+                speedTable.put(10.0*0.3048,   3453.0);
+                speedTable.put(11.0*0.3048,   3523.0);
+                speedTable.put(12.0*0.3048,   3653.0);
+                speedTable.put(13.0*0.3048,   3703.0);
+                speedTable.put(14.0*0.3048,   3753.0);
 
 
             }

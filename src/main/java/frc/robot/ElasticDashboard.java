@@ -58,4 +58,12 @@ public final class ElasticDashboard {
     public static void putData(String key, Field2d field) {
         SmartDashboard.putData(key, field);
     }
+
+    public static double getNumber(String key, double defaultValue) {
+        try {
+            return entry(key).getDouble(defaultValue);
+        } catch (Exception ignored) {
+            return defaultValue;
+        }
+    }
 }

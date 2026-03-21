@@ -83,10 +83,18 @@ public class RobotContainer {
         controller.povUp().onTrue(new InstantCommand(() -> hopper.startConveyor(0.6)));
         controller.povDown().onTrue(new InstantCommand(() -> hopper.stopConveyor()));
 
-        controller.R1().onTrue(new InstantCommand(() -> intake.startRoller(0.9))
-            .alongWith(new InstantCommand(() -> intake.deployIntake())));
-        controller.R1().onFalse(new InstantCommand(() -> intake.stopRoller())
-            .alongWith(new InstantCommand(() -> intake.retractIntake())));
+        //controller.R1().onTrue(new InstantCommand(() -> intake.startRoller(0.9))
+            //.alongWith(new InstantCommand(() -> intake.deployIntake())));
+        //controller.R1().onFalse(new InstantCommand(() -> intake.stopRoller())
+            //.alongWith(new InstantCommand(() -> intake.retractIntake())));
+        controller.R1().onTrue(new InstantCommand(() -> intake.deployIntake()));
+        controller.R1().onFalse(new InstantCommand(() -> intake.retractIntake()));
+        controller.R2().onTrue(new InstantCommand(() -> intake.startRoller(1.0)));
+        controller.R2().onFalse(new InstantCommand(() -> intake.stopRoller()));
+
+        controller.triangle().onTrue(new InstantCommand(() -> shooter.shootAtSpeedFromDashboard()));
+        controller.triangle().onFalse(new InstantCommand(() -> shooter.stop()));
+
 
         // D-pad LEFT - DriveAndFaceGoal: face goal, drive to tag, align + re-center
         DriveAndFaceGoal driveAndFaceCommand = new DriveAndFaceGoal(swerve, vision);

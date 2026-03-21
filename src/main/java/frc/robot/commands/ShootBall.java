@@ -19,7 +19,7 @@ public class ShootBall extends Command {
     private final Hopper hopper;
     private final Vision2025 vision; // Add Vision2025 instance
 
-    private static final double SHOOTER_SPEED_THRESHOLD = 0.95; // 95% of target speed
+    private static final double SHOOTER_SPEED_THRESHOLD = 0.97; // 95% of target speed
     private static double lastDistanceMeters = -1.0; // Last distance of the robot from tag
 
     /**
@@ -61,7 +61,7 @@ public class ShootBall extends Command {
 
         double targetRpm = shooter.getCurrentRPM();
         double targetRps = Math.abs(targetRpm) / 60.0;
-        boolean upToSpeed = Math.abs(shooter.getVelocity()*60) >= SHOOTER_SPEED_THRESHOLD * targetRpm;
+        boolean upToSpeed = Math.abs(shooter.getVelocity()) >= SHOOTER_SPEED_THRESHOLD * targetRpm;
 
         if (upToSpeed) {
             hopper.startConveyor(Constants.HopperConveyorConfig.intakeDuty);

@@ -2,6 +2,8 @@ package frc.robot.subsystems;
 
 import frc.robot.Constants;
 import frc.robot.ElasticDashboard;
+import edu.wpi.first.util.sendable.SendableBuilder;
+import edu.wpi.first.util.sendable.SendableRegistry;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.lib.motors.Neo;
 import frc.lib.motors.NeoConfiguration;
@@ -39,7 +41,7 @@ public class Shooter extends SubsystemBase {
                 .withSmartCurrentLimit(40)
                 .withKFF(0.002114)
                 .withOutputRange(-5000,5000)
-                .withKP(0.00025)
+                .withKP(0.00035)
                 .withKI(0.0)
                 .withKD(0.0);
 
@@ -54,6 +56,8 @@ public class Shooter extends SubsystemBase {
                 .withKI(0.0)
                 .withKD(0.0);
         feederMotor = new Neo(feederConfig);
+
+        SendableRegistry.addLW(this, "Shooter");
     }
 
     @Override
@@ -61,7 +65,7 @@ public class Shooter extends SubsystemBase {
         ElasticDashboard.putBoolean("Shooter/Active", isShooting);
         ElasticDashboard.putNumber("Shooter/Velocity", motor.getVelocity());
         ElasticDashboard.putNumber("Shooter/Current", motor.getOutputCurrent());
-        ElasticDashboard.putNumber("Shooter/TargetRPM", currentRPM);
+        ElasticDashboard.putNumber("Shooter/InputRPM", currentRPM);
         ElasticDashboard.putNumber("Shooter/FeederTargetRPM", currentFeederDutyCycle);
         ElasticDashboard.putNumber("Shooter/FeederCurrent", feederMotor.getOutputCurrent());
     }
@@ -79,6 +83,25 @@ public class Shooter extends SubsystemBase {
         ElasticDashboard.putNumber("Shooter/CalculatedRPM", rpm);
 
         return rpm;
+    }
+
+    private double rpmFromDashboard;
+
+    public double getRpmFromDashboard(){
+        return rpmFromDashboard;
+    }
+
+    public void setRpmFromDashboard(double rpm){
+        rpmFromDashboard=rpm;
+    }
+
+    @Override
+    public void initSendable(SendableBuilder builder){
+        builder.addDoubleProperty("Shooter/RpmFromDashboard", this::getRpmFromDashboard, this::setRpmFromDashboard);
+    }
+
+    public void shootAtSpeedFromDashboard(){
+        shoot(rpmFromDashboard);
     }
 
     /**
@@ -106,7 +129,7 @@ public class Shooter extends SubsystemBase {
      * @param distanceInches Distance to target in <b>inches</b>.
      */
     public void shootForDistance(double distanceInches) {
-        double rpm = calculateRPMForDistance(distanceInches) * 0.87;
+        double rpm = calculateRPMForDistance(distanceInches);
         shoot(rpm);
     }
 
