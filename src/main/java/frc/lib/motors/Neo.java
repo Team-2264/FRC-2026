@@ -135,7 +135,15 @@ public class Neo {
   }
 
   /**
-   * Get tthe voltage that is being applied to the motor
+   * Runs the motor at a specific velocity (typically RPM or RPS depending on conversion factor).
+   * @param velocity Target velocity
+   */
+  public void setVelocity(double velocity) {
+    pidNeo.setSetpoint(velocity, ControlType.kVelocity);
+  }
+
+  /**
+   * Get the voltage that is being applied to the motor
    */
   public double getAppliedOutput() {
     return motor.getAppliedOutput();
