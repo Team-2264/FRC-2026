@@ -7,7 +7,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "3.1"
+            "pathName": "Right to Shoot"
           }
         },
         {
@@ -19,25 +19,43 @@
         {
           "type": "path",
           "data": {
-            "pathName": "3.2"
+            "pathName": "Shoot to Right"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "3.3"
+            "pathName": "Right to Middlefield"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "3.4"
+            "pathName": "Middlefield Pickup to Right"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Right to Shoot"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 1.0
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Right Shoot to Outpost"
           }
         }
       ]
     }
   },
   "resetOdom": true,
-  "folder": null,
+  "folder": "Right Side Autonomous",
   "choreoAuto": false
 }

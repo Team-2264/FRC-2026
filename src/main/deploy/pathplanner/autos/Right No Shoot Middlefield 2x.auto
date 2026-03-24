@@ -7,55 +7,55 @@
         {
           "type": "path",
           "data": {
-            "pathName": "2.1"
+            "pathName": "Right to Middlefield"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "2.2"
+            "pathName": "Middlefield Pickup to Right"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "2.3"
+            "pathName": "Right to Shoot"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 1.0
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "2.4"
+            "pathName": "Shoot to Right"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "2.5"
+            "pathName": "Right to Innerfield"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "2.6"
+            "pathName": "Innerfield Pickup to Right"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "2.7"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "2.8"
+            "pathName": "Right to Shoot"
           }
         }
       ]
     }
   },
   "resetOdom": true,
-  "folder": null,
+  "folder": "Right Side Autonomous",
   "choreoAuto": false
 }
