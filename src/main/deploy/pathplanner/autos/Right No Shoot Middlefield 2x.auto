@@ -23,9 +23,15 @@
           }
         },
         {
-          "type": "wait",
+          "type": "named",
           "data": {
-            "waitTime": 1.0
+            "name": "AlignWithTag10"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ShootBall"
           }
         },
         {
@@ -50,6 +56,18 @@
           "type": "path",
           "data": {
             "pathName": "Right to Shoot"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "AlignWithTag10"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ShootBall"
           }
         }
       ]

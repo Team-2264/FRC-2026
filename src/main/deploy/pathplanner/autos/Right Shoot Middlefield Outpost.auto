@@ -11,9 +11,15 @@
           }
         },
         {
-          "type": "wait",
+          "type": "named",
           "data": {
-            "waitTime": 1.0
+            "name": "AlignWithTag10"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ShootBall"
           }
         },
         {
@@ -41,9 +47,15 @@
           }
         },
         {
-          "type": "wait",
+          "type": "named",
           "data": {
-            "waitTime": 1.0
+            "name": "AlignWithTag10"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ShootBall"
           }
         },
         {
