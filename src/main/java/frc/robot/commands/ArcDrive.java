@@ -15,15 +15,20 @@ import frc.robot.subsystems.Vision2025;
  * ArcDrive — bound to L2 (whileTrue).
  *
  * <h3>Behaviour:</h3>
- * <p>While L2 is held, the robot is locked on a circular arc around AprilTag 10.
- * The radius is captured on initialisation from the current distance to the tag.
+ * <p>
+ * While L2 is held, the robot is locked on a circular arc around AprilTag 10.
+ * The radius is captured on initialisation from the current distance to the
+ * tag.
  * Hold L1 to move left along the arc, R1 to move right along the arc.
  * The robot continuously rotates to keep tag 10 centred in the camera.
- * If tag 10 is lost, the robot stops immediately and waits for re-acquisition.</p>
+ * If tag 10 is lost, the robot stops immediately and waits for re-acquisition.
+ * </p>
  *
  * <h3>Prerequisites:</h3>
- * <p>The driver should first use D-pad LEFT (DriveAndFaceGoal) to align with
- * tag 10 before activating this command.</p>
+ * <p>
+ * The driver should first use D-pad LEFT (DriveAndFaceGoal) to align with
+ * tag 10 before activating this command.
+ * </p>
  */
 public class ArcDrive extends Command {
 
@@ -31,33 +36,30 @@ public class ArcDrive extends Command {
     private final Vision2025 vision;
     private final CommandPS4Controller controller;
 
-    // ---- Target ----
-    private static final int TARGET_TAG_ID = 10;
-
-    // Tag 10 approximate field position (blue-origin, 2026 field)
-    private static final double TAG10_X = 12.227; // metres
-    private static final double TAG10_Y = 4.026;
+    // ---- Targets ----
+    private static final int[] TARGET_TAG_IDS = { 10, 26 };
 
     // ---- Arc movement speed ----
     private static final double ARC_SPEED = 0.5; // m/s — fixed slow speed along the arc
 
     // ---- Rotation P-gain (keep tag centred in camera) ----
-    private static final double KP_ROT  = 3.0;   // rad bearing error → rad/s
-    private static final double MAX_ROT = 2.0;    // rad/s cap
+    private static final double KP_ROT = 3.0; // rad bearing error → rad/s
+    private static final double MAX_ROT = 2.0; // rad/s cap
 
     // ---- Radial correction ----
     private static final double RADIUS_DEADZONE = 0.05; // metres — no correction inside this band
-    private static final double KP_RADIAL       = 1.0;  // P-gain for radius correction
-    private static final double MAX_RADIAL      = 0.3;  // m/s cap for radial correction
+    private static final double KP_RADIAL = 1.0; // P-gain for radius correction
+    private static final double MAX_RADIAL = 0.3; // m/s cap for radial correction
 
     // ---- Slew-rate limits (per 20 ms cycle) ----
     private static final double MAX_SPEED_DELTA = 0.06;
-    private static final double MAX_ROT_DELTA   = 0.10;
+    private static final double MAX_ROT_DELTA = 0.10;
 
     // ---- State ----
-    private double arcRadius;       // captured on init (metres)
-    private double prevArcSpeed;    // slew-rate state for tangential speed
-    private double prevRot;         // slew-rate state for rotation
+    private double arcRadius; // captured on init (metres)
+    private double prevArcSpeed; // slew-rate state for tangential speed
+    private double prevRot; // slew-rate state for rotation
+    private int lockedTagId; // which tag we locked to for this run
 
     public ArcDrive(Swerve swerve, Vision2025 vision, CommandPS4Controller controller) {
         this.swerve = swerve;
@@ -67,7 +69,7 @@ public class ArcDrive extends Command {
     }
 
     // ===================================================================
-    //  Lifecycle
+    // Lifecycle
     // ===================================================================
 
     @Override
@@ -78,18 +80,43 @@ public class ArcDrive extends Command {
         // Use robot-relative: forward = toward tag, left/right = along arc
         swerve.setFieldRelative(false);
 
-        // Capture radius from current robot position to tag 10
-        Pose2d pose = swerve.getPose();
-        double dx = TAG10_X - pose.getX();
-        double dy = TAG10_Y - pose.getY();
+        // Choose nearest target tag based on current pose and field layout
+        Pose2d robotPose = swerve.getPose();
+        double bestDist = Double.POSITIVE_INFINITY;
+        lockedTagId = TARGET_TAG_IDS[0];
+
+        for (int id : TARGET_TAG_IDS) {
+            Optional<edu.wpi.first.math.geometry.Pose3d> tagPoseOpt = vision.getFieldLayout().getTagPose(id);
+            if (tagPoseOpt.isEmpty())
+                continue;
+            Pose2d tagPose = tagPoseOpt.get().toPose2d();
+            double dist = robotPose.getTranslation().getDistance(tagPose.getTranslation());
+            if (dist < bestDist) {
+                bestDist = dist;
+                lockedTagId = id;
+            }
+        }
+
+        // Capture radius from current robot position to chosen tag
+        Optional<edu.wpi.first.math.geometry.Pose3d> lockedTagPose = vision.getFieldLayout().getTagPose(lockedTagId);
+        double dx = 0;
+        double dy = 0;
+        if (lockedTagPose.isPresent()) {
+            Pose2d tagPose2d = lockedTagPose.get().toPose2d();
+            dx = tagPose2d.getX() - robotPose.getX();
+            dy = tagPose2d.getY() - robotPose.getY();
+        }
         arcRadius = Math.hypot(dx, dy);
 
         // Clamp radius to sensible bounds
-        if (arcRadius < 0.5) arcRadius = 0.5;
-        if (arcRadius > 6.0) arcRadius = 6.0;
+        if (arcRadius < 0.5)
+            arcRadius = 0.5;
+        if (arcRadius > 6.0)
+            arcRadius = 6.0;
 
         ElasticDashboard.putBoolean("ArcDrive/Active", true);
         ElasticDashboard.putNumber("ArcDrive/Radius", arcRadius);
+        ElasticDashboard.putNumber("ArcDrive/LockedTag", lockedTagId);
     }
 
     @Override
@@ -102,13 +129,13 @@ public class ArcDrive extends Command {
         // If both or neither are pressed, target speed is 0
         double desiredStrafeSpeed = 0;
         if (l1 && !r1) {
-            desiredStrafeSpeed = ARC_SPEED;    // strafe left (robot-relative)
+            desiredStrafeSpeed = ARC_SPEED; // strafe left (robot-relative)
         } else if (r1 && !l1) {
-            desiredStrafeSpeed = -ARC_SPEED;   // strafe right (robot-relative)
+            desiredStrafeSpeed = -ARC_SPEED; // strafe right (robot-relative)
         }
 
-        // ---- Check for tag 10 ----
-        Optional<Transform3d> opt = vision.getTransformToTag(TARGET_TAG_ID);
+        // ---- Check for the chosen tag (either 10 or 26) ----
+        Optional<Transform3d> opt = vision.getTransformToAny(TARGET_TAG_IDS);
 
         if (!opt.isPresent()) {
             // Tag lost — coast to stop
@@ -119,11 +146,11 @@ public class ArcDrive extends Command {
             return;
         }
 
-        // ---- Rotation: keep tag 10 centred using camera bearing ----
+        // ---- Rotation: keep tag centred using camera bearing ----
         Transform3d t = opt.get();
-        double tagCamX = t.getX();   // forward in camera frame
-        double tagCamY = t.getY();   // left in camera frame
-        double range   = Math.hypot(tagCamX, tagCamY);
+        double tagCamX = t.getX(); // forward in camera frame
+        double tagCamY = t.getY(); // left in camera frame
+        double range = Math.hypot(tagCamX, tagCamY);
         double bearingRad = Math.atan2(tagCamY, tagCamX);
         double rotCmd = clamp(bearingRad * KP_ROT, -MAX_ROT, MAX_ROT);
         rotCmd = slewLimit(rotCmd, prevRot, MAX_ROT_DELTA);
@@ -161,7 +188,7 @@ public class ArcDrive extends Command {
     }
 
     // ===================================================================
-    //  End
+    // End
     // ===================================================================
 
     @Override
@@ -180,7 +207,7 @@ public class ArcDrive extends Command {
     }
 
     // ===================================================================
-    //  Helpers
+    // Helpers
     // ===================================================================
 
     private static double clamp(double v, double min, double max) {

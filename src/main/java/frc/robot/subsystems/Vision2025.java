@@ -264,6 +264,46 @@ public class Vision2025 extends SubsystemBase {
     }
 
     /**
+     * Returns the Pose2d the robot should drive to in order to be a given distance
+     * directly in front of the specified tag, facing the tag.
+     */
+    public Optional<Pose2d> getTagTargetPose(int tagId, double distanceMeters) {
+        Optional<Pose3d> tagPose3d = aprilTagFieldLayout.getTagPose(tagId);
+        if (tagPose3d.isEmpty()) {
+            return Optional.empty();
+        }
+        Pose2d tagPose = tagPose3d.get().toPose2d();
+        return Optional.of(calculateTargetPose(tagPose, distanceMeters));
+    }
+
+    /**
+     * Return the first visible transform to any of the given tag IDs. If multiple
+     * are visible, chooses the closest in camera frame.
+     */
+    public Optional<Transform3d> getTransformToAny(int... tagIds) {
+        if (latestResult == null || !latestResult.hasTargets()) {
+            return Optional.empty();
+        }
+        Transform3d best = null;
+        double bestRange = Double.POSITIVE_INFINITY;
+        for (var target : latestResult.targets) {
+            int id = target.getFiducialId();
+            for (int wanted : tagIds) {
+                if (id == wanted) {
+                    Transform3d tf = target.getBestCameraToTarget();
+                    double range = Math.hypot(tf.getX(), tf.getY());
+                    if (range < bestRange) {
+                        bestRange = range;
+                        best = tf;
+                    }
+                    break;
+                }
+            }
+        }
+        return Optional.ofNullable(best);
+    }
+
+    /**
      * track IDs of detected April Tags
      */
     public int[] targetIds;
@@ -385,10 +425,13 @@ public class Vision2025 extends SubsystemBase {
                 }
             }
         }
-        
     }
 
     public Optional<Pose3d> getTagPose(int tagId) {
         return aprilTagFieldLayout.getTagPose(tagId);
+    }
+
+    public AprilTagFieldLayout getFieldLayout() {
+        return aprilTagFieldLayout;
     }
 }

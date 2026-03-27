@@ -11,7 +11,9 @@ import frc.robot.subsystems.Vision2025;
 import java.util.Optional;
 
 /**
- * ShootBall command - adjusts shooter speed based on distance to AprilTag 10.
+ * ShootBall command - adjusts shooter speed based on distance to AprilTag 10 or
+ * 26
+ * (nearest visible), so it works on both alliances.
  */
 public class ShootBall extends Command {
 
@@ -44,15 +46,15 @@ public class ShootBall extends Command {
 
     @Override
     public void execute() {
-        Optional<Transform3d> tagTransform = vision.getTransformToTag(10);
+        Optional<Transform3d> tagTransform = vision.getTransformToAny(10, 26);
         double distance = lastDistanceMeters;
         if (tagTransform.isPresent()) {
             Transform3d t = tagTransform.get();
-            distance =Math.hypot(t.getX(), t.getY());
+            distance = Math.hypot(t.getX(), t.getY());
             lastDistanceMeters = distance;
-        }           
+        }
 
-        if(lastDistanceMeters<0){
+        if (lastDistanceMeters < 0) {
             shooter.shoot();
         }
 
