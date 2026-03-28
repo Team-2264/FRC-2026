@@ -8,6 +8,7 @@ import frc.robot.commands.ArcDrive;
 import frc.robot.commands.DriveAndFaceGoal;
 import frc.robot.commands.DriveToTag;
 import frc.robot.commands.FaceGoal;
+import frc.robot.commands.RetractAndStopIntake;
 import frc.robot.commands.ShootBall;
 import frc.robot.commands.TeleopSwerve;
 import frc.robot.commands.ToggleTurbo;
@@ -46,7 +47,7 @@ public class RobotContainer {
 
     // Controllers
     private final CommandPS4Controller controller = new CommandPS4Controller(Constants.Operator.controllerPort);
-    //private final CommandPS4Controller controller2 = new CommandPS4Controller(Constants.Operator.controller2Port);
+    private final CommandPS4Controller controller2 = new CommandPS4Controller(Constants.Operator.controller2Port);
 
     // transient LED override (millis since epoch)
     private long ledOverrideUntil = 0;
@@ -71,6 +72,10 @@ public class RobotContainer {
         NamedCommands.registerCommand("ShooterSpinUp", new InstantCommand(() -> shooter.shoot(3000)));
 
 
+        NamedCommands.registerCommand("DeoloyAndStartIntake", new InstantCommand(() -> intake.startRoller(1.0))
+            .alongWith(new InstantCommand(() -> intake.deployIntake())));
+        NamedCommands.registerCommand("RetractAndStopIntake",new RetractAndStopIntake(intake));
+
 
         configureBindings();
 
@@ -88,33 +93,44 @@ public class RobotContainer {
         controller.share().onTrue(new ToggleTurbo(swerve));
         controller.share().onFalse(new ToggleTurbo(swerve));
 
-        // Triangle - HOLD to shoot (vision-independent now)
+        // L1 - HOLD to shoot (vision-independent now)
         controller.L1().whileTrue(new ShootBall(shooter, hopper, vision));
 
-        controller.povUp().onTrue(new InstantCommand(() -> hopper.startConveyor(0.6)));
-        controller.povDown().onTrue(new InstantCommand(() -> hopper.stopConveyor()));
 
-        //controller.R1().onTrue(new InstantCommand(() -> intake.startRoller(0.9))
-            //.alongWith(new InstantCommand(() -> intake.deployIntake())));
-        //controller.R1().onFalse(new InstantCommand(() -> intake.stopRoller())
-            //.alongWith(new InstantCommand(() -> intake.retractIntake())));
-        controller.R1().onTrue(new InstantCommand(() -> intake.deployIntake()));
-        controller.R1().onFalse(new InstantCommand(() -> intake.retractIntake()));
+        controller.R1().onTrue(new InstantCommand(() -> intake.startRoller(1.0))
+            .alongWith(new InstantCommand(() -> intake.deployIntake())));
+        controller.R1().onFalse(new RetractAndStopIntake(intake));
+
         controller.R2().onTrue(new InstantCommand(() -> intake.startRoller(1.0)));
         controller.R2().onFalse(new InstantCommand(() -> intake.stopRoller()));
 
-        controller.triangle().onTrue(new InstantCommand(() -> shooter.shootAtSpeedFromDashboard()));
-        controller.triangle().onFalse(new InstantCommand(() -> shooter.stop()));
-
-
         // D-pad LEFT - DriveAndFaceGoal: face goal, drive to tag, align + re-center
         DriveAndFaceGoal driveAndFaceCommand = new DriveAndFaceGoal(swerve, vision);
-        controller.pov(270).toggleOnTrue(driveAndFaceCommand);
+        controller.povLeft().toggleOnTrue(driveAndFaceCommand);
 
-        controller.square().onTrue(new InstantCommand(() -> intake.deployManualMove(Constants.IntakeConfig.Deploy.motorOpenLoopMoveVolts)));
-        controller.square().onFalse(new InstantCommand(() -> intake.deployManualMove(0)));
-        controller.circle().onTrue(new InstantCommand(() -> intake.deployManualMove(-Constants.IntakeConfig.Deploy.motorOpenLoopMoveVolts)));
-        controller.circle().onFalse(new InstantCommand(() -> intake.deployManualMove(0)));
+
+        // Codriver controller
+
+        // R2 - Reverse the intake, hopper and feed motor in case we need to try 
+        // and unjam a ball that is stuck between the feeder and shooter
+        controller.R2().onTrue(new InstantCommand(() -> intake.deployIntake())
+            .alongWith(new InstantCommand(() -> intake.startRoller(-1.0)))
+            .alongWith(new InstantCommand(() -> hopper.startConveyor(-1.0)))
+            .alongWith(new InstantCommand(() -> shooter.startFeederReverse())));
+        controller.R2().onFalse(new InstantCommand(() -> shooter.stopFeeder())
+            .alongWith(new InstantCommand(() -> hopper.stopConveyor()))
+            .alongWith(new RetractAndStopIntake(intake)));
+
+        controller2.povUp().onTrue(new InstantCommand(() -> intake.deployManualMove(Constants.IntakeConfig.Deploy.motorOpenLoopMoveVolts)));
+        controller2.povUp().onFalse(new InstantCommand(() -> intake.deployManualMove(0)));
+        controller2.povDown().onTrue(new InstantCommand(() -> intake.deployManualMove(-Constants.IntakeConfig.Deploy.motorOpenLoopMoveVolts)));
+        controller2.povDown().onFalse(new InstantCommand(() -> intake.deployManualMove(0)));
+        controller2.povLeft().onTrue(new InstantCommand(() -> intake.deployFindHome()));
+
+        controller.triangle().onTrue(new InstantCommand(() -> hopper.startConveyor(1.0)));
+        controller.triangle().onFalse(new InstantCommand(() -> hopper.stopConveyor()));
+        controller.cross().onTrue(new InstantCommand(() -> hopper.startConveyor(-1.0)));
+        controller.cross().onFalse(new InstantCommand(() -> hopper.stopConveyor()));
     }
 
     public Command getAutonomousCommand() {

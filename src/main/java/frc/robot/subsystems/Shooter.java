@@ -138,7 +138,12 @@ public class Shooter extends SubsystemBase {
      */
     public void startFeeder() {
         currentFeederDutyCycle = FEEDER_DUTY_CYCLE;
-        feederMotor.rotateAtSpeed(FEEDER_DUTY_CYCLE);
+        feederMotor.rotateAtSpeed(currentFeederDutyCycle);
+    }
+
+    public void startFeederReverse() {
+        currentFeederDutyCycle = -FEEDER_DUTY_CYCLE;
+        feederMotor.rotateAtSpeed(currentFeederDutyCycle);
     }
 
     /**

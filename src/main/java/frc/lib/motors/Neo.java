@@ -51,6 +51,8 @@ public class Neo {
       config.smartCurrentLimit(c.smartCurrentLimit.getAsInt());
     }
 
+    config.encoder.uvwMeasurementPeriod(8).quadratureAverageDepth(2).quadratureMeasurementPeriod(8);
+
 
   
     config.closedLoop.feedbackSensor(FeedbackSensor.kPrimaryEncoder).pid(c.kP, c.kI, c.kD);
