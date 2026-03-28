@@ -7,13 +7,13 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Left to Shoot"
+            "pathName": "Center Move Back"
           }
         },
         {
           "type": "named",
           "data": {
-            "name": "AlignWithTag10"
+            "name": "AlignWithHubTag"
           }
         },
         {
@@ -25,25 +25,25 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Left Shoot to Outpost"
+            "pathName": "Back to Outpost"
           }
         },
         {
           "type": "wait",
           "data": {
-            "waitTime": 2.0
+            "waitTime": 5.0
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "Outpost to Left Shoot"
+            "pathName": "Outpost to Right Shoot"
           }
         },
         {
           "type": "named",
           "data": {
-            "name": "AlignWithTag10"
+            "name": "AlignWithHubTag"
           }
         },
         {
@@ -56,6 +56,6 @@
     }
   },
   "resetOdom": true,
-  "folder": "Left Side Autonomous",
+  "folder": "Center Autonomous",
   "choreoAuto": false
 }

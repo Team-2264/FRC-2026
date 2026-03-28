@@ -5,6 +5,12 @@
     "data": {
       "commands": [
         {
+          "type": "named",
+          "data": {
+            "name": "ShooterSpinUp"
+          }
+        },
+        {
           "type": "path",
           "data": {
             "pathName": "Right to Shoot"
@@ -13,13 +19,13 @@
         {
           "type": "named",
           "data": {
-            "name": "AlignWithTag10"
+            "name": "AlignWithHubTag"
           }
         },
         {
           "type": "named",
           "data": {
-            "name": "ShootBall"
+            "name": "ShootBallInitial"
           }
         },
         {
@@ -35,6 +41,12 @@
           }
         },
         {
+          "type": "named",
+          "data": {
+            "name": "ShooterSpinUp"
+          }
+        },
+        {
           "type": "path",
           "data": {
             "pathName": "Outpost to Right Shoot"
@@ -43,13 +55,13 @@
         {
           "type": "named",
           "data": {
-            "name": "AlignWithTag10"
+            "name": "AlignWithHubTag"
           }
         },
         {
           "type": "named",
           "data": {
-            "name": "ShootBall"
+            "name": "ShootBallFinal"
           }
         }
       ]

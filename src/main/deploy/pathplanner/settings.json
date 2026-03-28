@@ -4,13 +4,15 @@
   "holonomicMode": true,
   "pathFolders": [
     "Left Side Paths",
+    "Center Paths",
     "Right Side Paths"
   ],
   "autoFolders": [
     "Left Side Autonomous",
+    "Center Autonomous",
     "Right Side Autonomous"
   ],
-  "defaultMaxVel": 2.0,
+  "defaultMaxVel": 3.0,
   "defaultMaxAccel": 3.0,
   "defaultMaxAngVel": 540.0,
   "defaultMaxAngAccel": 720.0,

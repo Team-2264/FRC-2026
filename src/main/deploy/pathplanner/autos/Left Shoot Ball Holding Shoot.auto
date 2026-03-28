@@ -13,7 +13,7 @@
         {
           "type": "named",
           "data": {
-            "name": "AlignWithTag10"
+            "name": "AlignWithHubTag"
           }
         },
         {
@@ -25,55 +25,55 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Shoot to Left"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Left to Middlefield"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Middlefield Pickup to Left"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Left to Shoot"
+            "pathName": "Left Shoot to Ball Holding"
           }
         },
         {
           "type": "named",
           "data": {
-            "name": "AlignWithTag10"
+            "name": "IntakeOut"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "RollerStart"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Ball Holding Move Forward"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "IntakeIn"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "RollerStop"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Ball Holding to Left Shoot"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "AlignWithHubTag"
           }
         },
         {
           "type": "named",
           "data": {
             "name": "ShootBall"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Shoot to Left"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Left to Innerfield"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Innerfield Pickup to Left"
           }
         }
       ]

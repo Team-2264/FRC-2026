@@ -7,67 +7,67 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Left to Shoot"
+            "pathName": "Right to Middlefield"
           }
         },
         {
           "type": "named",
           "data": {
-            "name": "AlignWithTag10"
+            "name": "IntakeOut"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "RollerStart"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Right Middlefield Pickup"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "IntakeIn"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "RollerStop"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Middlefield to Right"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Right to Shoot"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "AlignWithHubTag"
           }
         },
         {
           "type": "named",
           "data": {
             "name": "ShootBall"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Shoot to Left"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Left to Middlefield"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Middlefield Pickup to Left"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Left to Shoot"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "AlignWithTag10"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "ShootBall"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Left Shoot to Outpost"
           }
         }
       ]
     }
   },
   "resetOdom": true,
-  "folder": "Left Side Autonomous",
+  "folder": "Right Side Autonomous",
   "choreoAuto": false
 }

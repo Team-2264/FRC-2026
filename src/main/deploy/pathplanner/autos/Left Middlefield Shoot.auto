@@ -7,61 +7,55 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Right to Middlefield"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Middlefield Pickup to Right"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Right to Shoot"
+            "pathName": "Left to Middlefield"
           }
         },
         {
           "type": "named",
           "data": {
-            "name": "AlignWithTag10"
+            "name": "IntakeOut"
           }
         },
         {
           "type": "named",
           "data": {
-            "name": "ShootBall"
+            "name": "RollerStart"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "Shoot to Right"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Right to Innerfield"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Innerfield Pickup to Right"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Right to Shoot"
+            "pathName": "Left Middlefield Pickup"
           }
         },
         {
           "type": "named",
           "data": {
-            "name": "AlignWithTag10"
+            "name": "IntakeIn"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "RollerStop"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Middlefield to Left"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Left to Shoot"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "AlignWithHubTag"
           }
         },
         {
@@ -74,6 +68,6 @@
     }
   },
   "resetOdom": true,
-  "folder": "Right Side Autonomous",
+  "folder": "Left Side Autonomous",
   "choreoAuto": false
 }
