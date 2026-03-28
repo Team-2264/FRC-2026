@@ -160,10 +160,10 @@ public final class Constants {
 
         // Swerve Profiling Values
         // TODO: Remove training wheels...
-        public static final double maxSpeed = 1.0; // meters per second
-        public static final double maxAngularVelocity = Math.PI / 2; // radians per second (rad/s)
+        public static final double maxSpeed = 2.5; // meters per second
+        //public static final double maxAngularVelocity = Math.PI / 2; // radians per second (rad/s)
         //public static final double maxSpeed = 3.0; // meters per second
-        //public static final double maxAngularVelocity = Math.PI; // radians per second (rad/s)
+        public static final double maxAngularVelocity = Math.PI; // radians per second (rad/s)
         
         // Turbo mode values
         public static final double turboMaxSpeed = 4.5;

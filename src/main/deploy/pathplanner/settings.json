@@ -3,16 +3,14 @@
   "robotLength": 0.8255,
   "holonomicMode": true,
   "pathFolders": [
-    "Center",
-    "Bottom",
-    "Top"
+    "Left Side Paths",
+    "Right Side Paths"
   ],
   "autoFolders": [
-    "Bottom",
-    "Center",
-    "Top"
+    "Left Side Autonomous",
+    "Right Side Autonomous"
   ],
-  "defaultMaxVel": 1.0,
+  "defaultMaxVel": 2.0,
   "defaultMaxAccel": 3.0,
   "defaultMaxAngVel": 540.0,
   "defaultMaxAngAccel": 720.0,

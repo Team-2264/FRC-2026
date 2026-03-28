@@ -63,7 +63,7 @@ public class Neo {
       config.absoluteEncoder.inverted(c.InvertAbsoluteEncoder);
     }
 
-    //config.encoder.velocityConversionFactor(1.0/60.0);
+    config.encoder.velocityConversionFactor(1.0);
     if(c.followMotor.isPresent()) {
         config.follow(c.followMotor.getAsInt(), c.followInvert);
     }

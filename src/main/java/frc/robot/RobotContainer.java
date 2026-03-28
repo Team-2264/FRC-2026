@@ -60,6 +60,14 @@ public class RobotContainer {
     public RobotContainer() {
         NamedCommands.registerCommand("lockSwerve", new LockSwerve(swerve));
         NamedCommands.registerCommand("unlockSwerve", new UnlockSwerve(swerve));
+        NamedCommands.registerCommand("AlignWithTag10", new DriveAndFaceGoal(swerve, vision));
+        // Add a 2-second timeout to ShootBall so it doesn't get stuck forever in autonomous!
+        NamedCommands.registerCommand("ShootBall", new ShootBall(shooter, hopper, vision).withTimeout(8.0));
+        NamedCommands.registerCommand("IntakeOut", new InstantCommand(() -> intake.deployIntake()));
+        NamedCommands.registerCommand("IntakeIn", new InstantCommand(() -> intake.retractIntake()));
+        NamedCommands.registerCommand("RollerStart", new InstantCommand(() -> intake.startRoller(1.0)));
+        NamedCommands.registerCommand("RollerStop", new InstantCommand(() -> intake.stopRoller()));
+
 
         configureBindings();
 
