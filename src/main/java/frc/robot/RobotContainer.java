@@ -135,71 +135,62 @@ public class RobotContainer {
         long remainingMs = Math.max(0, ledOverrideUntil - now);
         ElasticDashboard.putNumber("LEDs/OverrideRemainingMs", remainingMs);
 
-        // If a transient LED override is active, honor it first — but allow
-        // Tag 10 progressive green to bypass the override so the driver sees
+        // If a transient LED override is active, honor it first - but allow
+        // Hub tag progressive green to bypass the override so the driver sees
         // detection/centering feedback even during short confirmations.
-        Optional<edu.wpi.first.math.geometry.Transform3d> tag10Tf = vision.getTransformToTag(10);
-        boolean bypassOverrideForTag10 = tag10Tf.isPresent();
-        if (System.currentTimeMillis() < ledOverrideUntil && !bypassOverrideForTag10) {
+        Optional<edu.wpi.first.math.geometry.Transform3d> hubTf = vision.getNearestHubTagTransform();
+        boolean bypassOverrideForHub = hubTf.isPresent();
+
+        if (System.currentTimeMillis() < ledOverrideUntil && !bypassOverrideForHub) {
             leds.setRGB(ledOverrideR, ledOverrideG, ledOverrideB);
             return;
         }
 
-        // Prefer Tag 10 progressive green if Tag 10 is visible at all (even if
-        // Photon reports another 'best' target). This prevents tag 9 from
-        // overriding tag 10 centering feedback.
-        if (tag10Tf.isPresent()) {
+        // Prefer Hub tag progressive green if any Hub tag is visible at all (even if
+        // Photon reports another 'best' target).
+        if (hubTf.isPresent()) {
             try {
                 edu.wpi.first.math.geometry.Pose2d robotPose = swerve.getPose();
-                double hubFieldX = 12.227 - edu.wpi.first.math.util.Units.inchesToMeters(23.5);
-                double hubFieldY = 4.026;
                 
-                Optional<edu.wpi.first.math.geometry.Pose3d> exactTagPose = vision.getTagPose(10);
+                // Get the target pose directly
+                Optional<edu.wpi.first.math.geometry.Pose2d> exactTagPose = vision.getNearestHubTargetPose(robotPose, 0);
+
                 if (exactTagPose.isPresent()) {
-                    edu.wpi.first.math.geometry.Pose3d tagPose = exactTagPose.get();
-                    edu.wpi.first.math.geometry.Pose3d hubPose = tagPose.transformBy(
-                        new edu.wpi.first.math.geometry.Transform3d(
-                            new edu.wpi.first.math.geometry.Translation3d(edu.wpi.first.math.util.Units.inchesToMeters(-23.5), 0, 0), 
-                            new edu.wpi.first.math.geometry.Rotation3d()
-                        )
-                    );
-                    hubFieldX = hubPose.getX();
-                    hubFieldY = hubPose.getY();
-                }
+                    edu.wpi.first.math.geometry.Pose2d tagPose = exactTagPose.get();
+                    double hubDx = tagPose.getX() - robotPose.getX();
+                    double hubDy = tagPose.getY() - robotPose.getY();
+                    double targetAngleRad = Math.atan2(hubDy, hubDx);
 
-                double hubDx = hubFieldX - robotPose.getX();
-                double hubDy = hubFieldY - robotPose.getY();
-                double targetAngleRad = Math.atan2(hubDy, hubDx);
-                
-                // Wrap the bearing to [-pi, pi]
-                double bearingRad = targetAngleRad - robotPose.getRotation().getRadians();
-                while (bearingRad > Math.PI) bearingRad -= 2 * Math.PI;
-                while (bearingRad < -Math.PI) bearingRad += 2 * Math.PI;
-                
-                double yawDeg = Math.abs(Math.toDegrees(bearingRad));
+                    // Wrap the bearing to [-pi, pi]
+                    double bearingRad = targetAngleRad - robotPose.getRotation().getRadians();
+                    while (bearingRad > Math.PI) bearingRad -= 2 * Math.PI;
+                    while (bearingRad < -Math.PI) bearingRad += 2 * Math.PI;
 
-                ElasticDashboard.putNumber("LEDs/Tag10YawDeg", yawDeg);
+                    double yawDeg = Math.abs(Math.toDegrees(bearingRad));
 
-                final double MAX_YAW_DEG = 15.0; // adjust as needed
-                double frac = 1.0 - Math.min(yawDeg / MAX_YAW_DEG, 1.0);
-                int numLeds = Constants.LedStrip.numLeds;
-                int lit = (int) Math.round(frac * numLeds);
-                ElasticDashboard.putNumber("LEDs/Tag10Lit", lit);
-                if (lit <= 0) {
-                    int center = numLeds / 2;
-                    leds.setRGBRange(0, 255, 0, center, center);
-                } else if (lit >= numLeds) {
-                    leds.setRGB(0, 255, 0);
-                } else {
-                    int center = numLeds / 2;
-                    int half = lit / 2;
-                    int start = center - half;
-                    int end = start + lit - 1;
-                    if (start < 0)
-                        start = 0;
-                    if (end >= numLeds)
-                        end = numLeds - 1;
-                    leds.setRGBRange(0, 255, 0, start, end);
+                    ElasticDashboard.putNumber("LEDs/HubYawDeg", yawDeg);
+
+                    final double MAX_YAW_DEG = 15.0; // adjust as needed
+                    double frac = 1.0 - Math.min(yawDeg / MAX_YAW_DEG, 1.0);
+                    int numLeds = Constants.LedStrip.numLeds;
+                    int lit = (int) Math.round(frac * numLeds);
+                    ElasticDashboard.putNumber("LEDs/HubLit", lit);
+                    if (lit <= 0) {
+                        int center = numLeds / 2;
+                        leds.setRGBRange(0, 255, 0, center, center);
+                    } else if (lit >= numLeds) {
+                        leds.setRGB(0, 255, 0);
+                    } else {
+                        int center = numLeds / 2;
+                        int half = lit / 2;
+                        int start = center - half;
+                        int end = start + lit - 1;
+                        if (start < 0)
+                            start = 0;
+                        if (end >= numLeds)
+                            end = numLeds - 1;
+                        leds.setRGBRange(0, 255, 0, start, end);
+                    }
                 }
             } catch (Exception e) {
                 ElasticDashboard.putString("LEDs/Error", e.toString());
@@ -221,7 +212,7 @@ public class RobotContainer {
             }
         }
 
-        // hub alignment is triggered by the DriveToTag10 binding (on completion)
+        // hub alignment is triggered by the DriveToHub binding (on completion)
     }
 
     public Leds getLeds() {

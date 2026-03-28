@@ -238,29 +238,86 @@ public class Vision2025 extends SubsystemBase {
         Rotation2d tagRotation = tagPose.getRotation();
         double offsetX = tagPose.getX() - distance * tagRotation.getCos();
         double offsetY = tagPose.getY() - distance * tagRotation.getSin();
+
         // Robot should face toward the tag (opposite of the tag's outward direction)
         Rotation2d robotRotation = tagRotation.plus(Rotation2d.fromDegrees(180));
         return new Pose2d(offsetX, offsetY, robotRotation);
     }
 
     /**
-     * Returns the Pose2d the robot should drive to in order to be a given distance
-     * directly in front of AprilTag 10, facing the tag.
-     *
-     * Uses the field layout to look up tag 10's 3D pose, then offsets along the
-     * tag's facing direction so the robot ends up in front of it.
-     *
-     * @param distanceMeters how far in front of the tag (meters)
-     * @return Optional containing the target Pose2d, or empty if tag 10 is not in
-     *         the layout
+     * Get the nearest hub tag's target pose based on the robot's current pose.
+     * @param robotPose Current robot position
+     * @param distanceMeters Standoff distance from the tag
+     * @return Optional containing the target Pose2d, or empty if no hub tags visible/found in layout
      */
-    public Optional<Pose2d> getTag10TargetPose(double distanceMeters) {
-        Optional<Pose3d> tag10Pose3d = aprilTagFieldLayout.getTagPose(10);
-        if (tag10Pose3d.isEmpty()) {
+    public Optional<Pose2d> getNearestHubTargetPose(Pose2d robotPose, double distanceMeters) {
+        if (latestResult == null || !latestResult.hasTargets()) {
             return Optional.empty();
         }
-        Pose2d tag10Pose = tag10Pose3d.get().toPose2d();
-        return Optional.of(calculateTargetPose(tag10Pose, distanceMeters));
+
+        int[] hubIds = Constants.TagSets.hubTags;
+        double minDistance = Double.MAX_VALUE;
+        Optional<Pose2d> bestPose = Optional.empty();
+
+        for (int i = 0; i < latestResult.targets.size(); i++) {
+            org.photonvision.targeting.PhotonTrackedTarget target = latestResult.targets.get(i);
+            int id = target.getFiducialId();
+            boolean isHub = false;
+            for (int hubId : hubIds) {
+                if (id == hubId) {
+                    isHub = true;
+                    break;
+                }
+            }
+
+            if (isHub) {
+                Optional<Pose3d> tagPose3d = aprilTagFieldLayout.getTagPose(id);
+                if (tagPose3d.isPresent()) {
+                    Pose2d targetPose = calculateTargetPose(tagPose3d.get().toPose2d(), distanceMeters);
+                    double dist = targetPose.getTranslation().getDistance(robotPose.getTranslation());
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        bestPose = Optional.of(targetPose);
+                    }
+                }
+            }
+        }
+        return bestPose;
+    }
+
+    /**
+     * Get the Transform3d of the nearest visible hub tag.
+     * @return Optional containing the Transform3d
+     */
+    public Optional<Transform3d> getNearestHubTagTransform() {
+        if (latestResult == null || !latestResult.hasTargets()) {
+            return Optional.empty();
+        }
+
+        int[] hubIds = Constants.TagSets.hubTags;
+        Optional<Transform3d> bestTf = Optional.empty();
+        double minDistance = Double.MAX_VALUE;
+
+        for (int i = 0; i < latestResult.targets.size(); i++) {
+            org.photonvision.targeting.PhotonTrackedTarget target = latestResult.targets.get(i);
+            int id = target.getFiducialId();
+            boolean isHub = false;
+            for (int hubId : hubIds) {
+                if (id == hubId) {
+                    isHub = true;
+                    break;
+                }
+            }
+
+            if (isHub) {
+                double dist = target.getBestCameraToTarget().getTranslation().getNorm();
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    bestTf = Optional.of(target.getBestCameraToTarget());
+                }
+            }
+        }
+        return bestTf;
     }
 
     /**
@@ -390,5 +447,43 @@ public class Vision2025 extends SubsystemBase {
 
     public Optional<Pose3d> getTagPose(int tagId) {
         return aprilTagFieldLayout.getTagPose(tagId);
+    }
+
+    /**
+     * Get the exact field layout Pose3d of the nearest visible hub tag.
+     * @return Optional containing the Pose3d, or empty if no hub tags visible/found in layout
+     */
+    public Optional<Pose3d> getNearestHubTagPose3d() {
+        if (latestResult == null || !latestResult.hasTargets()) {
+            return Optional.empty();
+        }
+
+        int[] hubIds = Constants.TagSets.hubTags;
+        Optional<Pose3d> bestPose = Optional.empty();
+        double minDistance = Double.MAX_VALUE;
+
+        for (int i = 0; i < latestResult.targets.size(); i++) {
+            org.photonvision.targeting.PhotonTrackedTarget target = latestResult.targets.get(i);
+            int id = target.getFiducialId();
+            boolean isHub = false;
+            for (int hubId : hubIds) {
+                if (id == hubId) {
+                    isHub = true;
+                    break;
+                }
+            }
+
+            if (isHub) {
+                double dist = target.getBestCameraToTarget().getTranslation().getNorm();
+                if (dist < minDistance) {
+                    Optional<Pose3d> tagPose3d = aprilTagFieldLayout.getTagPose(id);
+                    if (tagPose3d.isPresent()) {
+                        minDistance = dist;
+                        bestPose = tagPose3d;
+                    }
+                }
+            }
+        }
+        return bestPose;
     }
 }

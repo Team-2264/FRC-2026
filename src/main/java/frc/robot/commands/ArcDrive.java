@@ -15,28 +15,21 @@ import frc.robot.subsystems.Vision2025;
  * ArcDrive — bound to L2 (whileTrue).
  *
  * <h3>Behaviour:</h3>
- * <p>While L2 is held, the robot is locked on a circular arc around AprilTag 10.
+ * <p>While L2 is held, the robot is locked on a circular arc around the nearest hub tag.
  * The radius is captured on initialisation from the current distance to the tag.
  * Hold L1 to move left along the arc, R1 to move right along the arc.
- * The robot continuously rotates to keep tag 10 centred in the camera.
- * If tag 10 is lost, the robot stops immediately and waits for re-acquisition.</p>
+ * The robot continuously rotates to keep the tag centred in the camera.
+ * If the tag is lost, the robot stops immediately and waits for re-acquisition.</p>
  *
  * <h3>Prerequisites:</h3>
  * <p>The driver should first use D-pad LEFT (DriveAndFaceGoal) to align with
- * tag 10 before activating this command.</p>
+ * a hub tag before activating this command.</p>
  */
 public class ArcDrive extends Command {
 
     private final Swerve swerve;
     private final Vision2025 vision;
     private final CommandPS4Controller controller;
-
-    // ---- Target ----
-    private static final int TARGET_TAG_ID = 10;
-
-    // Tag 10 approximate field position (blue-origin, 2026 field)
-    private static final double TAG10_X = 12.227; // metres
-    private static final double TAG10_Y = 4.026;
 
     // ---- Arc movement speed ----
     private static final double ARC_SPEED = 0.5; // m/s — fixed slow speed along the arc
@@ -78,11 +71,16 @@ public class ArcDrive extends Command {
         // Use robot-relative: forward = toward tag, left/right = along arc
         swerve.setFieldRelative(false);
 
-        // Capture radius from current robot position to tag 10
+        // Capture radius from current robot position to nearest hub tag
         Pose2d pose = swerve.getPose();
-        double dx = TAG10_X - pose.getX();
-        double dy = TAG10_Y - pose.getY();
-        arcRadius = Math.hypot(dx, dy);
+        Optional<edu.wpi.first.math.geometry.Pose3d> exactTagPose = vision.getNearestHubTagPose3d();
+        if (exactTagPose.isPresent()) {
+            double dx = exactTagPose.get().getX() - pose.getX();
+            double dy = exactTagPose.get().getY() - pose.getY();
+            arcRadius = Math.hypot(dx, dy);
+        } else {
+            arcRadius = 2.0; // default safe fallback radius
+        }
 
         // Clamp radius to sensible bounds
         if (arcRadius < 0.5) arcRadius = 0.5;
@@ -107,8 +105,8 @@ public class ArcDrive extends Command {
             desiredStrafeSpeed = -ARC_SPEED;   // strafe right (robot-relative)
         }
 
-        // ---- Check for tag 10 ----
-        Optional<Transform3d> opt = vision.getTransformToTag(TARGET_TAG_ID);
+        // ---- Check for nearest hub tag ----
+        Optional<Transform3d> opt = vision.getNearestHubTagTransform();
 
         if (!opt.isPresent()) {
             // Tag lost — coast to stop
@@ -119,7 +117,7 @@ public class ArcDrive extends Command {
             return;
         }
 
-        // ---- Rotation: keep tag 10 centred using camera bearing ----
+        // ---- Rotation: keep hub tag centred using camera bearing ----
         Transform3d t = opt.get();
         double tagCamX = t.getX();   // forward in camera frame
         double tagCamY = t.getY();   // left in camera frame

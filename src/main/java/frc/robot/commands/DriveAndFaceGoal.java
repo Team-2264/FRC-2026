@@ -20,13 +20,6 @@ public class DriveAndFaceGoal extends Command {
     private final Swerve swerve;
     private final Vision2025 vision;
 
-    // ---- Target tag ----
-    private static final int TARGET_TAG_ID = 10;
-
-    // Tag 10 approximate field position (for initial rotation guess)
-    private static final double TAG10_X = 12.227; // metres (2026 field, blue-origin)
-    private static final double TAG10_Y = 4.026;
-
     // ---- Distance band ----
     private static final double MAX_RADIUS = 4.0;   // outer edge — drive in if farther
     private static final double MIN_RADIUS = 1.0;   // inner edge — back up if closer
@@ -83,10 +76,16 @@ public class DriveAndFaceGoal extends Command {
 
         // Guess initial search direction from odometry
         Pose2d pose = swerve.getPose();
-        double angleToTag = Math.atan2(TAG10_Y - pose.getY(), TAG10_X - pose.getX());
-        double headingErr = angleToTag - pose.getRotation().getRadians();
-        headingErr = wrapAngle(headingErr);
-        searchDirection = (headingErr >= 0) ? 1.0 : -1.0;
+        
+        Optional<Pose3d> exactTagPose = vision.getNearestHubTagPose3d();
+        if (exactTagPose.isPresent()) {
+            double angleToTag = Math.atan2(exactTagPose.get().getY() - pose.getY(), exactTagPose.get().getX() - pose.getX());
+            double headingErr = angleToTag - pose.getRotation().getRadians();
+            headingErr = wrapAngle(headingErr);
+            searchDirection = (headingErr >= 0) ? 1.0 : -1.0;
+        } else {
+            searchDirection = 1.0;
+        }
 
         swerve.setFieldRelative(false);
         ElasticDashboard.putBoolean("DriveFace/Active", true);
@@ -97,8 +96,8 @@ public class DriveAndFaceGoal extends Command {
     public void execute() {
         cycles++;
 
-        // Always try to see tag 10
-        Optional<Transform3d> opt = vision.getTransformToTag(TARGET_TAG_ID);
+        // Always try to see hub tag
+        Optional<Transform3d> opt = vision.getNearestHubTagTransform();
 
         if (phase == Phase.SEARCH) {
             executeSearch(opt);
@@ -115,7 +114,7 @@ public class DriveAndFaceGoal extends Command {
         searchCycles++;
 
         if (opt.isPresent()) {
-            // Found tag 10 → transition to ALIGN
+            // Found a hub tag -> transition to ALIGN
             phase = Phase.ALIGN;
             ElasticDashboard.putString("DriveFace/Phase", "ALIGN");
             executeAlign(opt);
@@ -123,21 +122,13 @@ public class DriveAndFaceGoal extends Command {
         }
 
         if (searchCycles > SEARCH_TIMEOUT) {
-            // Give up searching — transition anyway
+            // Give up searching -> transition anyway
             phase = Phase.ALIGN;
             ElasticDashboard.putString("DriveFace/Phase", "ALIGN (search timed out)");
             return;
         }
 
-        // Refine search direction from any visible tag
-        Optional<Integer> visibleId = vision.getBestTargetId();
-        if (visibleId.isPresent()) {
-            int id = visibleId.get();
-            if (id == 12) searchDirection = 1.0;       // tag 10 is left of 12
-            else if (id == 7) searchDirection = -1.0;   // tag 10 is right of 7
-        }
-
-        // Gentle rotation to find tag 10
+        // Gentle rotation to find hub tag
         double rot = slewLimit(searchDirection * SEARCH_ROT, prevRot, MAX_ROT_DELTA);
         prevRot = rot;
         prevFwd = slewLimit(0, prevFwd, MAX_FWD_DELTA);
@@ -153,7 +144,7 @@ public class DriveAndFaceGoal extends Command {
     private void executeAlign(Optional<Transform3d> opt) {
 
         if (!opt.isPresent()) {
-            // Tag 10 lost — coast to stop smoothly
+            // Hub tag lost -> coast to stop smoothly
             prevFwd = slewLimit(0, prevFwd, MAX_FWD_DELTA);
             prevRot = slewLimit(0, prevRot, MAX_ROT_DELTA);
             swerve.drive(new Translation2d(prevFwd, 0), prevRot);
@@ -162,35 +153,35 @@ public class DriveAndFaceGoal extends Command {
             return;
         }
 
-        // Because of camera offset and PnP instability, camera-relative angles can over-compensate. 
-        // We use the fused Odometry (which accurately tracks our global position using the tags) 
+        // Because of camera offset and PnP instability, camera-relative angles can over-compensate.
+        // We use the fused Odometry (which accurately tracks our global position using the tags)
         // to aim the physical center of the robot directly at the hub's coordinates.
         Pose2d robotPose = swerve.getPose();
-        
-        double tagFieldX = TAG10_X;
-        double tagFieldY = TAG10_Y;
-        
+
+        double tagFieldX = robotPose.getX();
+        double tagFieldY = robotPose.getY();
+
         // Approximate hub location (if tag isn't yet retrieved from layout)
-        double hubFieldX = tagFieldX - Units.inchesToMeters(23.5); 
+        double hubFieldX = tagFieldX;
         double hubFieldY = tagFieldY;
-        
-        // Refine with the exact field layout position for Tag 10
-        Optional<Pose3d> exactTagPose = vision.getTagPose(TARGET_TAG_ID);
+
+        // Refine with the exact field layout position for the nearest hub tag
+        Optional<Pose3d> exactTagPose = vision.getNearestHubTagPose3d();
         if (exactTagPose.isPresent()) {
             Pose3d tagPose = exactTagPose.get();
             tagFieldX = tagPose.getX();
             tagFieldY = tagPose.getY();
-            
+
             // The center of the hub is 23.5 inches behind the tag in the tag's local coordinate system.
             // A tag's X axis points outwards (into the field). We want to go backwards (into the hub).
             // So we translate -23.5 inches along the tag's local X axis.
             Pose3d hubPose = tagPose.transformBy(
                 new Transform3d(
-                    new edu.wpi.first.math.geometry.Translation3d(Units.inchesToMeters(-23.5), 0, 0), 
+                    new edu.wpi.first.math.geometry.Translation3d(Units.inchesToMeters(-23.5), 0, 0),
                     new edu.wpi.first.math.geometry.Rotation3d()
                 )
             );
-            
+
             hubFieldX = hubPose.getX();
             hubFieldY = hubPose.getY();
         }

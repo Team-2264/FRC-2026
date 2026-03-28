@@ -70,17 +70,17 @@ public class DriveToTag extends Command {
 
     // ================== Constructors ==================
 
-    /** Default: tag 10, max radius 3.0 m. */
+    /** Default: nearest hub tag (-2), max radius 3.0 m. */
     public DriveToTag(Swerve swerve, Vision2025 vision) {
-        this(swerve, vision, 3.0, 10);
+        this(swerve, vision, 3.0, -2);
     }
 
-    /** Specify max radius, default tag 10. */
+    /** Specify max radius, default nearest hub tag (-2). */
     public DriveToTag(Swerve swerve, Vision2025 vision, double maxRadiusMeters) {
-        this(swerve, vision, maxRadiusMeters, 10);
+        this(swerve, vision, maxRadiusMeters, -2);
     }
 
-    /** Full constructor — max radius + tag ID (-1 = best visible). */
+    /** Full constructor — max radius + tag ID (-1 = best visible, -2 = nearest hub). */
     public DriveToTag(Swerve swerve, Vision2025 vision, double maxRadiusMeters, int tagId) {
         this.swerve    = swerve;
         this.vision    = vision;
@@ -108,9 +108,14 @@ public class DriveToTag extends Command {
         cycles++;
 
         // ---- Get tag transform ----
-        Optional<Transform3d> opt = (tagId >= 0)
-                ? vision.getTransformToTag(tagId)
-                : vision.getTargetTransform();
+        Optional<Transform3d> opt;
+        if (tagId == -2) {
+            opt = vision.getNearestHubTagTransform();
+        } else if (tagId >= 0) {
+            opt = vision.getTransformToTag(tagId);
+        } else {
+            opt = vision.getTargetTransform();
+        }
 
         if (!opt.isPresent()) {
             // No tag visible — coast to zero smoothly

@@ -33,6 +33,14 @@ import frc.lib.motors.TalonFxConfiguration;
  * wherever the constants are needed, to reduce verbosity.
  */
 public final class Constants {
+
+    public static final class TagSets {
+        // Tunnel tags (both alliances): red 7,6 and blue 17,28
+        public static final int[] tunnelTags = { 7, 6, 17, 28 };
+        // Hub/reef surround tags: red (8,5,9,10,4,3,11,2), blue (18,27,19,20,26,25,21,24)
+        public static final int[] hubTags = {2,10,5,21,26,18 };
+    }
+
     /**
      * Operator class holds constants related to operator input.
      */

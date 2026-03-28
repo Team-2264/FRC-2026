@@ -26,7 +26,7 @@ import frc.robot.subsystems.Vision2025;
  * Behavior:
  *   1. Must see a coral station tag to start (7/12 for Red, 17/22/23/28 for Blue)
  *   2. Strafes sideways toward the center reef (direction depends on which station)
- *   3. When a center reef tag appears (9/10 Red, 19/20 Blue), stops and rotates to align
+ *   3. When a hub tag appears, stops and rotates to align
  *   4. Finishes when the reef tag is centered within tolerance
  *
  * Bind to left D-pad. Press once to start, press again to cancel.
@@ -54,11 +54,6 @@ public class AlignToShoot extends Command {
     private static final Set<Integer> RED_STATION_TAGS = Set.of(7, 12);
     // Blue coral station tags
     private static final Set<Integer> BLUE_STATION_TAGS = Set.of(17, 22, 23, 28);
-    // Red center reef tags (the shooting targets)
-    private static final Set<Integer> RED_REEF_CENTER = Set.of(9, 10);
-    // Blue center reef tags
-    private static final Set<Integer> BLUE_REEF_CENTER = Set.of(19, 20);
-
     // Tags at the BOTTOM of the field (low Y) — strafe must go UP (+Y in field, which is +strafe in robot-relative)
     private static final Set<Integer> BOTTOM_STATION_TAGS = Set.of(7, 17, 28);
     // Tags at the TOP of the field (high Y) — strafe must go DOWN (-Y in field, which is -strafe in robot-relative)
@@ -70,8 +65,6 @@ public class AlignToShoot extends Command {
     private int cycleCount = 0;
     private int noTagCount = 0;
     private double strafeDirection = 0; // +1 or -1
-    private Set<Integer> targetReefTags;  // which reef tags to look for
-    private int alignTagId; // which specific tag to align to (10 for red, 20 for blue)
 
     public AlignToShoot(Swerve swerve, Vision2025 vision) {
         this.swerve = swerve;
@@ -93,8 +86,6 @@ public class AlignToShoot extends Command {
         }
 
         Set<Integer> stationTags = isBlue ? BLUE_STATION_TAGS : RED_STATION_TAGS;
-        targetReefTags = isBlue ? BLUE_REEF_CENTER : RED_REEF_CENTER;
-        alignTagId = isBlue ? 20 : 10; // primary alignment tag (center-facing reef tag)
 
         // Check if we see a coral station tag
         Optional<Integer> tagId = vision.getBestTargetId();
@@ -139,32 +130,26 @@ public class AlignToShoot extends Command {
         }
 
         if (state == AlignState.STRAFING) {
-            // Check if we can see a center reef tag
-            Optional<Integer> tagId = vision.getBestTargetId();
-            boolean seesReef = tagId.isPresent() && targetReefTags.contains(tagId.get());
+            // Check if we can see any hub tag
+            Optional<Transform3d> hubTf = vision.getNearestHubTagTransform();
+            boolean seesReef = hubTf.isPresent();
 
             if (seesReef) {
                 // Found a reef tag! Stop motion, then switch to alignment phase
                 swerve.drive(new Translation2d(0, 0), 0);
                 state = AlignState.ALIGNING;
                 ElasticDashboard.putString("AlignToShoot/Status",
-                    "FOUND TAG " + tagId.get() + " - ALIGNING");
+                    "FOUND REEF TAG - ALIGNING");
             } else {
                 // Keep strafing left
                 swerve.drive(new Translation2d(0, STRAFE_SPEED), 0);
             }
         } else if (state == AlignState.ALIGNING) {
-            // Try to get transform to the primary alignment tag
-            Optional<Transform3d> tf = vision.getTransformToTag(alignTagId);
-
-            // If we can't see the primary tag, try the secondary
-            if (tf.isEmpty()) {
-                int secondaryTag = (alignTagId == 10) ? 9 : 19;
-                tf = vision.getTransformToTag(secondaryTag);
-            }
+            // Try to get transform to the nearest hub tag
+            Optional<Transform3d> tf = vision.getNearestHubTagTransform();
 
             if (tf.isEmpty()) {
-                // Can't see either reef tag — hold still briefly
+                // Can't see any reef tag - hold still briefly
                 swerve.drive(new Translation2d(0, 0), 0);
                 noTagCount++;
                 ElasticDashboard.putString("AlignToShoot/Status", "LOOKING FOR REEF TAG");
