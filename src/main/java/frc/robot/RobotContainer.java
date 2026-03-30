@@ -93,8 +93,14 @@ public class RobotContainer {
         controller.share().onTrue(new ToggleTurbo(swerve));
         controller.share().onFalse(new ToggleTurbo(swerve));
 
-        // L1 - HOLD to shoot (vision-independent now)
-        controller.L1().whileTrue(new ShootBall(shooter, hopper, vision));
+        // L2 - HOLD to shoot (vision-independent now)
+        controller.L2().onTrue(new ShootBall(shooter, hopper, vision));
+        
+        controller.L1().whileTrue(new InstantCommand(() -> {
+            if(!controller.L2().getAsBoolean()){
+                shooter.shoot(2500);
+            }
+        }));
 
 
         controller.R1().onTrue(new InstantCommand(() -> intake.startRoller(1.0))

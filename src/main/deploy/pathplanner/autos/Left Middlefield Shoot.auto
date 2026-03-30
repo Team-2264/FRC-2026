@@ -5,21 +5,15 @@
     "data": {
       "commands": [
         {
+          "type": "named",
+          "data": {
+            "name": "DeoloyAndStartIntake"
+          }
+        },
+        {
           "type": "path",
           "data": {
             "pathName": "Left to Middlefield"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "IntakeOut"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "RollerStart"
           }
         },
         {
@@ -31,13 +25,7 @@
         {
           "type": "named",
           "data": {
-            "name": "IntakeIn"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "RollerStop"
+            "name": "RetractAndStopIntake"
           }
         },
         {
