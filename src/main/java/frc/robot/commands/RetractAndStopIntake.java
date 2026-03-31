@@ -9,7 +9,7 @@ import frc.robot.subsystems.Intake;
  * 
  */
 public class RetractAndStopIntake extends Command {
-    private static final double STOP_ROLLER_DELAY_TIME = 0.5;
+    private static final double STOP_ROLLER_DELAY_TIME = 1.5;
     
     private double m_startTime;
     private boolean m_finished = false;

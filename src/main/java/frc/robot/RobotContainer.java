@@ -65,14 +65,14 @@ public class RobotContainer {
         // Add a 2-second timeout to ShootBall so it doesn't get stuck forever in autonomous!
         NamedCommands.registerCommand("ShootBallInitial", new ShootBall(shooter, hopper, vision).withTimeout(6.0));
         NamedCommands.registerCommand("ShootBallFinal", new ShootBall(shooter, hopper, vision).withTimeout(9.0));
-        NamedCommands.registerCommand("IntakeOut", new InstantCommand(() -> intake.deployIntake()));
-        NamedCommands.registerCommand("IntakeIn", new InstantCommand(() -> intake.retractIntake()));
-        NamedCommands.registerCommand("RollerStart", new InstantCommand(() -> intake.startRoller(1.0)));
-        NamedCommands.registerCommand("RollerStop", new InstantCommand(() -> intake.stopRoller()));
+        //NamedCommands.registerCommand("IntakeOut", new InstantCommand(() -> intake.deployIntake()));
+        //NamedCommands.registerCommand("IntakeIn", new InstantCommand(() -> intake.retractIntake()));
+        //NamedCommands.registerCommand("RollerStart", new InstantCommand(() -> intake.startRoller(1.0)));
+        //NamedCommands.registerCommand("RollerStop", new InstantCommand(() -> intake.stopRoller()));
         NamedCommands.registerCommand("ShooterSpinUp", new InstantCommand(() -> shooter.shoot(3000)));
 
 
-        NamedCommands.registerCommand("DeoloyAndStartIntake", new InstantCommand(() -> intake.startRoller(1.0))
+        NamedCommands.registerCommand("DeployAndStartIntake", new InstantCommand(() -> intake.startRoller(1.0))
             .alongWith(new InstantCommand(() -> intake.deployIntake())));
         NamedCommands.registerCommand("RetractAndStopIntake",new RetractAndStopIntake(intake));
 
@@ -94,11 +94,17 @@ public class RobotContainer {
         controller.share().onFalse(new ToggleTurbo(swerve));
 
         // L2 - HOLD to shoot (vision-independent now)
-        controller.L2().onTrue(new ShootBall(shooter, hopper, vision));
+        controller.L1().whileTrue(new ShootBall(shooter, hopper, vision));
         
-        controller.L1().whileTrue(new InstantCommand(() -> {
-            if(!controller.L2().getAsBoolean()){
+        controller.L2().whileTrue(new InstantCommand(() -> {
+            if(!controller.L1().getAsBoolean()){
                 shooter.shoot(2500);
+            }
+        }));
+
+        controller.L2().onFalse(new InstantCommand(() -> {
+            if(!controller.L1().getAsBoolean()){
+                shooter.stop();
             }
         }));
 
@@ -119,11 +125,11 @@ public class RobotContainer {
 
         // R2 - Reverse the intake, hopper and feed motor in case we need to try 
         // and unjam a ball that is stuck between the feeder and shooter
-        controller.R2().onTrue(new InstantCommand(() -> intake.deployIntake())
+        controller2.R2().onTrue(new InstantCommand(() -> intake.deployIntake())
             .alongWith(new InstantCommand(() -> intake.startRoller(-1.0)))
             .alongWith(new InstantCommand(() -> hopper.startConveyor(-1.0)))
             .alongWith(new InstantCommand(() -> shooter.startFeederReverse())));
-        controller.R2().onFalse(new InstantCommand(() -> shooter.stopFeeder())
+        controller2.R2().onFalse(new InstantCommand(() -> shooter.stopFeeder())
             .alongWith(new InstantCommand(() -> hopper.stopConveyor()))
             .alongWith(new RetractAndStopIntake(intake)));
 

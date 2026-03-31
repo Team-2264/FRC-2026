@@ -396,7 +396,8 @@ public final class Constants {
 
             }
 
-            public static final double DefaultShooterRPM = -3360.0;
+            public static final double DefaultShooterRPM = 3753.0;
+            public static final double ShootFromCenterRPM = 5500.0;
         }
 
 
