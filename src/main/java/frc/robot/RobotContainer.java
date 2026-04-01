@@ -136,10 +136,10 @@ public class RobotContainer {
         controller2.povDown().onFalse(new InstantCommand(() -> intake.deployManualMove(0)));
         controller2.povLeft().onTrue(new InstantCommand(() -> intake.deployFindHome()));
 
-        controller.triangle().onTrue(new InstantCommand(() -> hopper.startConveyor(1.0)));
-        controller.triangle().onFalse(new InstantCommand(() -> hopper.stopConveyor()));
-        controller.cross().onTrue(new InstantCommand(() -> hopper.startConveyor(-1.0)));
-        controller.cross().onFalse(new InstantCommand(() -> hopper.stopConveyor()));
+        controller2.triangle().onTrue(new InstantCommand(() -> hopper.startConveyor(1.0)));
+        controller2.triangle().onFalse(new InstantCommand(() -> hopper.stopConveyor()));
+        controller2.cross().onTrue(new InstantCommand(() -> hopper.startConveyor(-1.0)));
+        controller2.cross().onFalse(new InstantCommand(() -> hopper.stopConveyor()));
     }
 
     public Command getAutonomousCommand() {
