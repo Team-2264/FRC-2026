@@ -5,6 +5,12 @@
     "data": {
       "commands": [
         {
+          "type": "named",
+          "data": {
+            "name": "ShooterSpinUp"
+          }
+        },
+        {
           "type": "path",
           "data": {
             "pathName": "Center Move Back"
@@ -19,7 +25,7 @@
         {
           "type": "named",
           "data": {
-            "name": "ShootBall"
+            "name": "ShootBallInitial"
           }
         },
         {
@@ -32,6 +38,12 @@
           "type": "wait",
           "data": {
             "waitTime": 2.0
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ShooterSpinUp"
           }
         },
         {
@@ -49,7 +61,7 @@
         {
           "type": "named",
           "data": {
-            "name": "ShootBall"
+            "name": "ShootBallFinal"
           }
         }
       ]

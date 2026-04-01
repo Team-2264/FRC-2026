@@ -13,7 +13,7 @@
         {
           "type": "named",
           "data": {
-            "name": "DeployAndStartIntake"
+            "name": "InitiateIntake"
           }
         },
         {
@@ -35,6 +35,12 @@
           }
         },
         {
+          "type": "named",
+          "data": {
+            "name": "ShooterSpinUp"
+          }
+        },
+        {
           "type": "path",
           "data": {
             "pathName": "Left to Shoot"
@@ -49,7 +55,7 @@
         {
           "type": "named",
           "data": {
-            "name": "ShootBall"
+            "name": "ShootBallFinal"
           }
         }
       ]

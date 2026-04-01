@@ -78,7 +78,7 @@ public final class Constants {
      * LedStrip class holds constants related to the LED strip.
      */
     public static final class LedStrip {
-        public static final int pwmPort = 0;
+        public static final int pwmPort = 1;
         public static final int numLeds = 12;
         public static final float scaleFactor = 0.5f;
     }
@@ -380,10 +380,10 @@ public final class Constants {
                 //  distance (meters)  →  duty cycles
                 speedTable.put(1.0*0.3048,    2471.2);
                 speedTable.put(2.0*0.3048,    2617.0);
-                speedTable.put(3.0*0.3048,   2688.0); 
-                speedTable.put(4.0*0.3048,   2804.0); 
-                speedTable.put(5.0*0.3048,   2851.0);
-                speedTable.put(6.0*0.3048,   2908.0);
+                speedTable.put(3.0*0.3048,   2638.0); 
+                speedTable.put(4.0*0.3048,   2704.0); 
+                speedTable.put(5.0*0.3048,   2751.0);
+                speedTable.put(6.0*0.3048,   2858.0);
                 speedTable.put(7.0*0.3048,   3021.0);
                 speedTable.put(8.0*0.3048,   3275.0);
                 speedTable.put(9.0*0.3048,    3359.0);
@@ -396,8 +396,7 @@ public final class Constants {
 
             }
 
-            public static final double DefaultShooterRPM = 3753.0;
-            public static final double ShootFromCenterRPM = 5500.0;
+            public static final double DefaultShooterRPM = 5000.0;
         }
 
 

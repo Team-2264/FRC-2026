@@ -5,15 +5,15 @@
     "data": {
       "commands": [
         {
-          "type": "named",
-          "data": {
-            "name": "DeployAndStartIntake"
-          }
-        },
-        {
           "type": "path",
           "data": {
             "pathName": "Right to Middlefield"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "InitiateIntake"
           }
         },
         {
