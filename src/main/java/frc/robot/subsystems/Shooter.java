@@ -79,6 +79,9 @@ public class Shooter extends SubsystemBase {
      */
     public double calculateRPMForDistance(double distanceInMeters) {
         double rpm = Constants.ShooterConfig.Shooter.speedTable.get(distanceInMeters);
+        if(distanceInMeters < 0){
+            rpm = DEFAULT_RPM;
+        }
         ElasticDashboard.putNumber("Shooter/TargetDistInches", distanceInMeters);
         ElasticDashboard.putNumber("Shooter/CalculatedRPM", rpm);
 

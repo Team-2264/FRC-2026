@@ -4,12 +4,10 @@
 
 package frc.robot;
 
-import frc.robot.commands.ArcDrive;
 import frc.robot.commands.DriveAndFaceGoal;
-import frc.robot.commands.DriveToTag;
-import frc.robot.commands.FaceGoal;
 import frc.robot.commands.RetractAndStopIntake;
 import frc.robot.commands.ShootBall;
+//import frc.robot.commands.DriveToTag;
 import frc.robot.commands.TeleopSwerve;
 import frc.robot.commands.ToggleTurbo;
 import frc.robot.commands.locks.LockSwerve;
@@ -20,8 +18,6 @@ import frc.robot.subsystems.Leds;
 import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.Swerve;
 import frc.robot.subsystems.Vision2025;
-import frc.robot.subsystems.ManualMotors;
-import frc.robot.commands.RotateAndSpinWhileHeld;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandPS4Controller;
@@ -61,18 +57,17 @@ public class RobotContainer {
     public RobotContainer() {
         NamedCommands.registerCommand("lockSwerve", new LockSwerve(swerve));
         NamedCommands.registerCommand("unlockSwerve", new UnlockSwerve(swerve));
-        NamedCommands.registerCommand("AlignWithHubTag", new DriveAndFaceGoal(swerve, vision).withTimeout(1.0));
-        // Add a 2-second timeout to ShootBall so it doesn't get stuck forever in autonomous!
-        NamedCommands.registerCommand("ShootBallInitial", new ShootBall(shooter, hopper, vision).withTimeout(6.0));
-        NamedCommands.registerCommand("ShootBallFinal", new ShootBall(shooter, hopper, vision).withTimeout(9.0));
-        NamedCommands.registerCommand("IntakeOut", new InstantCommand(() -> intake.deployIntake()));
-        NamedCommands.registerCommand("IntakeIn", new InstantCommand(() -> intake.retractIntake()));
-        NamedCommands.registerCommand("RollerStart", new InstantCommand(() -> intake.startRoller(1.0)));
-        NamedCommands.registerCommand("RollerStop", new InstantCommand(() -> intake.stopRoller()));
-        NamedCommands.registerCommand("ShooterSpinUp", new InstantCommand(() -> shooter.shoot(3000)));
+        NamedCommands.registerCommand("AlignWithHubTag", new DriveAndFaceGoal(swerve, vision));
+        NamedCommands.registerCommand("ShootBallFinal", new ShootBall(shooter, hopper, intake, vision).withTimeout(9.0));
+        NamedCommands.registerCommand("ShootBallInitial", new ShootBall(shooter, hopper, intake, vision).withTimeout(5.0));
+        //NamedCommands.registerCommand("IntakeOut", new InstantCommand(() -> intake.deployIntake()));
+        //NamedCommands.registerCommand("IntakeIn", new InstantCommand(() -> intake.retractIntake()));
+        //NamedCommands.registerCommand("RollerStart", new InstantCommand(() -> intake.startRoller(1.0)));
+        //NamedCommands.registerCommand("RollerStop", new InstantCommand(() -> intake.stopRoller()));
+        NamedCommands.registerCommand("ShooterSpinUp", new InstantCommand(() -> shooter.shoot(2500)));
 
 
-        NamedCommands.registerCommand("DeoloyAndStartIntake", new InstantCommand(() -> intake.startRoller(1.0))
+        NamedCommands.registerCommand("InitiateIntake",new InstantCommand(() -> intake.startRoller(1.0))
             .alongWith(new InstantCommand(() -> intake.deployIntake())));
         NamedCommands.registerCommand("RetractAndStopIntake",new RetractAndStopIntake(intake));
 
@@ -94,14 +89,19 @@ public class RobotContainer {
         controller.share().onFalse(new ToggleTurbo(swerve));
 
         // L2 - HOLD to shoot (vision-independent now)
-        controller.L2().onTrue(new ShootBall(shooter, hopper, vision));
-        
-        controller.L1().whileTrue(new InstantCommand(() -> {
-            if(!controller.L2().getAsBoolean()){
+    controller.L1().whileTrue(new ShootBall(shooter, hopper, intake, vision));
+
+        controller.L2().whileTrue(new InstantCommand(() -> {
+            if(!controller.L1().getAsBoolean()){
                 shooter.shoot(2500);
             }
         }));
 
+        controller.L2().onFalse(new InstantCommand(() -> {
+            if(!controller.L1().getAsBoolean()){
+                shooter.stop();
+            }
+        }));
 
         controller.R1().onTrue(new InstantCommand(() -> intake.startRoller(1.0))
             .alongWith(new InstantCommand(() -> intake.deployIntake())));
@@ -112,7 +112,10 @@ public class RobotContainer {
 
         // D-pad LEFT - DriveAndFaceGoal: face goal, drive to tag, align + re-center
         DriveAndFaceGoal driveAndFaceCommand = new DriveAndFaceGoal(swerve, vision);
+        //DriveToTag driveToTag = new DriveToTag(swerve, vision);
+
         controller.povLeft().toggleOnTrue(driveAndFaceCommand);
+        //controller.povUp().toggleOnTrue(driveToTag);
 
 
         // Codriver controller
