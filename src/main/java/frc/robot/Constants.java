@@ -379,19 +379,19 @@ public final class Constants {
             static {
                 //  distance (meters)  →  duty cycles
                 speedTable.put(1.0*0.3048,    2471.2);
-                speedTable.put(2.0*0.3048,    2617.0);
-                speedTable.put(3.0*0.3048,   2638.0); 
-                speedTable.put(4.0*0.3048,   2704.0); 
-                speedTable.put(5.0*0.3048,   2751.0);
-                speedTable.put(6.0*0.3048,   2858.0);
-                speedTable.put(7.0*0.3048,   3021.0);
-                speedTable.put(8.0*0.3048,   3275.0);
-                speedTable.put(9.0*0.3048,    3359.0);
-                speedTable.put(10.0*0.3048,   3453.0);
-                speedTable.put(11.0*0.3048,   3523.0);
-                speedTable.put(12.0*0.3048,   3653.0);
-                speedTable.put(13.0*0.3048,   3703.0);
-                speedTable.put(14.0*0.3048,   3753.0);
+                speedTable.put(2.0*0.3048,    2517.0);
+                speedTable.put(3.0*0.3048,   2538.0); 
+                speedTable.put(4.0*0.3048,   2604.0); 
+                speedTable.put(5.0*0.3048,   2651.0);
+                speedTable.put(6.0*0.3048,   2758.0);
+                speedTable.put(7.0*0.3048,   2921.0);
+                speedTable.put(8.0*0.3048,   3175.0);
+                speedTable.put(9.0*0.3048,    3259.0);
+                speedTable.put(10.0*0.3048,   3353.0);
+                speedTable.put(11.0*0.3048,   3423.0);
+                speedTable.put(12.0*0.3048,   3553.0);
+                speedTable.put(13.0*0.3048,   3603.0);
+                speedTable.put(14.0*0.3048,   3653.0);
 
 
             }

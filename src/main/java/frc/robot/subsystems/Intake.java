@@ -134,6 +134,7 @@ public class Intake extends SubsystemBase {
         ElasticDashboard.putBoolean("Intake/Deploy/PositionKnown", deployHomingState == HomingState.COMPLETE);
         ElasticDashboard.putNumber("Intake/Deploy/Position", currentDeployPosition);
 
+
         double deployMotorCurrent = deployMotor.getOutputCurrent();
         double filteredMotorCurrent = deployMotorCurrentDrawMedianFilter.calculate(deployMotorCurrent);
 
@@ -191,6 +192,7 @@ public class Intake extends SubsystemBase {
             deployMotor.setVoltage(voltage);
 
             ElasticDashboard.putNumber("Intake/Deploy/DriveVoltage", voltage);
+            ElasticDashboard.putBoolean("Intake/Deploy/Extended", currentDeployPosition>3.0);
         }
     }
 

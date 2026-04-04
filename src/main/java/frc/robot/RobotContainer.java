@@ -7,6 +7,7 @@ package frc.robot;
 import frc.robot.commands.DriveAndFaceGoal;
 import frc.robot.commands.RetractAndStopIntake;
 import frc.robot.commands.ShootBall;
+import frc.robot.commands.ShootBallNoVision;
 //import frc.robot.commands.DriveToTag;
 import frc.robot.commands.TeleopSwerve;
 import frc.robot.commands.ToggleTurbo;
@@ -57,9 +58,9 @@ public class RobotContainer {
     public RobotContainer() {
         NamedCommands.registerCommand("lockSwerve", new LockSwerve(swerve));
         NamedCommands.registerCommand("unlockSwerve", new UnlockSwerve(swerve));
-        NamedCommands.registerCommand("AlignWithHubTag", new DriveAndFaceGoal(swerve, vision));
+        NamedCommands.registerCommand("AlignWithHubTag", new DriveAndFaceGoal(swerve, vision).withTimeout(2));
         NamedCommands.registerCommand("ShootBallFinal", new ShootBall(shooter, hopper, intake, vision).withTimeout(9.0));
-        NamedCommands.registerCommand("ShootBallInitial", new ShootBall(shooter, hopper, intake, vision).withTimeout(5.0));
+        NamedCommands.registerCommand("ShootBallInitial", new ShootBall(shooter, hopper, intake, vision).withTimeout(4.0));
         //NamedCommands.registerCommand("IntakeOut", new InstantCommand(() -> intake.deployIntake()));
         //NamedCommands.registerCommand("IntakeIn", new InstantCommand(() -> intake.retractIntake()));
         //NamedCommands.registerCommand("RollerStart", new InstantCommand(() -> intake.startRoller(1.0)));
@@ -89,7 +90,7 @@ public class RobotContainer {
         controller.share().onFalse(new ToggleTurbo(swerve));
 
         // L2 - HOLD to shoot (vision-independent now)
-    controller.L1().whileTrue(new ShootBall(shooter, hopper, intake, vision));
+        controller.L1().whileTrue(new ShootBall(shooter, hopper, intake, vision));
 
         controller.L2().whileTrue(new InstantCommand(() -> {
             if(!controller.L1().getAsBoolean()){
@@ -140,6 +141,8 @@ public class RobotContainer {
         controller2.triangle().onFalse(new InstantCommand(() -> hopper.stopConveyor()));
         controller2.cross().onTrue(new InstantCommand(() -> hopper.startConveyor(-1.0)));
         controller2.cross().onFalse(new InstantCommand(() -> hopper.stopConveyor()));
+
+        controller2.L1().whileTrue(new ShootBallNoVision(shooter, hopper, intake));
     }
 
     public Command getAutonomousCommand() {

@@ -25,7 +25,7 @@ public class ShootBall extends Command {
     private final Vision2025 vision; // Add Vision2025 instance
 
     private static final double SHOOTER_SPEED_THRESHOLD = 0.97; // 97% of target speed
-    private static final double INTAKE_PULSE_PERIOD_SECONDS = 0.25;
+    private static final double INTAKE_PULSE_PERIOD_SECONDS = 1.0;
     private static double lastDistanceMeters = -1.0; // Last distance of the robot from tag
     private double lastIntakePulseTime = 0.0;
 
@@ -42,7 +42,7 @@ public class ShootBall extends Command {
         this.intake = intake;
         this.vision = vision; // Initialize Vision2025
         lastDistanceMeters = -1.0;
-        addRequirements(shooter, hopper, vision); // Add all requirements in one call
+        addRequirements(shooter, hopper, vision, intake); // Add all requirements in one call
     }
 
     @Override
@@ -80,8 +80,8 @@ public class ShootBall extends Command {
             if ((now - lastIntakePulseTime) >= INTAKE_PULSE_PERIOD_SECONDS) {
                 new InstantCommand(() -> intake.startRoller(1.0))
                         .alongWith(new InstantCommand(() -> intake.deployIntake()))
-                        .andThen(new WaitCommand(0.25))
-                        .andThen(new RetractAndStopIntake(intake))
+                        .andThen(new WaitCommand(1))
+                        .andThen(new InstantCommand(() -> intake.retractIntake()))
                         .schedule();
                 lastIntakePulseTime = now;
             }
@@ -107,7 +107,7 @@ public class ShootBall extends Command {
     public void end(boolean interrupted) {
         shooter.stop();
         hopper.stopConveyor();
-        intake.stopRoller();
+        //intake.stopRoller();
         intake.retractIntake();
         ElasticDashboard.putBoolean("ShootBall/Active", false);
         lastDistanceMeters = -1.0;
